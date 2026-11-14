@@ -37,7 +37,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 app.appendChild(renderer.domElement);
 
-const world = createWorld({ quality });
+const world = createWorld({ quality, renderer });
 const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 3000);
 const input = createInput();
 const player = createPlayerController(camera, document.body, world, input);

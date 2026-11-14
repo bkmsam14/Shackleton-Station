@@ -9,6 +9,7 @@ import { heightAt } from './heightfield.js';
 import { createHabitat } from './habitat.js';
 import { createGreenhouse } from './greenhouse.js';
 import { mergeStatic } from './mergeStatic.js';
+import { createEnvironments, ENV_INTENSITY } from './environment.js';
 import { LAYOUT } from './layout.js';
 import { skyDirection } from '../systems/daycycle.js';
 
@@ -17,7 +18,7 @@ export const QUALITY = {
   high: { terrainSegments: 220, rocks: 260, stars: 2600, shadowMap: 2048, pixelRatioCap: 2 },
 };
 
-export function createWorld({ quality = 'high' } = {}) {
+export function createWorld({ quality = 'high', renderer } = {}) {
   const q = QUALITY[quality];
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000); // no atmosphere → black sky
@@ -38,6 +39,7 @@ export function createWorld({ quality = 'high' } = {}) {
   const outdoorOnly = [terrain, horizon, rocks.mesh, sky.group, solarArray.object, createPathLights(), createPowerCable()];
   scene.add(...outdoorOnly, habitat.object, greenhouse.object);
   let lastZone = null;
+  const env = renderer ? createEnvironments(renderer) : null;
 
   // Outdoor colliders (solid things you cannot walk through when outside).
   const outdoorColliders = [
@@ -88,6 +90,10 @@ export function createWorld({ quality = 'high' } = {}) {
         for (const o of outdoorOnly) o.visible = outside;
         habitat.object.visible = outside || zoneId === 'habitat';
         greenhouse.object.visible = outside || zoneId === 'greenhouse';
+        if (env) {
+          scene.environment = outside ? env.outdoor : env.indoor;
+          scene.environmentIntensity = ENV_INTENSITY[zoneId] ?? ENV_INTENSITY.outside;
+        }
       }
       const d = skyDirection(sun.azimuthDeg, sun.elevationDeg);
       sunDir.set(d.x, d.y, d.z);
