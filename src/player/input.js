@@ -1,0 +1,51 @@
+// input.js — keyboard state. Movement keys are held; action keys are edge-triggered.
+
+const MOVE = {
+  KeyW: 'forward',
+  ArrowUp: 'forward',
+  KeyS: 'back',
+  ArrowDown: 'back',
+  KeyA: 'left',
+  ArrowLeft: 'left',
+  KeyD: 'right',
+  ArrowRight: 'right',
+  ShiftLeft: 'run',
+  ShiftRight: 'run',
+  Space: 'jump',
+};
+
+export function createInput() {
+  const held = { forward: false, back: false, left: false, right: false, run: false, jump: false };
+  let interactPressed = false;
+
+  function onDown(e) {
+    const k = MOVE[e.code];
+    if (k) {
+      held[k] = true;
+      if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+    }
+    if (e.code === 'KeyE' && !e.repeat) interactPressed = true;
+  }
+  function onUp(e) {
+    const k = MOVE[e.code];
+    if (k) held[k] = false;
+  }
+  function clear() {
+    for (const k of Object.keys(held)) held[k] = false;
+    interactPressed = false;
+  }
+  window.addEventListener('keydown', onDown);
+  window.addEventListener('keyup', onUp);
+  window.addEventListener('blur', clear);
+
+  return {
+    held,
+    /** true once per E press */
+    consumeInteract() {
+      const v = interactPressed;
+      interactPressed = false;
+      return v;
+    },
+    clear,
+  };
+}
