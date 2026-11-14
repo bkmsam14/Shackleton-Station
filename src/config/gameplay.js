@@ -147,6 +147,42 @@ export const UI = {
   TOAST_SECONDS: 4, // GAME BALANCE (not real data)
 };
 
+// ---------------------------------------------------------------------------
+// ELECTROLYSIS (Molecule Zapper mini-game) — 2 H₂O → 2 H₂ + O₂. See SCIENCE.md "Electrolysis".
+// ---------------------------------------------------------------------------
+export const ELECTROLYSIS = {
+  // Water used per kg of oxygen made: 2 × 18 g of water gives 32 g of O₂ → 36 / 32.
+  WATER_PER_KG_O2: 1.125, // stoichiometry of 2 H₂O → 2 H₂ + O₂ (molar masses H₂O 18, O₂ 32)
+  // Energy to split the water: ΔfH°(H₂O, liquid) = −285.83 kJ/mol (NIST Chemistry WebBook).
+  // 1 kg O₂ needs 62.5 mol of water → 62.5 × 285.83 kJ = 17.86 MJ = 4.96 kWh.
+  // This is the physics MINIMUM; real electrolysers need more (shown that way in the game).
+  KJ_PER_MOL_WATER: 285.83, // NIST WebBook, water (liquid) standard enthalpy of formation
+  MOL_WATER_PER_KG_O2: 62.5, // 1000 g ÷ 32 g/mol × 2 (stoichiometry)
+  // Real ISS Oxygen Generation Assembly, nominal rate (range 2.3–9.2 kg/day).
+  ISS_O2_KG_PER_DAY_NOMINAL: 5.4, // NASA NTRS 20180006335 (range: NTRS 20080036243)
+  // The station's own water tank (finite: ice mining / recycler come later).
+  TANK_START_KG: 10, // GAME BALANCE (not real data) — about 3 full oxygen refills
+  // Batches the player can choose (kg of oxygen made).
+  BATCHES: [
+    { id: 'small', label: 'Small', o2Kg: 0.5, zaps: 8 }, // GAME BALANCE (not real data)
+    { id: 'medium', label: 'Medium', o2Kg: 1.0, zaps: 14 }, // GAME BALANCE (not real data)
+    { id: 'big', label: 'Big', o2Kg: 1.5, zaps: 20 }, // GAME BALANCE (not real data)
+  ],
+  // Each missed zap wastes a little electricity (electrolysers lose some energy as heat).
+  MISS_EXTRA_KWH: 0.05, // GAME BALANCE (not real data)
+  // A batch is only allowed if the battery stays above this after paying for it.
+  POWER_FLOOR_PERCENT: 5, // GAME BALANCE (not real data)
+  // Arcade feel.
+  MOLECULE_SPEED_PX: 70, // GAME BALANCE (not real data) — drift speed, px per second
+  MAX_MOLECULES: 6, // GAME BALANCE (not real data)
+  SPAWN_SECONDS: 0.9, // GAME BALANCE (not real data)
+  COMBO_WINDOW_SECONDS: 1.5, // GAME BALANCE (not real data)
+  // Stars from play (1–2); a right quiz answer adds 1 (max 3).
+  STAR_ACCURACY: 0.75, // GAME BALANCE (not real data) — hits ÷ (hits + misses) for the 2nd star
+};
+ELECTROLYSIS.KWH_PER_KG_O2_MIN =
+  (ELECTROLYSIS.KJ_PER_MOL_WATER * ELECTROLYSIS.MOL_WATER_PER_KG_O2) / 3600; // kJ → kWh (≈ 4.96)
+
 // Feature flags (later demos).
 export const FEATURES = {
   ENABLE_WATER_GAUGE: false,
