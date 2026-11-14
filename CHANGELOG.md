@@ -14,6 +14,12 @@
 - **Water walls panel:** pump water between the Electrolysis tank and the shelter walls (costs a
   little power). The real trade-off: water in the walls blocks radiation but can't make oxygen.
   The three wall tanks show their water level.
+- **The Water Walls panel teaches:** a live *particle test* (particles stopped by the wall or
+  getting through, using the game's real shielding numbers), a *Where are you safest?* chart
+  (particles out of every 100 for each place), sourced *Did you know?* cards (why water, why not
+  metal, NASA's Water Walls concept, use the mass you have) and an easy quick-check question.
+- **Storm snow and dosimeter ticks:** camera "snow" on screen and a ticking dosimeter, both
+  following the dose rate, so the shelter's protection can be seen and heard.
 - **"What just happened?" card** after each storm: the real flare (class, date, sunspot region),
   the real time until particles arrived, and how much NASA's LRO (CRaTER) measured at the Moon,
   with sources and an honest "Replay of real data / Live" tag.

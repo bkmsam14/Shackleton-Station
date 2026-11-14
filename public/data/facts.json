@@ -168,6 +168,24 @@
       "text": "In a proton storm, spacecraft cameras fill with white speckles (\"snow\") as protons hit their detectors.",
       "value": "SOHO/LASCO, January 2005 solar events",
       "source": "https://svs.gsfc.nasa.gov/3159"
+    },
+    {
+      "id": "hydrogen-shield",
+      "text": "Materials with lots of hydrogen, like water, are some of the best at slowing down fast space particles.",
+      "value": "NASA shielding materials study (2009)",
+      "source": "https://ntrs.nasa.gov/citations/20090020691"
+    },
+    {
+      "id": "metal-secondaries",
+      "text": "Fast particles hitting metal walls can knock out new particles; on the ISS many come from its aluminium walls.",
+      "value": "NASA TM-20230003044",
+      "source": "https://ntrs.nasa.gov/citations/20230003044"
+    },
+    {
+      "id": "water-walls",
+      "text": "NASA engineers have studied \"water walls\": habitat walls of water bags that block radiation and help clean water and air.",
+      "value": "NASA NIAC Water Walls concept",
+      "source": "https://www.nasa.gov/general/water-walls-highly-reliable-and-massively-redundant-life-support-architecture"
     }
   ]
 }

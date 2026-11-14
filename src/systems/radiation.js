@@ -34,6 +34,11 @@ export function shieldFactor(place, wallKg = 0) {
   return place === 'shelter' ? base * wallFactor(wallKg) : base;
 }
 
+/** "About N of every 100 particles reach you" — shieldFactor as a whole number kids can read. */
+export function particlesPerHundred(place, wallKg = 0) {
+  return Math.max(1, Math.round(shieldFactor(place, wallKg) * 100));
+}
+
 /** Dose rate (% of the storm limit per game hour) for a storm at this place. */
 export function doseRate(storm, place, wallKg = 0) {
   return RADIATION.STORM_DOSE_PER_GAME_HOUR * (storm?.intensity ?? 0) * shieldFactor(place, wallKg);
