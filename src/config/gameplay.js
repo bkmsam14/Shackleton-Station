@@ -234,6 +234,41 @@ export const ASSISTANT = {
   VOICE_RATE: 0.95, // GAME BALANCE (not real data)
 };
 
+// ---------------------------------------------------------------------------
+// RADIATION — solar particle storms (real DONKI + RadLab replays) and the storm shelter.
+// See docs/SCIENCE.md "Radiation and shielding". Dose is shown as % of a per-storm safety
+// limit (NASA plans shielding against a limit per big particle event); the PDA keeps the
+// mission total, which never goes down (dose adds up — it does not "heal").
+// ---------------------------------------------------------------------------
+export const RADIATION = {
+  // --- turning real data into storms
+  SEP_GROUP_HOURS: 6, // GAME BALANCE (not real data) — SEP records this close = one storm
+  RATIO_FOR_FULL_INTENSITY: 300, // GAME BALANCE (not real data) — CRaTER dose rate ×300 quiet = strongest
+  MIN_INTENSITY: 0.25, // GAME BALANCE (not real data)
+  DEFAULT_INTENSITY: 0.5, // GAME BALANCE (not real data) — when no RadLab measurement exists (Live)
+  // --- warning and storm timing (game hours; 1 game hour = 10 real seconds)
+  MIN_WARNING_GAME_HOURS: 4, // GAME BALANCE (not real data) — at least 40 s to reach the shelter
+  MAX_WARNING_GAME_HOURS: 8, // GAME BALANCE (not real data)
+  DEFAULT_LEAD_GAME_HOURS: 1, // particles "in less than an hour" (NASA Science, see SCIENCE.md)
+  STORM_GAME_HOURS: 5, // GAME BALANCE (not real data) — real particle storms last hours to days
+  // --- dose (all in % of the per-storm limit)
+  STORM_DOSE_PER_GAME_HOUR: 70, // GAME BALANCE (not real data) — strongest storm, no shielding
+  // Where you are while particles arrive (fraction of the dose that gets through).
+  LOCATION_FACTOR: {
+    outside: 1.0, // GAME BALANCE (not real data) — a spacesuit gives little protection
+    greenhouse: 0.7, // GAME BALANCE (not real data) — thin walls
+    habitat: 0.5, // GAME BALANCE (not real data)
+    // Artemis I: Orion's storm-shelter spot got much less dose than less-shielded spots (DLR /
+    // Nature 2024, measured in Earth's radiation belts). The exact factor here is game balance.
+    shelter: 0.25, // GAME BALANCE (not real data)
+  },
+  // Water walls: more water between you and the Sun = less dose (mass shielding).
+  WALL_CAPACITY_KG: 6, // GAME BALANCE (not real data) — real shelters would need tonnes
+  WALL_HALF_KG: 3, // GAME BALANCE (not real data) — this much water halves the shelter dose
+  PUMP_KWH_PER_KG: 0.05, // GAME BALANCE (not real data) — moving water costs a little power
+  RING_LINGER_S: 6, // GAME BALANCE (not real data) — dose ring stays visible after a storm
+};
+
 // Feature flags (later demos).
 export const FEATURES = {
   ENABLE_WATER_GAUGE: false,
