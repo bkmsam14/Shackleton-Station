@@ -15,8 +15,8 @@
   to a place, and shares a sourced science fact about every 3 minutes. He stays quiet in menus,
   the PDA and mini-games, and never chatters (cooldown).
 - **Talk to Volt:** look at him and press E for the most useful tip right now.
-- **Volt speaks out loud with a cute robot voice** — neither male nor female, the same in every
-  browser, offline. Words come from the eSpeak speech engine (meSpeak, melodic "female 3" voice,
+- **Volt speaks out loud with a cute, friendly robot voice** — warm and childlike with a touch of
+  femininity, the same in every browser, offline. Words come from the eSpeak speech engine (meSpeak, melodic "female 3" voice,
   gently lifted to a warm, childlike ~240 Hz — cute and never scary); a soft Web Audio chain adds
   a slow chorus shimmer, a faint robot tint, warmth, rounded highs and a quiet "bip-bip" before each line. The engine (~600 KB gzipped) is
   loaded in the background after the game starts; if it fails, Volt falls back to the browser
