@@ -1,0 +1,230 @@
+// assistant.js — Volt's "brain". PURE LOGIC: no Three.js, no DOM.
+//
+// Decides WHAT Volt says and WHEN. main.js feeds it a plain snapshot each frame plus game
+// events (notify), and shows whatever line step() returns in Volt's bubble.
+//  - First-day tour: a step machine; each step waits for the player to really do it.
+//  - Priorities: warning (3) > tour (2) > news (1) > fact (0). Warnings skip the cooldown.
+//  - Chattiness: 'chatty' (everything) | 'helpful' (no idle facts) | 'quiet' (tour + warnings).
+//  - Silent unless snapshot.mode === 'playing' (no talking in menus, the PDA, mini-games).
+// Persistence (tour done, chattiness) goes through an injected { load, save } store, so the
+// game passes save.js and tests pass an in-memory store.
+import { ASSISTANT } from '../config/gameplay.js';
+import * as LINES from '../data/voltLines.js';
+
+const PRIORITY = { warning: 3, tour: 2, news: 1, fact: 0 };
+export const CHATTINESS = ['chatty', 'helpful', 'quiet'];
+
+export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {}) {
+  let saved = {};
+  try {
+    saved = store?.load()?.volt ?? {};
+  } catch {
+    saved = {};
+  }
+  let tourDone = Boolean(saved.tourDone);
+  let chattiness = CHATTINESS.includes(saved.chattiness) ? saved.chattiness : 'chatty';
+
+  let tourIndex = -1; // -1 = no tour running
+  let walked = 0;
+  let tourIdle = 0; // seconds since the current tour line was said
+  let tourWaitGap = 0; // short pause before saying the next tour step
+  let tourLineSaid = false;
+  let queue = []; // { line, kind, age }
+  let cooldown = 0;
+  let sinceFact = 0;
+  let factIndex = 0;
+  const visited = new Set();
+
+  function persist() {
+    try {
+      store?.save({ volt: { tourDone, chattiness } });
+    } catch {
+      // storage blocked — fine, it only means the tour may show again next time
+    }
+  }
+
+  const allows = (kind) =>
+    kind === 'warning' || kind === 'tour' || (kind === 'news' && chattiness !== 'quiet') || (kind === 'fact' && chattiness === 'chatty');
+
+  function enqueue(line, kind) {
+    if (!line || !allows(kind)) return false;
+    queue = queue.filter((q) => q.line.id !== line.id); // no duplicates waiting
+    queue.push({ line, kind, age: 0 });
+    return true;
+  }
+
+  // ---------------------------------------------------------------- tour
+  const tourStep = () => (tourIndex >= 0 ? lines.TOUR[tourIndex] : null);
+
+  function beginStep(i) {
+    tourIndex = i;
+    walked = 0;
+    tourIdle = 0;
+    tourLineSaid = false;
+    tourWaitGap = i === 0 ? 0 : config.TOUR_GAP_S;
+  }
+
+  function completeStep() {
+    const next = tourIndex + 1;
+    if (next >= lines.TOUR.length) {
+      tourIndex = -1;
+      tourDone = true;
+      persist();
+      enqueue(lines.TOUR_DONE, 'tour');
+    } else {
+      beginStep(next);
+    }
+  }
+
+  function checkTourDone(snap, dt) {
+    const s = tourStep();
+    if (!s || !tourLineSaid) return; // the kid must hear the step before it can complete
+    if (s.done.walk) {
+      walked += snap.moved ?? 0;
+      if (walked >= config.TOUR_WALK_M) completeStep();
+    } else if (s.done.flag && snap[s.done.flag]) {
+      completeStep();
+    }
+    tourIdle += dt;
+  }
+
+  function startTour() {
+    queue = queue.filter((q) => q.kind !== 'tour');
+    beginStep(0);
+  }
+
+  // ---------------------------------------------------------------- talk ("E" on Volt)
+  function nextFact() {
+    const f = lines.FACTS[factIndex % lines.FACTS.length];
+    factIndex++;
+    return f;
+  }
+
+  return {
+    get chattiness() {
+      return chattiness;
+    },
+    get tourActive() {
+      return tourIndex >= 0;
+    },
+    get tourDone() {
+      return tourDone;
+    },
+    /** Current tour step (or null) — main.js uses step.target for the 3D marker. */
+    get tourStep() {
+      return tourStep();
+    },
+
+    setChattiness(level) {
+      if (!CHATTINESS.includes(level)) return;
+      chattiness = level;
+      queue = queue.filter((q) => allows(q.kind));
+      persist();
+    },
+
+    /** Call once when play starts: runs the tour the first time, otherwise says hello. */
+    startIfNeeded() {
+      if (!tourDone) startTour();
+      else enqueue(lines.WELCOME_BACK, 'news');
+    },
+    replayTour() {
+      tourDone = false;
+      persist();
+      startTour();
+    },
+    skipTour() {
+      if (tourIndex < 0) return;
+      tourIndex = -1;
+      tourDone = true;
+      persist();
+      queue = queue.filter((q) => q.kind !== 'tour');
+      enqueue(lines.TOUR_SKIPPED, 'tour');
+    },
+
+    /**
+     * Game events: 'pda-opened', 'oxygen-made', 'gauges-shown', 'zone:<id>', or an
+     * EVENTS key ('oxygen-low', 'sun-down', …). Returns true if Volt will say something
+     * about it (main.js shows a plain caption otherwise).
+     */
+    notify(event) {
+      const s = tourStep();
+      if (s && tourLineSaid && s.done.event === event) {
+        completeStep();
+        return true;
+      }
+      if (event.startsWith('zone:')) {
+        const zone = event.slice(5);
+        if (visited.has(zone)) return false;
+        visited.add(zone);
+        if (tourIndex >= 0) return false; // the tour already explains places
+        return enqueue(lines.VISITS[zone], 'news');
+      }
+      const e = lines.EVENTS[event];
+      if (!e) return false;
+      return enqueue({ id: event, ...e }, e.kind);
+    },
+
+    /**
+     * Advance time. snap: { mode, moved, nearArray, ... }.
+     * Returns a line object { id, text, long?, mood, action?, tour? } to say now, or null.
+     */
+    step(dt, snap) {
+      if (snap.mode !== 'playing') return null;
+      cooldown = Math.max(0, cooldown - dt);
+      for (const q of queue) q.age += dt;
+      queue = queue.filter((q) => q.kind === 'tour' || q.kind === 'warning' || q.age < config.STALE_S);
+
+      // tour: say the current step (after a short gap), remind if nothing happens
+      const s = tourStep();
+      if (s) {
+        checkTourDone(snap, dt);
+        if (tourIndex >= 0 && tourStep() === s) {
+          tourWaitGap = Math.max(0, tourWaitGap - dt);
+          const due = (!tourLineSaid && tourWaitGap === 0) || (tourLineSaid && tourIdle >= config.TOUR_REMIND_S);
+          if (due && !queue.some((q) => q.line.id === s.id)) enqueue(s, 'tour');
+        }
+      } else {
+        sinceFact += dt;
+        if (sinceFact >= config.FACT_EVERY_S && queue.length === 0 && cooldown === 0) {
+          sinceFact = 0;
+          enqueue(nextFact(), 'fact');
+        }
+      }
+
+      if (!queue.length) return null;
+      queue.sort((a, b) => PRIORITY[b.kind] - PRIORITY[a.kind]);
+      const top = queue[0];
+      const urgent = top.kind === 'warning';
+      const gap = top.kind === 'tour' ? 0 : cooldown;
+      if (!urgent && gap > 0) return null;
+      queue.shift();
+      cooldown = config.COOLDOWN_S;
+      sinceFact = 0;
+      const isTourLine = tourStep() && top.line.id === tourStep().id;
+      if (isTourLine) {
+        tourLineSaid = true;
+        tourIdle = 0;
+      }
+      return { ...top.line, kind: top.kind, tour: Boolean(isTourLine) };
+    },
+
+    /** The player pressed E on Volt: a helpful line for right now (ignores the cooldown). */
+    talk(snap) {
+      const s = tourStep();
+      if (s) {
+        tourLineSaid = true;
+        tourIdle = 0;
+        return { ...s, kind: 'tour', tour: true };
+      }
+      const T = lines.TALK;
+      let line;
+      if (snap.oxygen < 40) line = snap.zoneId === 'outside' ? T.oxygenOutside : T.oxygen;
+      else if (snap.power < 30) line = T.power;
+      else if (snap.food < 35) line = T.food;
+      else if (snap.tankKg < config.TANK_LOW_KG) line = T.tank;
+      else line = nextFact();
+      cooldown = config.COOLDOWN_S;
+      return { ...line, kind: 'talk', tour: false };
+    },
+  };
+}

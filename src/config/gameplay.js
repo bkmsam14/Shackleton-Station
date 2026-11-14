@@ -53,7 +53,8 @@ export const OXYGEN = {
   // Size of the full supply. Inside it lasts 3 / 0.0373 kg/h ≈ 80 game h ≈ 13 real min;
   // working outside it lasts 3 / 0.086 kg/h ≈ 35 game h ≈ 6 real min.
   CAPACITY_KG: 3, // GAME BALANCE (not real data)
-  START_PERCENT: 100, // GAME BALANCE (not real data)
+  // 60 % so the first-day tour can make oxygen at the Electrolysis unit right away.
+  START_PERCENT: 60, // GAME BALANCE (not real data)
 };
 
 export const FOOD = {
@@ -184,6 +185,27 @@ export const ELECTROLYSIS = {
 };
 ELECTROLYSIS.KWH_PER_KG_O2_MIN =
   (ELECTROLYSIS.KJ_PER_MOL_WATER * ELECTROLYSIS.MOL_WATER_PER_KG_O2) / 3600; // kJ → kWh (≈ 4.96)
+
+// ---------------------------------------------------------------------------
+// VOLT — the helper robot (behaviour and pacing only; all GAME BALANCE)
+// ---------------------------------------------------------------------------
+export const ASSISTANT = {
+  FOLLOW_BEHIND_M: 1.6, // GAME BALANCE (not real data) — how far behind the player
+  FOLLOW_SIDE_M: 0.8, // GAME BALANCE (not real data) — and to the right
+  SPEED_M_S: 3.4, // GAME BALANCE (not real data) — top rolling speed
+  RADIUS_M: 0.32, // GAME BALANCE (not real data) — collision circle
+  CATCH_UP_M: 8, // GAME BALANCE (not real data) — farther than this → Volt hops to you
+  COOLDOWN_S: 20, // GAME BALANCE (not real data) — quiet time between non-urgent lines
+  TOUR_GAP_S: 2.5, // GAME BALANCE (not real data) — pause before the next tour step
+  TOUR_REMIND_S: 30, // GAME BALANCE (not real data) — repeat a tour step if nothing happens
+  FACT_EVERY_S: 180, // GAME BALANCE (not real data) — an idle science fact this often
+  BUBBLE_BASE_S: 3.5, // GAME BALANCE (not real data) — bubble time = base + per word
+  BUBBLE_PER_WORD_S: 0.3, // GAME BALANCE (not real data)
+  STALE_S: 25, // GAME BALANCE (not real data) — drop queued news older than this
+  TOUR_WALK_M: 3, // GAME BALANCE (not real data) — tour step 1: walk this far
+  NEAR_ARRAY_M: 9, // GAME BALANCE (not real data) — tour step 6: this close to the array
+  TANK_LOW_KG: 2.5, // GAME BALANCE (not real data) — Volt warns when the water tank is this low
+};
 
 // Feature flags (later demos).
 export const FEATURES = {

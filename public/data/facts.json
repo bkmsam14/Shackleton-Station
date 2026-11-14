@@ -96,6 +96,30 @@
       "text": "Craters near the Moon's south pole that never get sunlight hold water ice.",
       "value": "LRO LEND data: ice in permanently shadowed regions near the south pole",
       "source": "https://science.nasa.gov/solar-system/moon/nasas-lro-lunar-ice-deposits-are-widespread/"
+    },
+    {
+      "id": "gravity-inside",
+      "text": "Gravity is the same inside the base: still about 1/6 of Earth’s.",
+      "value": "1.62 m/s² on the lunar surface; walls and air do not change it",
+      "source": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html"
+    },
+    {
+      "id": "astrobee-fans",
+      "text": "NASA’s Astrobee robots fly inside the Space Station using electric fans; they cannot work outside.",
+      "value": "Fan (impeller) propulsion, ISS interior only",
+      "source": "https://ntrs.nasa.gov/citations/20190002711"
+    },
+    {
+      "id": "lrv-wheels",
+      "text": "On the airless Moon, rovers roll on wheels; the Apollo Lunar Roving Vehicle used wire-mesh wheels.",
+      "value": "LRV wire-mesh wheels (NASA Glenn TM)",
+      "source": "https://ntrs.nasa.gov/citations/20100000019"
+    },
+    {
+      "id": "pink-grow-lights",
+      "text": "Plants mainly use red and blue light to grow, so grow lights look pink.",
+      "value": "NASA Veggie VEG-04 red:blue light study",
+      "source": "https://ntrs.nasa.gov/citations/20190033231"
     }
   ]
 }
