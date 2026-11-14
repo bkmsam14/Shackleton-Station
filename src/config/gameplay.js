@@ -239,8 +239,9 @@ export const ASSISTANT = {
 // ---------------------------------------------------------------------------
 export const FARMING = {
   START_SEED_POTATOES: 3, // GAME BALANCE (not real data)
-  // One potato from each plant is replanted, so only YIELD − 1 can be eaten.
-  HARVEST_YIELD: 3, // potatoes per harvest — GAME BALANCE (not real data)
+  // Each leafy stem comes up with a potato on its roots; one per harvest is replanted,
+  // so only YIELD − 1 can be eaten. (HARVEST_YIELD is set below: stems × per stem.)
+  POTATOES_PER_STEM: 1, // GAME BALANCE (not real data)
   POT_COUNT: 4, // pots in the greenhouse (2 stands × 2) — level layout
   TENDING_REAL_SECONDS: 30, // time to plant, cover, water and harvest one pot — GAME BALANCE (not real data)
   // Share of the astronaut's food (resting inside) the greenhouse supplies when all pots
@@ -252,8 +253,9 @@ export const FARMING = {
   COVER_LOADS: 3, // handfuls of soil to cover the seed potato — GAME BALANCE (not real data)
   WATER_NEEDED: 120, // water drops that must land on the soil — GAME BALANCE (not real data)
   POUR_ANGLE_DEG: 35, // the can pours once tilted past this — GAME BALANCE (not real data)
-  CUTS_TO_HARVEST: 3, // leafy stems to cut before lifting the potato — GAME BALANCE (not real data)
+  CUTS_TO_HARVEST: 3, // leafy stems to cut (each one brings up its potato) — GAME BALANCE (not real data)
 };
+FARMING.HARVEST_YIELD = FARMING.CUTS_TO_HARVEST * FARMING.POTATOES_PER_STEM; // potatoes per plant
 // Food value of one potato, DERIVED (not a free number). In one growing cycle the
 // astronaut eats (cycle ÷ day length) × the BVAD daily food; the full farm's spare
 // potatoes (pots × (yield − 1)) must cover FARM_FOOD_COVERAGE of that.

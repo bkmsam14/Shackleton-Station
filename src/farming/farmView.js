@@ -204,8 +204,8 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     if (s === 'harvest')
       text =
         tool === 'cutters'
-          ? `Click a leafy stem to cut it. (${pot.cuts}/${cutsNeeded(pot)})`
-          : 'The potato plant is ready! Take the cutters and cut the leafy stems.';
+          ? `Cut a leafy stem: it comes up with its potato! (${pot.cuts}/${cutsNeeded(pot)})`
+          : 'Ready! Potatoes grow underground on the roots. Take the cutters and cut each leafy stem.';
     if (s === 'harvested')
       text = `You harvested ${potatoes(pendingNotice)}! Keep one to plant again, and eat the rest (F).`;
     ui.instr.textContent = text;
@@ -503,82 +503,86 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     busy = true;
     const shears = cutters; // the last cut puts the cutters away before this finishes
     animate(0.09, (k) => shears.setOpen(1 - k), () => animate(0.15, (k) => shears.setOpen(k)));
-    // falling copy of the stem (Moon gravity), the original hides via its cut count
+    // a copy of the stem (with its root and potato) is pulled up; the original hides
     stem.updateMatrixWorld(true);
-    const fall = new THREE.Mesh(stem.geometry, stem.material.clone());
-    stem.matrixWorld.decompose(fall.position, fall.quaternion, fall.scale);
-    fall.material.transparent = true;
-    layer.add(fall);
-    const vel = new THREE.Vector3(stem.userData.tip.x, 0.08, stem.userData.tip.z).normalize().multiplyScalar(0.18);
-    vel.y = 0.12;
-    const spin = (Math.random() - 0.5) * 3;
-    animate(
-      1.4,
-      (k, dt) => {
-        vel.y -= PLAYER.GRAVITY * dt;
-        fall.position.addScaledVector(vel, dt);
-        fall.rotation.z += spin * dt;
-        fall.material.opacity = 1 - ease(Math.max(0, (k - 0.5) / 0.5));
-      },
-      () => {
-        fall.removeFromParent();
-        fall.material.dispose();
-      },
-    );
-    burst(KIND.CRUMB, hit.copy(fall.position).add({ x: 0, y: 0.12, z: 0 }), 6, COL.leaf, 0.12, 0.004);
+    const lifted = stem.clone(true);
+    lifted.material = stem.material.clone();
+    lifted.material.emissive.setHex(0x000000);
+    lifted.material.transparent = true;
+    stem.matrixWorld.decompose(lifted.position, lifted.quaternion, lifted.scale);
+    layer.add(lifted);
+    const tuber = lifted.getObjectByName('potato');
     const r = cutLeaf(state, potId);
     save();
-    if (r.harvested) {
-      // keep the falling stem's geometry alive until it is gone
+    const harvested = r.harvested;
+    if (harvested) {
+      // the plant is gone from the pot; keep its geometry alive until the animation ends
       const plant = v.plant;
-      v.plant = null; // so sync() doesn't dispose geometry that is still falling
+      v.plant = null;
       plant.group.removeFromParent();
-      setTimeout(() => plant.dispose(), 1600);
-      sync(potId);
+      setTimeout(() => plant.dispose(), 3000);
       clearTool();
-      popPotato(r.amount);
-    } else {
-      sync(potId);
-      animate(0.2, () => {}, () => {
-        busy = false;
-        setStep('harvest');
-      });
     }
-  }
-  function popPotato(amount) {
-    const potato = createPotatoMesh(23, 1.5);
-    const from = new THREE.Vector3(v.soilWorld.x, v.soilWorld.y - 0.03, v.soilWorld.z);
-    const top = from.clone().add({ x: 0, y: 0.17, z: 0 });
-    potato.position.copy(from);
-    layer.add(potato);
-    burst(KIND.CRUMB, v.soilWorld, 16, COL.soil, 0.25);
+    sync(potId);
+    pendingNotice += r.amount;
+    burst(KIND.CRUMB, v.soilWorld, 12, COL.soil, 0.22);
     sfx.plop();
+    // 1) pull up: the stem rises out of the soil, the potato dangles from its root
+    const from = lifted.position.clone();
+    const up = 0.2;
+    const sway = (Math.random() < 0.5 ? -1 : 1) * 0.25;
+    const baseRot = lifted.rotation.z;
     animate(
-      0.55,
+      0.5,
       (k) => {
-        potato.position.lerpVectors(from, top, 1 - (1 - k) * (1 - k));
-        potato.rotation.y = k * 4;
-        potato.rotation.x = k * 0.6;
+        lifted.position.y = from.y + up * (1 - (1 - k) * (1 - k));
+        lifted.rotation.z = baseRot + Math.sin(k * Math.PI * 2) * sway * (1 - k);
       },
       () => {
-        sfx.reward();
-        ui.bag.parentElement.classList.remove('is-pop');
-        void ui.bag.offsetWidth;
-        ui.bag.parentElement.classList.add('is-pop');
-        const start = potato.position.clone();
-        const toCam = camera.position.clone().add(tmp.set(0.25, 0.12, 0).applyQuaternion(camera.quaternion));
+        // 2) the potato comes off the root and goes into the bag (+1)
+        tuber.updateMatrixWorld(true);
+        const start = tuber.getWorldPosition(new THREE.Vector3());
+        const flying = new THREE.Mesh(tuber.geometry, tuber.material);
+        tuber.getWorldQuaternion(flying.quaternion);
+        tuber.getWorldScale(flying.scale);
+        flying.position.copy(start);
+        layer.add(flying);
+        tuber.visible = false;
+        const s0 = flying.scale.x;
+        const toBag = camera.position.clone().add(tmp.set(0.25, 0.14, -0.4).applyQuaternion(camera.quaternion));
         animate(
           0.45,
           (k) => {
-            potato.position.lerpVectors(start, toCam, ease(k));
-            potato.scale.setScalar(1 - k * 0.7);
+            flying.position.lerpVectors(start, toBag, ease(k));
+            flying.scale.setScalar(s0 * (1 - k * 0.6));
+            flying.rotation.y += 0.2;
           },
           () => {
-            potato.removeFromParent();
-            potato.geometry.dispose();
+            flying.removeFromParent();
+            sfx.reward();
+            ui.bag.textContent = String(countOf(state.inventory, 'potato'));
+            ui.bag.parentElement.classList.remove('is-pop');
+            void ui.bag.offsetWidth;
+            ui.bag.parentElement.classList.add('is-pop');
             busy = false;
-            pendingNotice = amount; // shown once the view closes (the panel would cover it)
-            setStep('harvested');
+            setStep(harvested ? 'harvested' : 'harvest');
+          },
+        );
+        // 3) the empty stem falls away (Moon gravity) and fades
+        const vel = new THREE.Vector3(stem.userData.tip.x, 0, stem.userData.tip.z).normalize().multiplyScalar(0.16);
+        vel.y = 0.08;
+        const spin = (Math.random() - 0.5) * 3;
+        animate(
+          1.2,
+          (k, dt) => {
+            vel.y -= PLAYER.GRAVITY * dt;
+            lifted.position.addScaledVector(vel, dt);
+            lifted.rotation.z += spin * dt;
+            lifted.material.opacity = 1 - ease(Math.max(0, (k - 0.4) / 0.6));
+          },
+          () => {
+            lifted.removeFromParent();
+            lifted.material.dispose();
           },
         );
       },
@@ -666,6 +670,7 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     sfx.unlock();
     el.hidden = false;
     layer.visible = true;
+    pendingNotice = 0;
     const s = stepForPot();
     setStep(s);
     moveToStep(s === 'empty' ? 'plant' : s);

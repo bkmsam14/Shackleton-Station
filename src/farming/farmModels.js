@@ -27,6 +27,7 @@ const looseSoilMat = () => mat('looseSoil', () => new THREE.MeshStandardMaterial
 const holeMat = () => mat('hole', () => new THREE.MeshStandardMaterial({ color: 0x21170f, roughness: 1 }));
 const stemMat = () => mat('stem', () => new THREE.MeshStandardMaterial({ color: 0x4f8f3a, roughness: 0.7 }));
 const petalMat = () => mat('petal', () => new THREE.MeshStandardMaterial({ color: 0xe4d4f8, roughness: 0.6, side: THREE.DoubleSide }));
+const rootMat = () => mat('root', () => new THREE.MeshStandardMaterial({ color: 0xd9c49b, roughness: 0.9 }));
 const pollenMat = () => mat('pollen', () => new THREE.MeshStandardMaterial({ color: 0xffc93c, roughness: 0.6 }));
 export const LEAF_COLOR = 0x5aa845;
 export const LEAF_HOVER = 0x5c8f1c;
@@ -181,6 +182,20 @@ function leafyStem(angle, rand) {
   const material = new THREE.MeshStandardMaterial({ color: LEAF_COLOR, roughness: 0.6, side: THREE.DoubleSide });
   const mesh = new THREE.Mesh(geo, material);
   mesh.userData.tip = tip.clone();
+  // underground: a pale root runs from the stem base down to the potato (hidden in the
+  // soil until the stem is pulled up). Potatoes grow on the roots, not on the leaves.
+  const root = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0.002, 0),
+    new THREE.Vector3(c * 0.008, -0.022, s * 0.008),
+    new THREE.Vector3(c * 0.024, -0.042, s * 0.024),
+    new THREE.Vector3(c * 0.032, -0.05, s * 0.032),
+  ]);
+  const rootMesh = new THREE.Mesh(new THREE.TubeGeometry(root, 12, 0.0024, 6, false), rootMat());
+  const potato = new THREE.Mesh(potatoGeometry(Math.round(angle * 13) & 63, 0.8), potatoMat());
+  potato.position.set(c * 0.036, -0.07, s * 0.036);
+  potato.rotation.set(0.4, angle, 0.2);
+  potato.name = 'potato';
+  mesh.add(rootMesh, potato);
   return mesh;
 }
 
@@ -277,18 +292,6 @@ export function createPotatoPlant(seed = 1) {
   }
   group.add(flowers);
 
-  // ripe potatoes (tubers) grow underground; when ready, a couple peek out of the soil
-  const tubers = new THREE.Group();
-  for (const [x, z, ry, sz] of [
-    [0.06, 0.035, 0.4, 0.75],
-    [-0.05, -0.045, 2.1, 0.65],
-  ]) {
-    const t = new THREE.Mesh(potatoGeometry(Math.round(ry * 10), sz), potatoMat());
-    t.position.set(x, -0.012, z);
-    t.rotation.set(0.3, ry, 0.15);
-    tubers.add(t);
-  }
-  group.add(tubers);
 
   return {
     group,
@@ -301,7 +304,6 @@ export function createPotatoPlant(seed = 1) {
       stemsGroup.scale.setScalar(Math.min(1, s));
       flowers.visible = stage >= 3;
       for (const f of flowers.children) f.visible = f.userData.stem.visible && stage >= 3;
-      tubers.visible = stage >= 3;
     },
     /** Hide stems that were already cut (e.g. the player left halfway through). */
     setCut(n) {
@@ -312,7 +314,7 @@ export function createPotatoPlant(seed = 1) {
       group.traverse((o) => {
         if (o.isMesh) {
           if (o.geometry !== blossomGeo) o.geometry.dispose(); // blossom shape is shared
-          if (o.material !== stemMat() && o.material !== petalMat() && o.material !== pollenMat()) o.material.dispose();
+          if (![stemMat(), petalMat(), pollenMat(), rootMat(), potatoMat()].includes(o.material)) o.material.dispose();
         }
       });
     },

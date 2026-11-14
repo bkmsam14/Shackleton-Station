@@ -89,7 +89,10 @@ test('cutting the leaves harvests a potato, which can be planted again', () => {
   const s = createFarmState(['a'], { inventory: { potato: 1 } });
   growToReady(s, 'a');
   assert.equal(countOf(s.inventory, 'potato'), 0);
-  for (let i = 1; i < FARMING.CUTS_TO_HARVEST; i++) assert.equal(cutLeaf(s, 'a').harvested, false);
+  for (let i = 1; i < FARMING.CUTS_TO_HARVEST; i++) {
+    assert.equal(cutLeaf(s, 'a').harvested, false);
+    assert.equal(countOf(s.inventory, 'potato'), i * FARMING.POTATOES_PER_STEM); // +1 every cut
+  }
   const r = cutLeaf(s, 'a');
   assert.equal(r.harvested, true);
   assert.equal(countOf(s.inventory, 'potato'), FARMING.HARVEST_YIELD);

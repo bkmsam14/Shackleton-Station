@@ -14,7 +14,7 @@ export const CROPS = {
   potato: {
     seedItem: 'potato', // a harvested potato is planted again as a "seed potato"
     harvestItem: 'potato',
-    harvestYield: FARMING.HARVEST_YIELD,
+    perStem: FARMING.POTATOES_PER_STEM, // every cut stem brings up its own potato
     growSeconds: FARMING.GROW_REAL_SECONDS,
     coverLoads: FARMING.COVER_LOADS,
     waterNeeded: FARMING.WATER_NEEDED,
@@ -129,16 +129,16 @@ export function eatPotato(state, item = 'potato') {
 }
 
 /**
- * Cut one leafy stem of a ready plant. After the last cut the plant is harvested:
- * the pot is emptied and the crop goes into the inventory.
+ * Cut one leafy stem of a ready plant. The stem comes up with the potato on its roots,
+ * which goes straight into the inventory. After the last stem the pot is empty.
  */
 export function cutLeaf(state, potId) {
   const pot = state.pots[potId];
-  if (!pot || pot.stage !== STAGE.READY) return { cut: false, harvested: false };
+  if (!pot || pot.stage !== STAGE.READY) return { cut: false, harvested: false, amount: 0 };
   const crop = cropOf(pot);
   pot.cuts += 1;
-  if (pot.cuts < crop.cutsToHarvest) return { cut: true, harvested: false };
-  addItem(state.inventory, crop.harvestItem, crop.harvestYield);
-  Object.assign(pot, emptyPot());
-  return { cut: true, harvested: true, item: crop.harvestItem, amount: crop.harvestYield };
+  addItem(state.inventory, crop.harvestItem, crop.perStem);
+  const harvested = pot.cuts >= crop.cutsToHarvest;
+  if (harvested) Object.assign(pot, emptyPot());
+  return { cut: true, harvested, item: crop.harvestItem, amount: crop.perStem };
 }
