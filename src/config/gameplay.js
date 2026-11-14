@@ -209,6 +209,10 @@ export const ASSISTANT = {
   TOUR_WALK_M: 3, // GAME BALANCE (not real data) — tour step 1: walk this far
   NEAR_ARRAY_M: 9, // GAME BALANCE (not real data) — tour step 6: this close to the array
   TANK_LOW_KG: 2.5, // GAME BALANCE (not real data) — Volt warns when the water tank is this low
+  // Volt's voice (browser text-to-speech). Pitch 0–2 (1 = normal), rate 0.1–10 (1 = normal).
+  VOICE_PITCH: 1.45, // GAME BALANCE (not real data) — higher = friendlier robot
+  VOICE_RATE: 0.95, // GAME BALANCE (not real data) — a touch slower for young listeners
+  VOICE_VOLUME: 0.9, // GAME BALANCE (not real data)
 };
 
 // Feature flags (later demos).

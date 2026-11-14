@@ -54,6 +54,15 @@ function voltRow() {
     <button type="button" class="link-btn" data-action="tour"></button></div>`;
 }
 
+/** Volt's voice on/off (browser text-to-speech). Hidden if the browser can't speak. */
+function voiceRow() {
+  return `<div class="menu-row"><span class="label">Volt’s voice</span>
+    <div class="seg" role="group" aria-label="Volt speaks out loud">
+      <button type="button" data-voice="on">On</button>
+      <button type="button" data-voice="off">Off</button>
+    </div></div>`;
+}
+
 export function createMenus(root, { onStart, onResume, onQuality, getQuality, volt = null }) {
   const start = document.createElement('div');
   start.className = 'menu';
@@ -81,6 +90,7 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
       <div class="menu-hint" data-hint></div>
       ${qualityToggle('pause')}
       ${volt ? voltRow() : ''}
+      ${volt?.voiceSupported ? voiceRow() : ''}
       ${CONTROLS}
       ${TIME_NOTE}
       ${CREDITS}
@@ -105,11 +115,19 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
     const level = volt.getChattiness();
     pause.querySelectorAll('[data-volt]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.volt === level)));
     pause.querySelector('[data-action="tour"]').textContent = volt.tourActive() ? 'Skip Volt’s tour' : 'Replay Volt’s tour';
+    const voiceOn = volt.getVoice?.() ? 'on' : 'off';
+    pause.querySelectorAll('[data-voice]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.voice === voiceOn)));
   }
   if (volt) {
     pause.querySelectorAll('[data-volt]').forEach((b) =>
       b.addEventListener('click', () => {
         volt.setChattiness(b.dataset.volt);
+        syncVolt();
+      }),
+    );
+    pause.querySelectorAll('[data-voice]').forEach((b) =>
+      b.addEventListener('click', () => {
+        volt.setVoice(b.dataset.voice === 'on');
         syncVolt();
       }),
     );

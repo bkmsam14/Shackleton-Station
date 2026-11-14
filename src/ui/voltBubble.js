@@ -26,6 +26,7 @@ export function createVoltBubble(root) {
 
   let showFor = 0;
   let visible = false;
+  let holdWhile = null; // e.g. () => voice.speaking: keep the bubble up until Volt finishes
   let mood = 'happy';
   const v = new THREE.Vector3();
 
@@ -36,8 +37,9 @@ export function createVoltBubble(root) {
   }
 
   return {
-    /** Show a line. line: { text, mood, tour } */
-    say(line) {
+    /** Show a line. line: { text, mood, tour }. opts.holdWhile: () => boolean */
+    say(line, { holdWhile: hold = null } = {}) {
+      holdWhile = hold;
       textEl.textContent = line.text;
       skipEl.hidden = !line.tour;
       setMood(line.mood ?? 'happy');
@@ -60,6 +62,7 @@ export function createVoltBubble(root) {
      */
     update(dt, camera, headWorld, enabled = true) {
       showFor = Math.max(0, showFor - dt);
+      if (holdWhile?.()) showFor = Math.max(showFor, 0.8); // still talking: stay up a bit after
       const on = enabled && showFor > 0;
       el.classList.toggle('is-on', on);
       if (!on) {

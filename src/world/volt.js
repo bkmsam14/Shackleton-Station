@@ -36,7 +36,7 @@ function placed(geo, x, y, z, rx = 0, ry = 0, rz = 0) {
 }
 
 // ---------------------------------------------------------------- face (canvas texture)
-function drawFace(ctx, mood) {
+function drawFace(ctx, mood, mouthOpen = 0) {
   const W = ctx.canvas.width;
   const H = ctx.canvas.height;
   ctx.clearRect(0, 0, W, H);
@@ -67,10 +67,13 @@ function drawFace(ctx, mood) {
     }
     ctx.stroke();
   }
-  // mouth
+  // mouth (while talking it opens and closes)
   const my = H * 0.74;
   ctx.beginPath();
-  if (mood === 'wow') {
+  if (mouthOpen > 0) {
+    ctx.ellipse(W / 2, my, 30, 6 + mouthOpen * 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (mood === 'wow') {
     ctx.ellipse(W / 2, my, 18, 22, 0, 0, Math.PI * 2);
     ctx.fill();
   } else if (mood === 'think') {
@@ -156,11 +159,22 @@ export function createVoltModel() {
   root.add(wheels);
 
   let mood = null;
+  let mouth = 0;
+  function redraw() {
+    drawFace(fctx, mood, mouth);
+    faceTex.needsUpdate = true;
+  }
   function setMood(m) {
     if (m === mood) return;
     mood = m;
-    drawFace(fctx, m);
-    faceTex.needsUpdate = true;
+    redraw();
+  }
+  /** 0 = closed (mood mouth), 0..1 = open while talking. */
+  function setMouth(open) {
+    const q = Math.round(open * 3) / 3; // few steps → few texture uploads
+    if (q === mouth) return;
+    mouth = q;
+    redraw();
   }
   setMood('happy');
 
@@ -168,6 +182,7 @@ export function createVoltModel() {
     object: root,
     body,
     setMood,
+    setMouth,
     spinWheels,
     setLight(on) {
       lightMat.color.setHex(on ? 0xffd43b : 0xff7a59).multiplyScalar(on ? 1.6 : 1.2);
@@ -243,7 +258,7 @@ export function createVolt(world) {
      * opts.talking: Volt is speaking → roll into view.
      * opts.waiting: the player is looking at Volt → stay put (so "E to talk" is easy).
      */
-    update(dt, player, { talking = false, waiting = false } = {}) {
+    update(dt, player, { talking = false, waiting = false, speaking = false } = {}) {
       t += dt;
       const far = Math.hypot(pos.x - player.position.x, pos.z - player.position.z) > ASSISTANT.CATCH_UP_M;
       if (zoneId !== player.zoneId || far) hopTo(player); // "rides through the airlock with you"
@@ -289,6 +304,8 @@ export function createVolt(world) {
       model.body.rotation.z = lean * 0.4;
       model.body.position.y = speed < 0.05 ? Math.sin(t * 2.2) * 0.012 : 0; // idle "breathing"
       model.setLight(Math.sin(t * 4) > -0.3);
+      // talking mouth: a simple open/close rhythm while the voice is speaking
+      model.setMouth(speaking ? 0.35 + 0.65 * Math.abs(Math.sin(t * 9)) * (Math.sin(t * 2.3) > -0.6 ? 1 : 0.3) : 0);
     },
   };
 }

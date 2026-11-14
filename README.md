@@ -57,8 +57,9 @@ calls. Measurements and the cost of each effect are in `docs/PERFORMANCE.md`.
 - The grow racks still show a "Coming soon" lesson toast.
 - **Volt, the helper robot (v0.4.0):** a small wheeled robot follows you, runs a 7-step
   learn-by-doing first-day tour, warns when a gauge gets low (and says how to fix it), and shares
-  sourced science facts now and then. Look at Volt and press E for a tip. Pause menu: how often
-  Volt talks (Chatty / Helpful / Quiet) and Replay / Skip the tour.
+  sourced science facts now and then. Look at Volt and press E for a tip. Volt speaks out loud
+  with the browser's built-in voice (it sounds different per browser). Pause menu: how often
+  Volt talks (Chatty / Helpful / Quiet), his voice On / Off, and Replay / Skip the tour.
 
 ## Where things live
 

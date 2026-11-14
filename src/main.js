@@ -29,6 +29,7 @@ import { createElectrolysisState, checkAfford } from './systems/electrolysis.js'
 import { createAssistant } from './systems/assistant.js';
 import { createVolt, createTourMarker } from './world/volt.js';
 import { createVoltBubble } from './ui/voltBubble.js';
+import { createVoltVoice } from './ui/voltVoice.js';
 import { heightAt } from './world/heightfield.js';
 import { createMastery } from './systems/mastery.js';
 import { createInstanceManager } from './instances/InstanceManager.js';
@@ -83,6 +84,7 @@ const volt = createVolt(world);
 const tourMarker = createTourMarker();
 world.scene.add(volt.object, tourMarker.object);
 const voltBubble = createVoltBubble(uiRoot);
+const voltVoice = createVoltVoice({ store: { load: loadSettings, save: saveSettings } });
 // Volt is an interactable that moves: "Press E to talk to Volt"
 const voltTarget = { id: 'volt', zone: 'habitat', x: 0, z: 0, prompt: 'Press E to talk to Volt', action: { type: 'volt' } };
 world.interactables.push(voltTarget);
@@ -164,6 +166,7 @@ function togglePda() {
     feedback.setCrosshairVisible(true);
   } else if (mode === 'playing' && lastHudState) {
     assistant.notify('pda-opened');
+    voltVoice.stop();
     pda.open(lastHudState, feedback.log);
     mode = 'pda';
     input.clear();
@@ -173,6 +176,7 @@ function togglePda() {
 function enterPause() {
   // Opening an instance releases the mouse, which fires 'unlock' — that is not a pause.
   if (mode === 'instance') return;
+  voltVoice.stop(); // time is stopped, so is Volt
   if (mode === 'pda') {
     pda.close();
     mode = 'playing';
@@ -204,6 +208,9 @@ const menus = createMenus(uiRoot, {
     tourActive: () => assistant.tourActive,
     skipTour: () => assistant.skipTour(),
     replayTour: () => assistant.replayTour(),
+    voiceSupported: voltVoice.supported,
+    getVoice: () => voltVoice.enabled,
+    setVoice: (on) => voltVoice.setEnabled(on),
   },
 });
 document.addEventListener('pointerlockerror', onLockFailed);
@@ -212,7 +219,8 @@ document.addEventListener('pointerlockerror', onLockFailed);
 /** Show one of Volt's lines: bubble in the world, face mood, full text in the PDA log. */
 function sayLine(line) {
   if (!line) return;
-  voltBubble.say(line);
+  voltBubble.say(line, { holdWhile: () => voltVoice.speaking });
+  voltVoice.speak(line.text);
   volt.model.setMood(line.mood ?? 'happy');
   const c = getClock(day);
   feedback.log.unshift({ time: 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute), text: 'Volt: ' + (line.long ?? line.text) });
@@ -271,6 +279,7 @@ feedback.setCrosshairVisible(false);
 // ---------------------------------------------------------------- instances (mini-games)
 const instances = createInstanceManager(uiRoot, {
   onOpen() {
+    voltVoice.stop(); // the mini-game's Volt takes over
     mode = 'instance';
     input.clear();
     feedback.setPrompt(null);
@@ -305,6 +314,7 @@ let edgeToastAt = -99;
 let elapsed = 0;
 
 async function useDoor(action) {
+  voltVoice.stop();
   mode = 'busy';
   player.frozen = true;
   feedback.setPrompt(null);
@@ -336,7 +346,7 @@ function onZoneEntered(zoneId) {
 
 function useStation(action) {
   if (action.station === 'electrolysis') {
-    instances.open('electrolysis', createElectrolysisInstance, { gauges, station, mastery });
+    instances.open('electrolysis', createElectrolysisInstance, { gauges, station, mastery, voice: voltVoice });
     return;
   }
   // a few words on screen; the full text goes to the PDA log
@@ -364,6 +374,7 @@ function advanceGameHours(hours) {
 // It still costs something: time passes (food keeps draining, the Sun moves, the base
 // uses power) and the gauges are only partly restored.
 async function gentleFailure(reason) {
+  voltVoice.stop();
   mode = 'busy';
   player.frozen = true;
   feedback.setPrompt(null);
@@ -534,7 +545,7 @@ renderer.setAnimationLoop(() => {
   }
 
   // ---- Volt: roll after the player, think, talk, show the tour marker
-  if (running) volt.update(dt, player, { talking: voltBubble.isShowing, waiting: mode === 'playing' && lookingAtVolt() });
+  if (running) volt.update(dt, player, { talking: voltBubble.isShowing, waiting: mode === 'playing' && lookingAtVolt(), speaking: voltVoice.speaking });
   const moved = mode === 'playing' ? Math.hypot(player.position.x - lastPX, player.position.z - lastPZ) : 0;
   lastPX = player.position.x;
   lastPZ = player.position.z;
@@ -605,5 +616,5 @@ if (import.meta.env.DEV) {
       greenhouse: ['greenhouse', 1.4, 30, 90, -0.08],
     },
   };
-  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, voltBubble };
+  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, voltBubble, voltVoice };
 }
