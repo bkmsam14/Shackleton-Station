@@ -1,0 +1,296 @@
+/* Electrolysis instance (Molecule Zapper). Kids first: body ≥ 16px, targets ≥ 44px,
+   contrast ≥ 4.5:1 (white / --text-muted on --panel-solid). Uses tokens from ui/ui.css. */
+
+.ez {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(2, 6, 16, 0.78);
+  overflow-y: auto;
+  animation: ez-in 0.25s ease;
+}
+@keyframes ez-in {
+  from {
+    opacity: 0;
+  }
+}
+.ez-card {
+  width: min(940px, 100%);
+  padding: 20px 24px 14px;
+  border-radius: 22px;
+  background: var(--panel-solid);
+  border: 2px solid var(--cyan);
+  box-shadow: var(--shadow);
+}
+.ez-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.ez-title {
+  margin: 0;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 30px;
+  color: var(--cyan);
+}
+.ez-medal {
+  font-family: var(--font-head);
+  font-size: 18px;
+  color: var(--text-muted);
+}
+.ez-h3 {
+  margin: 12px 0 6px;
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--orange);
+}
+.ez-p {
+  margin: 8px 0;
+  font-size: 19px;
+  line-height: 1.45;
+}
+.ez-p .t-o {
+  color: #ff8f8f; /* 6.4:1 on panel-solid */
+}
+.ez-p .t-h {
+  color: #ffffff;
+}
+.ez-q {
+  font-family: var(--font-head);
+  font-size: 22px;
+}
+.ez-note,
+.ez-source {
+  margin: 10px 0 0;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.ez-source a,
+.ez-link {
+  color: var(--cyan);
+}
+.ez-warn {
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--warn);
+  font-size: 18px;
+}
+.ez-hint {
+  margin: 6px 0 8px;
+  font-size: 18px;
+  color: var(--text-muted);
+}
+.ez-status {
+  min-height: 1.2em;
+  margin: 8px 0 0;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.ez-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+.ez-btn-quiet {
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--panel-border);
+  box-shadow: none;
+  font-size: 20px;
+}
+
+/* intro molecule */
+.ez-molecule {
+  display: block;
+  width: 200px;
+  max-width: 60%;
+  margin: 4px auto;
+}
+.ez-atom {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 26px;
+  fill: #10182c;
+}
+.ez-atom-big {
+  font-size: 34px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ez-molecule {
+    animation: ez-wobble 3s ease-in-out infinite;
+  }
+}
+@keyframes ez-wobble {
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+/* batch picker */
+.ez-meters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 10px 0;
+  font-size: 18px;
+}
+.ez-batches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+.ez-batch {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 44px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 2px solid var(--cyan);
+  background: rgba(79, 209, 232, 0.1);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.15s ease;
+}
+.ez-batch:hover:not([disabled]) {
+  background: rgba(79, 209, 232, 0.2);
+}
+.ez-batch:active:not([disabled]) {
+  transform: translateY(2px);
+}
+.ez-batch[disabled] {
+  cursor: not-allowed;
+  border-color: var(--panel-border);
+  background: rgba(255, 255, 255, 0.04);
+}
+.ez-batch[disabled] .ez-batch-why {
+  color: var(--warn);
+}
+.ez-batch-name {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 24px;
+}
+.ez-batch-gain {
+  font-size: 19px;
+  color: var(--cyan);
+  font-weight: 700;
+}
+.ez-batch-cost {
+  font-size: 17px;
+}
+.ez-batch-why {
+  margin-top: 4px;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+/* game */
+.ez-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 880 / 480;
+  border-radius: 16px;
+  background: #060b18;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+/* quiz */
+.ez-answers {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+.ez-answer {
+  min-height: 56px;
+  padding: 10px 18px;
+  border-radius: 14px;
+  border: 2px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font: inherit;
+  font-size: 19px;
+  text-align: left;
+  cursor: pointer;
+}
+.ez-answer:hover:not([disabled]) {
+  border-color: var(--cyan);
+}
+.ez-answer.is-right {
+  border-color: var(--green);
+  background: rgba(123, 224, 160, 0.16);
+}
+.ez-answer.is-right::before {
+  content: '✓ ';
+  color: var(--green);
+}
+.ez-answer.is-wrong {
+  border-color: var(--warn);
+}
+.ez-answer.is-wrong::before {
+  content: '✗ ';
+  color: var(--warn);
+}
+.ez-answer[disabled] {
+  cursor: default;
+}
+.ez-batch:focus-visible,
+.ez-answer:focus-visible,
+.ez-source a:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+/* result */
+.ez-stars {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  font-size: 54px;
+}
+.ez-star {
+  color: rgba(255, 255, 255, 0.18);
+}
+.ez-star.is-on {
+  color: var(--orange);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ez-star.is-on {
+    animation: ez-star-pop 0.4s ease backwards;
+  }
+  .ez-star.is-on:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  .ez-star.is-on:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+}
+@keyframes ez-star-pop {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+.ez-results {
+  margin: 10px 0;
+  padding-left: 0;
+  list-style: none;
+  font-size: 18px;
+  line-height: 1.5;
+}
+.ez-results li {
+  margin: 6px 0;
+}
