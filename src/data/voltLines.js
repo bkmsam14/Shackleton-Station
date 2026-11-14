@@ -142,6 +142,44 @@ export const EVENTS = {
     text: 'Phew, you’re safe! Let’s keep an eye on those rings.',
     mood: 'happy',
   },
+  // --- particle storms (radiation)
+  'storm-warning': {
+    kind: 'warning',
+    text: 'A solar flare! Fast particles are coming. Run to the storm shelter!',
+    long: 'A real solar flare was seen (based on NASA DONKI data). Fast particles may follow. Go to the storm shelter in the sleeping nook — follow the arrow.',
+    mood: 'wow',
+  },
+  'storm-exposed': {
+    kind: 'warning',
+    text: 'The particles are here! Get into the shelter, quick!',
+    mood: 'wow',
+  },
+  'storm-sheltered': {
+    kind: 'news',
+    text: 'Great, we’re in the shelter! The walls and water block particles.',
+    mood: 'cheer',
+  },
+  'storm-over': {
+    kind: 'news',
+    text: 'The storm is over. It’s safe to go out again!',
+    mood: 'happy',
+  },
+  'sun-stormy': {
+    kind: 'news',
+    text: 'Stormy Sun! Real data from May 2024. Watch for solar storms.',
+    long: 'Stormy Sun mode: a replay of real NASA DONKI and RadLab data from May 2024, one of the most active times of the Sun in 20 years.',
+    mood: 'wow',
+  },
+  'sun-calm': {
+    kind: 'news',
+    text: 'Calm Sun: real data from December 2019, when the Sun was quiet.',
+    mood: 'happy',
+  },
+  'sun-live': {
+    kind: 'news',
+    text: 'Live Sun! Real space weather from the last 7 days.',
+    mood: 'wow',
+  },
 };
 
 // ---------------------------------------------------------------- first visits (news)
@@ -177,10 +215,17 @@ export const FACTS = [
   { id: 'fact-ice', text: 'Ice hides in dark craters near the Moon’s south pole.', databank: 'moon-ice', mood: 'wow' },
   { id: 'fact-sky', text: 'The sky is black because the Moon has almost no air.', databank: 'black-sky', mood: 'think' },
   { id: 'fact-salt', text: 'Oxygen machines use clean water. Salt water makes poison gas!', databank: 'no-salt', mood: 'wow' },
+  { id: 'fact-sep', text: 'Only some solar flares send dangerous particles. Scientists watch them all!', databank: 'solar-particles', mood: 'think' },
+  { id: 'fact-shelter', text: 'Water, food and supplies can all be a radiation shield!', databank: 'storm-shelter', mood: 'happy' },
+  { id: 'fact-snow', text: 'Storm sparkles on screen? Real space cameras show that “snow” too!', databank: 'camera-snow', mood: 'wow' },
+  { id: 'fact-moon-dose', text: 'On the Moon’s surface, radiation is about twice the Space Station’s.', databank: 'moon-radiation', mood: 'think' },
 ];
 
 // ---------------------------------------------------------------- "talk to Volt" (E)
 export const TALK = {
+  stormWarning: { id: 'talk-storm-warn', text: 'Particles are coming! Follow the arrow to the storm shelter.', mood: 'wow' },
+  stormInside: { id: 'talk-storm-in', text: 'Stay in the shelter until the storm is over.', mood: 'think' },
+  stormOutside: { id: 'talk-storm-out', text: 'A storm is on! Get to the shelter in the sleeping nook.', mood: 'wow' },
   oxygen: { id: 'talk-oxygen', text: 'Oxygen first! Make some at Electrolysis in the work bay.', mood: 'wow' },
   oxygenOutside: { id: 'talk-oxygen-out', text: 'Oxygen drains fast out here. Let’s go back inside!', mood: 'wow' },
   power: { id: 'talk-power', text: 'Power is low. Wait for sunlight before big oxygen batches.', mood: 'think' },

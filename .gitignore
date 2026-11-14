@@ -7,3 +7,6 @@ dist/
 .DS_Store
 Thumbs.db
 .vite/
+
+# raw API responses cached by scripts/fetch-space-weather.mjs
+scripts/.cache/

@@ -91,6 +91,7 @@ export function createWorld({ quality = 'high', renderer } = {}) {
     outdoorColliders,
     zones,
     interactables,
+    habitat,
     greenhouse,
     /**
      * Called once per frame. sun = getSun(); zoneId = where the player is.

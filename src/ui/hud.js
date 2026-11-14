@@ -48,16 +48,23 @@ export function createHud(root) {
       <span class="power-arrow" data-arrow></span>
     </div>
     <div class="hud-location" data-location></div>
+    <div class="hud-storm" data-storm role="status" aria-live="assertive">
+      <span class="storm-icon">${ICONS.dose}</span><span class="storm-text" data-storm-text></span>
+    </div>
     <div class="hud-rings">
       ${ring('oxygen', 'Oxygen supply')}
       ${ring('food', 'Food')}
+      ${ring('dose', 'Radiation dose from this storm')}
       <div class="hud-warning" data-warning role="status" aria-live="polite"></div>
     </div>`;
   root.appendChild(wrap);
 
   const q = (s) => wrap.querySelector(s);
-  const rings = { oxygen: q('[data-ring="oxygen"]'), food: q('[data-ring="food"]') };
+  const rings = { oxygen: q('[data-ring="oxygen"]'), food: q('[data-ring="food"]'), dose: q('[data-ring="dose"]') };
+  rings.dose.hidden = true; // only shown around particle storms (4 gauges max on screen)
   const el = {
+    storm: q('[data-storm]'),
+    stormText: q('[data-storm-text]'),
     time: q('[data-time]'),
     power: q('[data-power]'),
     battery: q('[data-battery]'),
@@ -147,6 +154,27 @@ export function createHud(root) {
         el.power.dataset.state = v;
         if (v === 'low') voiceLine('power-low');
       });
+
+      // particle storm: dose ring (fills UP toward the storm limit) + a short countdown chip
+      const rad = s.radiation;
+      set('dshow', Boolean(rad?.showRing), (v) => (rings.dose.hidden = !v));
+      if (rad?.showRing) {
+        const pct = Math.max(0, Math.min(100, rad.dosePct));
+        const r = rings.dose;
+        set('dosev', Math.floor(pct), (v) => {
+          r.querySelector('[data-value]').textContent = String(v);
+          r.setAttribute('aria-valuenow', String(v));
+        });
+        const off = (RING_C * (1 - pct / 100)).toFixed(1);
+        set('doseo', off, (v) => r.querySelector('.ring-fill').setAttribute('stroke-dashoffset', v));
+        set('doses', pct >= 85 ? 'critical' : pct >= 60 ? 'low' : 'normal', (v) => (r.dataset.state = v));
+      }
+      const chip = rad?.chip ?? '';
+      set('storm', chip, (v) => {
+        el.stormText.textContent = v;
+        el.storm.classList.toggle('is-on', Boolean(v));
+      });
+      set('stormMode', rad?.chipMode ?? '', (v) => (el.storm.dataset.mode = v));
     },
   };
 }
