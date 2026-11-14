@@ -64,7 +64,7 @@ export function createLighting(scene, { shadowMapSize = 2048 } = {}) {
       } else {
         fill.color.setHex(OUTDOOR_SKY);
         fill.groundColor.setHex(OUTDOOR_GROUND);
-        fill.intensity = 0.35 + 0.95 * visibility; // regolith bounce fades with the Sun
+        fill.intensity = 0.6 + 0.7 * visibility; // regolith bounce fades with the Sun (floor kept for readability)
       }
     },
     setShadowMapSize(size) {

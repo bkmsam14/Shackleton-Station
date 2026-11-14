@@ -71,11 +71,16 @@ packaging**.
 | Vertical, sun-tracking solar arrays are being developed for the lunar south pole because the Sun is so low | — | NASA VSAT annual review (2023), https://ntrs.nasa.gov/api/citations/20230012849/downloads/GCD%20Annual%20Review%20VSAT%20September%202023%20Final.pdf | Verified |
 | Space greenhouses (NASA Veggie) light plants with red and blue LEDs; red:blue ratio is studied | — | VEG-04 (2019), https://ntrs.nasa.gov/citations/20190033231 | Verified |
 | Electrolysis splits water into oxygen and hydrogen; ISS makes breathing oxygen this way | 2 H₂O → 2 H₂ + O₂ | ISS Oxygen Generation Assembly (NTRS), https://ntrs.nasa.gov/citations/20200002346 | Verified |
+| Earth's axial tilt (used to tilt the Earth model in the sky) | 23.44° | NASA Earth Fact Sheet, https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html | Verified |
+| Earth seen from the Moon shows phases; the game lights Earth from the real Sun direction, so its phase changes as the Sun circles | — | Geometry (Earth phase is opposite to Moon phase) | Verified (geometry) |
+| Earth turns once a day; in the game it spins once per game day (4 real minutes) | 24 h (sidereal 23.93 h — detail left out) | NASA Earth Fact Sheet | Verified |
 | Sun's angular diameter seen from the Moon | ~0.53° | Sun diameter 1.39 × 10⁶ km at ~1.496 × 10⁸ km (NASA Sun Fact Sheet, https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html) | Verified (derived) |
 
 ---
 
 ## 3. Simplifications we chose (details left out — nothing false)
+
+0. **Lighting brightness.** Real ground at the pole under a 1.5° Sun (and in shadow) is darker than the game shows. A fill light stands in for light bounced off nearby sunlit slopes so kids can see where they walk. Shadow *directions and lengths* are real.
 
 1. **Sun speed.** The real Sun takes about **29.5 Earth days** to circle the sky at the south
    pole. In the game it circles once every ~20 real minutes so you can see the solar array

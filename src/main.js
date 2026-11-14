@@ -8,11 +8,11 @@ import '@fontsource/nunito/700.css';
 import './ui/ui.css';
 
 import * as THREE from 'three';
-import { UI } from './config/gameplay.js';
+import { UI, RECOVERY, TIME } from './config/gameplay.js';
 import { createWorld, QUALITY } from './world/World.js';
 import { LAYOUT } from './world/layout.js';
 import { createDayCycle, stepDayCycle, getSun, getClock } from './systems/daycycle.js';
-import { createGauges, stepGauges } from './systems/gauges.js';
+import { createGauges, stepGauges, applyRecovery } from './systems/gauges.js';
 import { loadSettings, saveSettings } from './systems/save.js';
 import { createInput } from './player/input.js';
 import { createPlayerController } from './player/controller.js';
@@ -179,7 +179,54 @@ function onZoneEntered(zoneId) {
 }
 
 function useStation(action) {
-  feedback.toast(action.toast, { icon: '🚧', kind: 'info', key: action.station, seconds: 5 });
+  const comingSoon = action.toast.startsWith('Coming soon');
+  feedback.toast(action.toast, { icon: comingSoon ? '🚧' : '💡', kind: 'info', key: action.station, seconds: comingSoon ? 5 : 8 });
+}
+
+// ---------------------------------------------------------------- gentle failure
+// Oxygen or food at 0 → fade out → wake up resting in the habitat. No death screen.
+// It still costs something: time passes (food keeps draining, the Sun moves, the base
+// uses power) and the gauges are only partly restored.
+async function gentleFailure(reason) {
+  mode = 'busy';
+  player.frozen = true;
+  feedback.setPrompt(null);
+  await feedback.fadeTo(true, RECOVERY.FADE_SECONDS);
+
+  const restSeconds = (RECOVERY.REST_GAME_HOURS * 3600) / TIME.SCALE;
+  for (let t = 0; t < restSeconds; t += 1) {
+    stepDayCycle(day, 1);
+    const s = getSun(day);
+    stepGauges(gauges, 1, { pressurized: true, sunVisibility: s.visibility, alignment: 1 });
+  }
+  applyRecovery(gauges, { oxygen: RECOVERY.OXYGEN_RESTORE_PERCENT, food: RECOVERY.FOOD_RESTORE_PERCENT });
+  const s = LAYOUT.HABITAT.spawn;
+  player.placeAt('habitat', LAYOUT.HABITAT.x + s.x, LAYOUT.HABITAT.z + s.z, s.yawDeg);
+
+  const why =
+    reason === 'oxygen'
+      ? 'Your oxygen ran too low, so you hurried back to the habitat to breathe and rest.'
+      : 'You got too hungry and tired, so you rested in the habitat and ate from the emergency food box.';
+  const tip =
+    reason === 'oxygen'
+      ? 'Tip: working outside in a spacesuit is hard work — you use oxygen about 2 times faster out there.'
+      : 'Tip: an astronaut eats about 0.8 kg of food every day (not counting the water in it).';
+  feedback.showFadeCard(`
+    <h2>Phew — you are safe!</h2>
+    <p>${why}</p>
+    <p class="small">You rested for ${RECOVERY.REST_GAME_HOURS} hours. Time passed, and the base kept using power.</p>
+    <p class="small">${tip}</p>`);
+  await wait(5200);
+  feedback.showFadeCard('');
+  await feedback.fadeTo(false, RECOVERY.FADE_SECONDS);
+  player.frozen = false;
+  if (mode === 'busy') mode = 'playing';
+  else pausedFromBusy = false;
+  feedback.toast(`You lost ${RECOVERY.REST_GAME_HOURS} hours resting. Keep an eye on your gauges!`, {
+    kind: 'info',
+    icon: '🛏️',
+    key: 'rest',
+  });
 }
 
 function handleInteraction() {
@@ -288,6 +335,13 @@ renderer.setAnimationLoop(() => {
     alignment,
   });
   if (running) reactToGauges(report, sun);
+  if (mode === 'playing' && (report.oxygenEmpty || report.foodEmpty)) {
+    gentleFailure(report.oxygenEmpty ? 'oxygen' : 'food');
+  }
+  // the Sun is off indoors, so skip re-rendering its shadow map there
+  const outdoors = zoneId === 'outside';
+  if (outdoors && !renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = true;
+  renderer.shadowMap.autoUpdate = outdoors;
   hud.update({
     gauges,
     report,
@@ -306,5 +360,5 @@ window.addEventListener('resize', () => {
 });
 
 if (import.meta.env.DEV) {
-  window.__game = { renderer, world, player, day, camera, gauges, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor };
+  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor };
 }

@@ -8,6 +8,7 @@ import { createPathLights, createPowerCable } from './props.js';
 import { heightAt } from './heightfield.js';
 import { createHabitat } from './habitat.js';
 import { createGreenhouse } from './greenhouse.js';
+import { mergeStatic } from './mergeStatic.js';
 import { LAYOUT } from './layout.js';
 import { skyDirection } from '../systems/daycycle.js';
 
@@ -29,17 +30,14 @@ export function createWorld({ quality = 'high' } = {}) {
   const solarArray = createSolarArray(heightAt(LAYOUT.SOLAR_ARRAY.x, LAYOUT.SOLAR_ARRAY.z));
   const habitat = createHabitat();
   const greenhouse = createGreenhouse();
-  scene.add(
-    terrain,
-    horizon,
-    rocks.mesh,
-    sky.group,
-    solarArray.object,
-    createPathLights(),
-    createPowerCable(),
-    habitat.object,
-    greenhouse.object,
-  );
+  // fewer draw calls: merge each building's static parts by material
+  mergeStatic(habitat.object);
+  mergeStatic(greenhouse.object);
+  // Things you can only see from outside (modules have no windows yet): hidden while
+  // indoors so the GPU doesn't draw the whole Moon behind the walls.
+  const outdoorOnly = [terrain, horizon, rocks.mesh, sky.group, solarArray.object, createPathLights(), createPowerCable()];
+  scene.add(...outdoorOnly, habitat.object, greenhouse.object);
+  let lastZone = null;
 
   // Outdoor colliders (solid things you cannot walk through when outside).
   const outdoorColliders = [
@@ -50,7 +48,24 @@ export function createWorld({ quality = 'high' } = {}) {
   ];
   // Pressurized interiors. 'outside' is the surface.
   const zones = { habitat: habitat.zone, greenhouse: greenhouse.zone };
-  const interactables = [...habitat.interactables, ...greenhouse.interactables];
+  const interactables = [
+    ...habitat.interactables,
+    ...greenhouse.interactables,
+    {
+      id: 'solar-info',
+      zone: 'outside',
+      x: LAYOUT.SOLAR_ARRAY.x,
+      z: LAYOUT.SOLAR_ARRAY.z,
+      prompt: 'Press E to read about the solar array',
+      action: {
+        type: 'station',
+        station: 'solar',
+        // facts.json: "vertical-solar" (NASA VSAT) + "sun-loop" (NASA Moon Fact Sheet)
+        toast:
+          '<strong>Vertical solar array.</strong> At the south pole the Sun stays low and circles the sky, so this tall panel stands up straight and turns to face it. NASA is testing arrays like this for the Moon.',
+      },
+    },
+  ];
 
   const sunDir = new THREE.Vector3();
 
@@ -67,6 +82,13 @@ export function createWorld({ quality = 'high' } = {}) {
      * Returns solar alignment 0..1.
      */
     update(dt, camera, focus, sun, earthSpin, zoneId = 'outside') {
+      if (zoneId !== lastZone) {
+        lastZone = zoneId;
+        const outside = zoneId === 'outside';
+        for (const o of outdoorOnly) o.visible = outside;
+        habitat.object.visible = outside || zoneId === 'habitat';
+        greenhouse.object.visible = outside || zoneId === 'greenhouse';
+      }
       const d = skyDirection(sun.azimuthDeg, sun.elevationDeg);
       sunDir.set(d.x, d.y, d.z);
       sky.update(camera, sunDir, earthSpin);

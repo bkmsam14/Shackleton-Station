@@ -2,7 +2,7 @@
 //  • Astronaut panel (bottom-left): OXYGEN + FOOD
 //  • BASE POWER panel (top-right, different style): battery + charging/draining
 //  • Clock + location (top-left)
-import { POWER, WARNING_THRESHOLD_PERCENT } from '../config/gameplay.js';
+import { POWER, TIME, WARNING_THRESHOLD_PERCENT } from '../config/gameplay.js';
 import { secondsUntilEmpty } from '../systems/gauges.js';
 
 const ICON = {
@@ -37,7 +37,7 @@ export function createHud(root) {
   wrap.className = 'hud';
   wrap.innerHTML = `
     <div class="hud-topleft">
-      <div class="chip clock" data-clock>DAY 1 · 07:00</div>
+      <div class="chip clock"><span data-clock>DAY 1 · 07:00</span><span class="speed">⏩ 1 day here = ${Math.round(TIME.REAL_SECONDS_PER_GAME_DAY / 60)} min</span></div>
       <div class="chip where" data-where></div>
     </div>
 

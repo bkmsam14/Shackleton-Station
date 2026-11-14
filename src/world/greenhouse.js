@@ -41,6 +41,7 @@ export function createGreenhouseModel() {
   const skyGeo = new THREE.CylinderGeometry(R + 0.03, R + 0.03, L - 1.2, 16, 1, true, Math.PI / 2 - 0.22, 0.44);
   skyGeo.rotateZ(Math.PI / 2);
   const skylight = new THREE.Mesh(skyGeo, MAT.glow(0xe08cff));
+  skylight.userData.dynamic = true; // switches off when base power runs out
   skylight.position.set(L / 2, fy, 0);
   group.add(skylight);
   // ribs

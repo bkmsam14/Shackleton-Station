@@ -658,3 +658,13 @@
     top: 112px;
   }
 }
+
+.chip.clock .speed {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}

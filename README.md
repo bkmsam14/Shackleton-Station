@@ -1,2 +1,50 @@
-first commit
+# Shackleton Station — Demo 0
 
+A browser-based 3D survival sandbox for kids (7–12) at the Moon's south pole.
+NASA Space Apps Challenge 2026. No download, no account.
+
+## Run it
+
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm test         # pure-logic unit tests (gauges, day cycle, collision)
+npm run build    # production build in dist/ (base path /Shackleton-Station/)
+```
+
+If `npm install` cannot reach registry.npmjs.org on your network, add
+`--registry=https://registry.yarnpkg.com` (official npm mirror).
+
+GitHub Pages: `.github/workflows/deploy.yml` builds and deploys on every push to `main`
+(enable *Settings → Pages → Source: GitHub Actions* once).
+
+## Controls
+
+| Key | Action |
+|---|---|
+| Mouse | Look (click to lock the mouse; if the browser refuses, drag to look) |
+| W A S D / arrows | Walk |
+| Shift | Hop faster |
+| Space | Jump — Moon gravity is 1/6 of Earth's |
+| E | Use / open doors |
+| Esc | Pause (credits + time notes) |
+
+## What is in Demo 0
+
+- Spawn inside the habitat → airlock → lunar south-pole surface (black sky, stars, Sun
+  1.5° above the horizon, long shadows, Earth low on the horizon with real phase).
+- Tall vertical solar array that turns to follow the Sun.
+- Greenhouse with grow racks under red + blue LEDs.
+- Gauges: **Oxygen** and **Food** (astronaut, bottom-left) and **Base Power** (whole base,
+  top-right). Drain rates use NASA BVAD (2022) values — see `docs/SCIENCE.md`.
+- Gentle failure: wake up in the habitat, time passes, no death screen.
+- Hooks: electrolysis unit and grow racks show "Coming soon" lesson toasts.
+
+## Where things live
+
+- `src/config/gameplay.js` — every rate and cost (sourced, or marked GAME BALANCE)
+- `src/systems/` — pure logic (no Three.js): gauges, day cycle, save
+- `src/world/` — terrain, sky, lighting, buildings (one model function per object)
+- `src/player/` — controller, collision, interaction
+- `src/ui/` — HUD, menus, prompts, toasts
+- `docs/SCIENCE.md` — every fact and number with its source
