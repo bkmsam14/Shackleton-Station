@@ -26,9 +26,7 @@ const potatoMat = () => mat('potato', () => new THREE.MeshStandardMaterial({ col
 const looseSoilMat = () => mat('looseSoil', () => new THREE.MeshStandardMaterial({ color: 0x6e5238, roughness: 1 }));
 const holeMat = () => mat('hole', () => new THREE.MeshStandardMaterial({ color: 0x21170f, roughness: 1 }));
 const stemMat = () => mat('stem', () => new THREE.MeshStandardMaterial({ color: 0x4f8f3a, roughness: 0.7 }));
-const petalMat = () => mat('petal', () => new THREE.MeshStandardMaterial({ color: 0xe4d4f8, roughness: 0.6, side: THREE.DoubleSide }));
 const rootMat = () => mat('root', () => new THREE.MeshStandardMaterial({ color: 0xd9c49b, roughness: 0.9 }));
-const pollenMat = () => mat('pollen', () => new THREE.MeshStandardMaterial({ color: 0xffc93c, roughness: 0.6 }));
 export const LEAF_COLOR = 0x5aa845;
 export const LEAF_HOVER = 0x5c8f1c;
 
@@ -199,47 +197,6 @@ function leafyStem(angle, rand) {
   return mesh;
 }
 
-/** Potato blossom: a 5-pointed lilac star with a pointed yellow centre (not a round disc). */
-let blossomGeo = null;
-function blossomGeometry() {
-  if (blossomGeo) return blossomGeo;
-  const s = new THREE.Shape();
-  const R = 0.011; // tip
-  const r = 0.0055; // notch between tips
-  for (let i = 0; i <= 10; i++) {
-    const a = (i / 10) * Math.PI * 2 + Math.PI / 2;
-    const rad = i % 2 === 0 ? R : r;
-    if (i === 0) s.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
-    else s.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
-  }
-  blossomGeo = new THREE.ShapeGeometry(s, 2);
-  blossomGeo.rotateX(-Math.PI / 2);
-  // cup the petals a little: tips higher than the centre
-  const p = blossomGeo.attributes.position;
-  for (let i = 0; i < p.count; i++) p.setY(i, (Math.hypot(p.getX(i), p.getZ(i)) / R) ** 2 * 0.004);
-  blossomGeo.computeVertexNormals();
-  return blossomGeo;
-}
-function flower() {
-  const g = new THREE.Group();
-  // a small cluster of 3 blossoms on short stalks, nodding outward
-  for (const [dx, dz, tilt] of [
-    [0, 0, 0.25],
-    [0.014, 0.008, 0.6],
-    [-0.012, 0.01, 0.6],
-  ]) {
-    const b = new THREE.Group();
-    b.position.set(dx, 0, dz);
-    b.rotation.set(tilt * Math.sign(dz || 1), Math.atan2(dx, dz), 0);
-    b.add(new THREE.Mesh(blossomGeometry(), petalMat()));
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.0028, 0.008, 8), pollenMat());
-    cone.position.y = 0.004;
-    b.add(cone);
-    g.add(b);
-  }
-  return g;
-}
-
 /**
  * Potato plant in growth stages. setGrowth(stage, growth) — stage from farmState.growthStage.
  * stems = the 3 leafy stems the player cuts at harvest.
@@ -283,14 +240,6 @@ export function createPotatoPlant(seed = 1) {
   stemsGroup.add(tuft);
   group.add(stemsGroup);
 
-  const flowers = new THREE.Group();
-  for (const st of stems) {
-    const f = flower();
-    f.position.copy(st.userData.tip).add(new THREE.Vector3(0, 0.025, 0));
-    f.userData.stem = st;
-    flowers.add(f);
-  }
-  group.add(flowers);
 
 
   return {
@@ -302,19 +251,16 @@ export function createPotatoPlant(seed = 1) {
       stemsGroup.visible = stage >= 1;
       const s = stage >= 3 ? 1 : 0.3 + Math.max(0, growth - 0.3) * 1.6;
       stemsGroup.scale.setScalar(Math.min(1, s));
-      flowers.visible = stage >= 3;
-      for (const f of flowers.children) f.visible = f.userData.stem.visible && stage >= 3;
     },
     /** Hide stems that were already cut (e.g. the player left halfway through). */
     setCut(n) {
       stems.forEach((st, i) => (st.visible = i >= n));
-      for (const f of flowers.children) f.visible = f.userData.stem.visible;
     },
     dispose() {
       group.traverse((o) => {
         if (o.isMesh) {
-          if (o.geometry !== blossomGeo) o.geometry.dispose(); // blossom shape is shared
-          if (![stemMat(), petalMat(), pollenMat(), rootMat(), potatoMat()].includes(o.material)) o.material.dispose();
+          o.geometry.dispose();
+          if (![stemMat(), rootMat(), potatoMat()].includes(o.material)) o.material.dispose();
         }
       });
     },
