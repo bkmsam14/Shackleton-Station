@@ -91,7 +91,7 @@ The user wants to see this before anything else gets built:
 5. **Three gauges:**
    - **Oxygen** (shown in the astronaut panel): **one shared oxygen supply for the habitat, greenhouse and suit together** (team decision, Nov 2026). The suit is assumed to stay topped up from it. It drains slowly while the astronaut is inside and faster outside (BVAD spacewalk rate). **Nothing refills it in Demo 0**: making oxygen comes with the electrolysis mini-game, which will call `addOxygen()` in `systems/gauges.js` and pay its own water + power cost.
    - **Food / hunger** (astronaut): drains slowly all the time.
-   - **Power** (the whole base, not the astronaut): shown **separately from the astronaut rings**, top-centre. **Team decision (polish pass):** the full readout (battery + % + charging/draining arrow) appears only inside a pressurized module; outside only a tiny battery icon shows. Details are in the PDA (Tab). It drains with base load and recharges from the solar array while it's in sunlight.
+   - **Power** (the whole base, not the astronaut): shown **separately from the astronaut rings**, top-centre. **Team decision (polish pass):** a large readout ("BASE POWER" label + 5-cell battery + % + charging/draining arrow) inside pressurized modules; outside the same battery + % shows smaller, without the label. Gauge colours: oxygen blue, food green; amber = low, red = critical. Details are in the PDA (Tab). It drains with base load and recharges from the solar array while it's in sunlight.
 6. Interaction prompt ("Press E to open door") and smooth inside/outside transitions.
 7. Gentle failure: if Oxygen or Food reaches 0, fade out and wake up in the habitat (no death screen).
 

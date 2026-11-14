@@ -1,5 +1,6 @@
-/* hud.css — minimal in-world HUD. No boxes: white at ~85 % with a soft dark halo so it
-   reads on bright regolith and on black sky. One typeface (Fredoka). Colour = state only. */
+/* hud.css — minimal in-world HUD. No boxes: a soft dark halo makes it read on bright
+   regolith and on black sky. One typeface (Fredoka). Gauge colours: oxygen blue, food
+   green; amber (low) and red (critical) override them. */
 
 .hud,
 .crosshair,
@@ -9,6 +10,9 @@
   --hud-fg: rgba(255, 255, 255, 0.88);
   --hud-low: #ffb547; /* amber (design palette "sun orange") */
   --hud-crit: #ff7a59; /* alert orange-red (design palette) */
+  --hud-o2: #5ab8ff; /* oxygen: blue */
+  --hud-food: #7be0a0; /* food / nutrients: green (design palette greenhouse green) */
+  --hud-charge: #7be0a0; /* power charging arrow */
   --hud-halo: 0 0 2px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.75), 0 1px 14px rgba(0, 0, 0, 0.55);
   font-family: var(--font-head);
   color: var(--hud-fg);
@@ -33,34 +37,70 @@
 /* ---------- base power (top-centre) ---------- */
 .hud-power {
   position: absolute;
-  top: 16px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
-  display: flex;
+  transform-origin: top center;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-template-areas: 'label label label' 'bat value arrow';
   align-items: center;
-  gap: 8px;
+  justify-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
   font-weight: 600;
-  font-size: 22px;
   font-variant-numeric: tabular-nums;
-  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8));
   transition: opacity 0.3s, transform 0.3s;
 }
+/* soft halo behind the readout (not a box) */
+.hud-power::before {
+  content: '';
+  position: absolute;
+  inset: -14px -36px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.25) 50%, rgba(0, 0, 0, 0) 72%);
+}
+.power-label {
+  grid-area: label;
+  font-size: 18px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+}
+.power-battery {
+  grid-area: bat;
+}
 .power-battery svg {
-  width: 40px;
-  height: 20px;
+  width: 84px;
+  height: 37px;
   display: block;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.85));
+}
+.power-value {
+  grid-area: value;
+  min-width: 2.6em;
+  font-size: 34px;
+  line-height: 1;
+}
+.power-arrow {
+  grid-area: arrow;
+  width: 28px;
 }
 .power-arrow svg {
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   display: block;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.85));
 }
+.hud-power[data-flow='up'] .power-arrow {
+  color: var(--hud-charge);
+}
+/* outside: still clear, just smaller and without the label */
 .hud-power.is-mini {
-  opacity: 0.7;
-  transform: translateX(-50%) scale(0.7);
+  opacity: 0.92;
+  transform: translateX(-50%) scale(0.72);
 }
-.hud-power.is-mini .power-value,
-.hud-power.is-mini .power-arrow {
+.hud-power.is-mini .power-label {
   display: none;
 }
 .hud-power[data-state='low'] {
@@ -73,7 +113,7 @@
 /* ---------- location name (fades in ~2 s) ---------- */
 .hud-location {
   position: absolute;
-  top: 64px;
+  top: 112px;
   left: 50%;
   transform: translateX(-50%);
   font-weight: 600;
@@ -122,14 +162,25 @@
   overflow: visible;
   filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.7));
 }
+.ring-oxygen {
+  --ring: var(--hud-o2);
+  --ring-track: rgba(90, 184, 255, 0.24);
+}
+.ring-food {
+  --ring: var(--hud-food);
+  --ring-track: rgba(123, 224, 160, 0.24);
+}
 .ring-track {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.22);
+  stroke: var(--ring-track, rgba(255, 255, 255, 0.22));
   stroke-width: 7;
+}
+.ring-icon {
+  color: var(--ring, var(--hud-fg));
 }
 .ring-fill {
   fill: none;
-  stroke: var(--hud-fg);
+  stroke: var(--ring, var(--hud-fg));
   stroke-width: 7;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.3s linear, stroke 0.3s;
@@ -163,18 +214,16 @@
   font-size: 20px;
 }
 .ring[data-state='low'] {
+  --ring: var(--hud-low);
+  --ring-track: rgba(255, 181, 71, 0.24);
   color: var(--hud-low);
   animation: ring-pulse 1.2s ease-in-out infinite;
 }
-.ring[data-state='low'] .ring-fill {
-  stroke: var(--hud-low);
-}
 .ring[data-state='critical'] {
+  --ring: var(--hud-crit);
+  --ring-track: rgba(255, 122, 89, 0.26);
   color: var(--hud-crit);
   animation: ring-pulse 0.7s ease-in-out infinite;
-}
-.ring[data-state='critical'] .ring-fill {
-  stroke: var(--hud-crit);
 }
 @keyframes ring-pulse {
   50% {

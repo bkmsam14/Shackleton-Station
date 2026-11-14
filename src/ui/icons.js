@@ -10,8 +10,14 @@ export const ICONS = {
   arrowDown: `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5" ${S}/></svg>`,
 };
 
-/** Battery icon with a fill level 0..1. */
+/** Battery icon with 5 cells; level 0..1 lights cells (partly lit last cell fades). */
 export function batteryIcon(level) {
-  const w = Math.max(0, Math.min(1, level)) * 22;
-  return `<svg viewBox="0 0 32 16" aria-hidden="true"><rect x="1.5" y="2" width="26" height="12" rx="2.5" ${S}/><rect x="29" y="5.5" width="2" height="5" rx="1" fill="currentColor"/><rect x="3.5" y="4" width="${w.toFixed(1)}" height="8" rx="1.2" fill="currentColor"/></svg>`;
+  const l = Math.max(0, Math.min(1, level));
+  let cells = '';
+  for (let i = 0; i < 5; i++) {
+    const fill = Math.max(0, Math.min(1, l * 5 - i)); // 0..1 for this cell
+    const op = fill <= 0 ? 0.16 : 0.35 + 0.65 * fill;
+    cells += `<rect x="${5 + i * 10.4}" y="5" width="8.6" height="18" rx="1.8" fill="currentColor" opacity="${op.toFixed(2)}"/>`;
+  }
+  return `<svg viewBox="0 0 64 28" aria-hidden="true"><rect x="1.5" y="1.5" width="56" height="25" rx="5" fill="none" stroke="currentColor" stroke-width="3"/><rect x="59" y="9" width="4" height="10" rx="1.5" fill="currentColor"/>${cells}</svg>`;
 }

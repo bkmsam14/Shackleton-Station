@@ -3,7 +3,8 @@
 //  • top-centre: BASE POWER battery + % + arrow — only inside a module; outside a tiny battery
 //  • top-left: day/time · top-centre: location name fades in for ~2 s on zone change
 //  • warnings: < 25 % amber + pulse; < 10 % red + screen-edge tint + one short line
-// One typeface (Fredoka). Colour only shows state: normal / low / critical.
+// One typeface (Fredoka). Each gauge has its own colour (oxygen blue, food green);
+// low (amber) and critical (red) override it.
 import { POWER, WARNING_THRESHOLD_PERCENT } from '../config/gameplay.js';
 import { ICONS, batteryIcon } from './icons.js';
 import { voiceLine } from './voice.js';
@@ -41,6 +42,7 @@ export function createHud(root) {
     <div class="hud-vignette" data-vignette></div>
     <div class="hud-time" data-time>Day 1 · 07:00</div>
     <div class="hud-power" data-power role="meter" aria-label="Base power" aria-valuemin="0" aria-valuemax="100">
+      <span class="power-label">Base power</span>
       <span class="power-battery" data-battery></span>
       <span class="power-value" data-power-value>70%</span>
       <span class="power-arrow" data-arrow></span>
