@@ -11,11 +11,12 @@
   --text: #ffffff;
   --text-muted: #c9d4e8; /* 11.9:1 on --panel-solid */
 
-  --cyan: #38d9f5; /* oxygen, prompts */
-  --orange: #ff9f43; /* food, accents */
-  --green: #4be38a; /* power charging */
-  --warn: #ff6b81; /* low gauges (always with icon + text) */
-  --base: #7fe0a8; /* base-power panel accent */
+  /* palette from docs/GAME_DESIGN.md "Look and feel" */
+  --cyan: #4fd1e8; /* UI + habitat lights; oxygen */
+  --orange: #ffb547; /* warm sun orange; food */
+  --green: #7be0a0; /* greenhouse green; power charging */
+  --warn: #ff7a59; /* alert orange-red (always with icon + text) */
+  --base: #7be0a0; /* base-power panel accent */
 
   --radius: 18px;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
@@ -328,8 +329,8 @@
   margin: 16px 0 0;
   padding: 12px 16px;
   border-radius: 14px;
-  background: rgba(56, 217, 245, 0.12);
-  border: 1px solid rgba(56, 217, 245, 0.45);
+  background: rgba(79, 209, 232, 0.12);
+  border: 1px solid rgba(79, 209, 232, 0.45);
   font-size: 17px;
   line-height: 1.45;
 }
@@ -416,9 +417,9 @@
   border-radius: 999px;
   font-size: 15px;
   letter-spacing: 0.5px;
-  background: rgba(127, 224, 168, 0.16);
+  background: rgba(123, 224, 160, 0.16);
   color: var(--base);
-  border: 1px solid rgba(127, 224, 168, 0.5);
+  border: 1px solid rgba(123, 224, 160, 0.5);
 }
 
 /* astronaut panel (bottom-left) */
@@ -508,7 +509,7 @@
 }
 @keyframes low-pulse {
   50% {
-    filter: drop-shadow(0 0 10px rgba(255, 107, 129, 0.75));
+    filter: drop-shadow(0 0 10px rgba(255, 122, 89, 0.75));
     opacity: 0.82;
   }
 }
@@ -519,7 +520,7 @@
   right: 16px;
   width: min(380px, calc(100vw - 32px));
   border-radius: 10px;
-  border: 2px solid rgba(127, 224, 168, 0.55);
+  border: 2px solid rgba(123, 224, 160, 0.55);
   border-top: 6px solid var(--base);
   background: rgba(8, 22, 18, 0.86);
 }

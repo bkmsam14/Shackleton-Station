@@ -20,6 +20,12 @@
       "source": "https://ntrs.nasa.gov/citations/20210024855"
     },
     {
+      "id": "food-eva",
+      "text": "Hard work outside in a spacesuit burns more food energy — about 2 times more per hour.",
+      "value": "1.062 MJ per hour on a spacewalk (BVAD Table 4-70, p. 135) vs 12.778 MJ per day = 0.53 MJ per hour normally (Table 3-31, p. 58)",
+      "source": "https://ntrs.nasa.gov/citations/20210024855"
+    },
+    {
       "id": "food-per-day",
       "text": "An astronaut eats about 0.8 kg of food per day (not counting the water in it).",
       "value": "0.800 kg dry mass per crewmember per day (BVAD Table 3-31, p. 58)",

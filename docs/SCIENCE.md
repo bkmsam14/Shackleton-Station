@@ -1,124 +1,120 @@
-# SCIENCE.md — Shackleton Station
+# Science Bible — Shackleton Station
 
-Rules (from CLAUDE.md): we simplify by **leaving details out**, never by saying something false.
-Every number used in gameplay comes from a source listed here, or is marked
-`// GAME BALANCE (not real data)` in `src/config/gameplay.js`.
+Every fact the game shows must come from this file (or `public/data/facts.json`, which mirrors it) and have a source. If a fact isn't here, it doesn't ship.
 
----
+## Rules
 
-## 1. Life support values — NASA BVAD (2022)
+1. Simplify by **leaving details out**, never by saying something false.
+2. Time and amounts may be scaled; **cause and effect and ratios stay real**. Show the real value next to the game value.
+3. Use real terms with a one-line explanation (electrolysis, regolith, sol, solar particle event).
+4. Two levels: a core sentence for ages 7+, and a "Go deeper" line for ages 10–12 and parents.
+5. Mark future tech as future: "NASA is testing…", not "astronauts do…".
+6. Simulated values are labeled as simulated. Archived data is labeled "replay"; only live fetches are labeled "live".
 
-**Source:** Ewert, M. K., Chen, T. T., Powell, C. D. *Life Support Baseline Values and
-Assumptions Document* (BVAD), NASA/TP-2015-218570/REV2, February 2022.
-https://ntrs.nasa.gov/citations/20210024855
-(PDF: https://ntrs.nasa.gov/api/citations/20210024855/downloads/BVAD_2.15.22-final.pdf)
+## Verified facts (core sentence → go deeper)
 
-"CM" = crewmember. "CM-d" = per crewmember per day. Page numbers are the numbers printed
-at the bottom of the PDF pages.
+### Life support numbers — NASA BVAD (used for gauge drain rates)
+Source: Ewert, Chen, Powell, *Life Support Baseline Values and Assumptions Document* (BVAD), NASA/TP-2015-218570/REV2, Feb 2022 — https://ntrs.nasa.gov/citations/20210024855 (PDF: https://ntrs.nasa.gov/api/citations/20210024855/downloads/BVAD_2.15.22-final.pdf). Page numbers are the numbers printed on the pages. CM = crewmember.
 
-### 1a. Nominal daily values (inside a habitat) — Table 3-31, p. 58 (explained on p. 59)
+| Quantity | Value | Where |
+|---|---|---|
+| Oxygen consumed, nominal (inside) | **0.895 kg/CM-day** (text rounds to 0.90) | Table 3-31, p. 58; footnote 77, p. 59 |
+| Carbon dioxide produced | 1.085 kg/CM-day | Table 3-31, p. 58 |
+| Food eaten, dry mass (no packaging) | **0.800 kg/CM-day** (= 1.56 kg eaten at 48.7 % water) | Table 3-31, p. 58; p. 59 |
+| Food energy | 12.778 MJ/CM-day | Table 3-31, p. 58 |
+| Drinking + food-prep water | 3.217 kg/CM-day | Table 3-31, p. 58 |
+| Oxygen during a spacewalk (EVA) | **0.086 kg/CM-hour** | Table 4-70, p. 135 |
+| Food energy during a spacewalk | **1.062 MJ/CM-hour** | Table 4-70, p. 135 |
+| Metabolic rate on a lunar-surface EVA (nominal) | 352 W/CM | Table 4-69, p. 135 |
 
-| Quantity | Value | Units | Where |
-|---|---|---|---|
-| Reference astronaut body mass | 82 | kg/CM | Table 3-31, p. 58 |
-| **Oxygen consumed** | **0.895** (the text rounds it to 0.90) | kg/CM-d | Table 3-31, p. 58; footnote 77, p. 59 |
-| Carbon dioxide produced | 1.085 | kg/CM-d | Table 3-31, p. 58 |
-| **Food consumed, dry mass (no packaging)** | **0.800** | kg/CM-d | Table 3-31, p. 58; p. 59 |
-| Food consumed, energy content | 12.778 | MJ/CM-d | Table 3-31, p. 58; p. 59 |
-| Potable water | 3.217 | kg/CM-d | Table 3-31, p. 58; p. 59 |
-| Respiratory quotient (nominal) | 0.86 | — | Table 3-31, p. 58; p. 59 |
+How the game uses them (ratios stay real, amounts are scaled):
+- Oxygen drains **0.086 ÷ (0.895 ÷ 24) ≈ 2.3×** faster outside than inside. *Core:* working in a heavy suit is hard work, so you breathe more.
+- Food drains **1.062 ÷ (12.778 ÷ 24) ≈ 2.0×** faster outside than inside. *Core:* hard work outside burns more food energy.
+- Time is sped up 360× (1 in-game day = 4 real minutes). The *size* of each full gauge (3 kg oxygen supply, 3 days of food) is game balance, marked in `gameplay.js`.
 
-Note (p. 59): the 0.8 kg/CM-d of dry food comes from 1.56 kg of food eaten at 48.7 % water
-(1.56 × (1 − 0.487) ≈ 0.8). ISS food supply planning value is 2.39 kg/person/day **including
-packaging**.
+### Oxygen and air
+- **Electrolysis:** electricity splits water into hydrogen and oxygen. → 2H₂O → 2H₂ + O₂. The hydrogen side makes twice as much gas as the oxygen side. *Source: NASA ISS Oxygen Generation Assembly — https://ntrs.nasa.gov/citations/20200002346*
+- **CO₂ removal:** astronauts breathe out carbon dioxide, which must be removed or it builds up. → The ISS uses CO₂ removal systems in its life support (ECLSS). *Source: NASA ECLSS (add URL)*
+- **Sabatier:** leftover hydrogen + CO₂ → water + methane. Your breath becomes water again. → On the ISS the methane is vented. *Source: NASA (add URL)*
+- **Oxygen in Moon rocks:** Moon soil (regolith) is about 40% oxygen by weight, locked in minerals. NASA is *testing* ways to extract it. *Source: NASA (add URL)*
 
-### 1b. Spacewalk (EVA) values — Table 4-70, p. 135
+### Water
+- The ISS recycles about **98%** of its water, including sweat and urine. *Source: NASA, 2023 ISS water recovery milestone (add URL)*
+- Craters near the lunar south pole that never get sunlight (permanently shadowed regions) hold water ice. That's a main reason Artemis is going there. *Source: NASA (add URL)*
 
-| Quantity | Value | Units | Where |
-|---|---|---|---|
-| **Oxygen consumption during EVA** | **0.086** | kg/CM-h | Table 4-70, p. 135 |
-| Food energy consumption during EVA | 1.062 | MJ/CM-h | Table 4-70, p. 135 |
-| Potable water during EVA (> 3 h sorties) | 0.240 | kg/CM-h | Table 4-70, p. 135 |
-| Carbon dioxide production during EVA | 0.109 | kg/CM-h | Table 4-70, p. 135 |
-| Human metabolic rate during EVA, lunar surface (nominal) | 352 | W/CM | Table 4-69, p. 135 |
+### Food and plants
+- NASA's **Veggie** system grew lettuce and other plants on the ISS under LED lights, using growing "pillows". *Source: NASA Veggie (add URL)*
+- Plants mainly use red and blue light for photosynthesis, which is why grow lights often look pink/purple. *Source: NASA Veggie VEG-04 (red:blue light study) — https://ntrs.nasa.gov/citations/20190033231*
+- Plants need light, water, warmth and nutrients, and they take time to grow. They also release some oxygen and take in CO₂.
+- ESA's **MELiSSA** project researches life-support loops including spirulina (an algae). *Source: ESA MELiSSA (add URL)*
+- CSA food production toolkit: https://www.asc-csa.gc.ca/eng/youth-educators/toolkits/food-production/ (an index page; use its linked articles "Food in space: the challenges" and "Growing healthy food in space and in remote areas")
 
-### 1c. How the game uses these (relative rates)
+### Power and light at the south pole
+- The Sun stays low on the horizon at the lunar south pole, so shadows are very long.
+- Some high ridges near the south pole are lit most of the time, but darkness periods still happen. That's partly why Artemis targets this region.
+- NASA is developing tall **vertical solar arrays** (VSAT project) that can follow the low Sun. *Source: NASA VSAT annual review, 2023 — https://ntrs.nasa.gov/api/citations/20230012849/downloads/GCD%20Annual%20Review%20VSAT%20September%202023%20Final.pdf*
+- During dark periods, a base needs stored energy (batteries or regenerative fuel cells).
 
-- Inside: 0.895 kg/day ÷ 24 = **0.0373 kg/h** of oxygen.
-- Outside (EVA): **0.086 kg/h**.
-- **Ratio outside : inside = 0.086 ÷ 0.0373 ≈ 2.31.**
-  So the Oxygen gauge drains about **2.3× faster outside** than inside. *Why (kid version):*
-  walking and working on the Moon in a heavy suit is hard work, and hard work makes you
-  breathe more.
-- **One shared oxygen supply** (team decision): the gauge is the base's total oxygen for the
-  habitat, greenhouse and suit together; the suit is assumed to be kept topped up from it
-  (detail left out: real suits carry their own tank that is refilled before each walk).
-  Nothing refills the supply in Demo 0; the electrolysis mini-game will add oxygen later.
-- Food: 0.800 kg dry food per day, all the time. (BVAD shows spacewalks burn about 2× the food
-  energy per hour (1.062 vs 12.778 ÷ 24 = 0.532 MJ/h). Demo 0 **leaves this detail out** and
-  drains food at one steady rate.)
-- **Scaled time:** 1 in-game day ≈ 4 real minutes (240 s), i.e. **360× real time**.
-- The *size* of a full gauge (how much oxygen the base stores — 3 kg in Demo 0 — and how many
-  days of food are in the pantry) is a **game balance** choice, marked as such in `gameplay.js`.
+### Radiation and shielding
+- The Moon has no thick atmosphere and no global magnetic field, so particles from the Sun and from deep space reach the surface.
+- Solar flares can be followed by **solar particle events**, bursts of fast particles that are dangerous for astronauts.
+- Shielding works with **mass**: water, regolith or plastic between the crew and space. Astronauts shelter in the most shielded spot during solar storms.
+- The ISS is in low Earth orbit, inside Earth's magnetic field, which partly protects it. **RadLab ISS readings are not Moon values.** Moon surface doses are higher (find a NASA source for the Moon/ISS comparison before showing a number).
 
----
+### Dust
+- Lunar regolith is sharp, abrasive and sticky. It clings to suits and covers equipment.
+- **There is no wind, so there are no dust storms on the Moon.** Dust gets thrown up by rocket exhaust, rovers and walking.
 
-## 2. The Moon and the south pole
+### Gravity and the environment
+- Moon gravity is about 1/6 of Earth's. → 1.62 m/s² vs 9.81 m/s². *Source: NASA Moon Fact Sheet — https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html*
+- The Moon has almost no air, so the sky is black even in daytime and shadows are sharp. → Surface pressure about 3 × 10⁻¹⁵ bar. *Source: NASA Moon Fact Sheet*
+- Moonquakes are real; seismometers left by the Apollo missions recorded them.
+- Micrometeoroids constantly strike the Moon; there is no atmosphere to burn them up.
 
-| Fact used in game | Value | Source | Status |
-|---|---|---|---|
-| Moon surface gravity | 1.62 m/s² (about 1/6 of Earth's 9.81 m/s²) | NASA Moon Fact Sheet, https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html | Verified |
-| No atmosphere → black sky in daytime, no haze, hard shadows | — | NASA Moon Fact Sheet (surface pressure ~3×10⁻¹⁵ bar) | Verified |
-| Synodic month (Sun returns to same place in the lunar sky) | 29.53 Earth days | NASA Moon Fact Sheet | Verified |
-| At the poles the Sun stays close to the horizon and circles around the sky over a lunar month; this makes very long shadows | Sun elevation at the south pole is within about ±1.5° of the horizon | Derived from NASA Moon Fact Sheet: obliquity to orbit 6.68° minus orbit inclination to ecliptic 5.145° ≈ 1.54° tilt of the Moon's equator to the ecliptic (Cassini's laws) | Verified (geometry, derived) |
-| Shackleton Crater is at the lunar south pole; its rim has places that are sunlit most of the time, its floor is in permanent shadow | — | NASA SVS / LRO, https://svs.gsfc.nasa.gov/ (search "Shackleton crater") | **Needs verification** (exact % sunlit) |
-| Vertical, sun-tracking solar arrays are being developed for the lunar south pole because the Sun is so low | — | NASA VSAT annual review (2023), https://ntrs.nasa.gov/api/citations/20230012849/downloads/GCD%20Annual%20Review%20VSAT%20September%202023%20Final.pdf | Verified |
-| Space greenhouses (NASA Veggie) light plants with red and blue LEDs; red:blue ratio is studied | — | VEG-04 (2019), https://ntrs.nasa.gov/citations/20190033231 | Verified |
-| Electrolysis splits water into oxygen and hydrogen; ISS makes breathing oxygen this way | 2 H₂O → 2 H₂ + O₂ | ISS Oxygen Generation Assembly (NTRS), https://ntrs.nasa.gov/citations/20200002346 | Verified |
-| Earth's axial tilt (used to tilt the Earth model in the sky) | 23.44° | NASA Earth Fact Sheet, https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html | Verified |
-| Earth seen from the Moon shows phases; the game lights Earth from the real Sun direction, so its phase changes as the Sun circles | — | Geometry (Earth phase is opposite to Moon phase) | Verified (geometry) |
-| Earth turns once a day; in the game it spins once per game day (4 real minutes) | 24 h (sidereal 23.93 h — detail left out) | NASA Earth Fact Sheet | Verified |
-| Sun's angular diameter seen from the Moon | ~0.53° | Sun diameter 1.39 × 10⁶ km at ~1.496 × 10⁸ km (NASA Sun Fact Sheet, https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html) | Verified (derived) |
+### Sun and sky at the south pole (used in the Demo 0 world)
+- The Sun stays within about 1.5° of the horizon at the lunar south pole. → Moon's equator is tilted ~1.54° to the ecliptic (6.68° obliquity to orbit − 5.145° orbit inclination). *Source: derived from NASA Moon Fact Sheet*
+- The Sun takes about **29.5 days** to circle the sky once (one synodic month, 29.53 days). *Source: NASA Moon Fact Sheet*
+- Seen from the Moon, Earth stays in nearly the same spot in the sky and shows phases (opposite to the Moon's phase). Its size in the sky is about 1.9° (12,742 km ÷ 384,400 km). *Source: NASA Earth and Moon Fact Sheets — https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html*
+- The Sun looks about 0.53° wide from the Moon. *Source: NASA Sun Fact Sheet — https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html*
+- Earth's axis is tilted 23.44° and it turns once a day. *Source: NASA Earth Fact Sheet*
 
----
+### Communication
+- A signal takes about **1.3 seconds** to travel one way between the Moon and Earth.
+- Between Mars and Earth it takes from about 3 to about 22 minutes one way, depending on the planets' positions.
+- At the south pole, Earth is low on the horizon, so terrain can block the signal. NASA and ESA are planning lunar relay satellites.
 
-## 3. Simplifications we chose (details left out — nothing false)
+### Real data events used
+- **Stormy Sun:** May 2024. A period of very strong solar activity, including X-class flares on 14 May 2024 (confirm in the DONKI archive JSON before shipping).
+- **Calm Sun:** late 2019, around solar minimum (December 2019).
 
-0. **Lighting brightness.** Real ground at the pole under a 1.5° Sun (and in shadow) is darker than the game shows. A fill light stands in for light bounced off nearby sunlit slopes so kids can see where they walk. Shadow *directions and lengths* are real.
+## Data sources (credit these in the game)
+**Required by the team:** BVAD (https://ntrs.nasa.gov/citations/20210024855), NASA BPS data hub (https://science.nasa.gov/biological-physical/data/), RadLab overview (https://visualization.osdr.nasa.gov/radlab/gui/overview/), DONKI (https://ccmc.gsfc.nasa.gov/donki/). See the table in CLAUDE.md for what each one is used for.
 
-1. **Sun speed.** The real Sun takes about **29.5 Earth days** to circle the sky at the south
-   pole. In the game it circles once every ~20 real minutes so you can see the solar array
-   turn and the battery charge and drain. The game says so on screen. This is a *second*
-   speed-up on top of the 360× life-support clock (allowed by CLAUDE.md rule 3 — the real
-   value is shown).
-2. **Sun hidden by a ridge.** Polar sites lose sunlight when the low Sun goes behind distant
-   hills and crater rims. The game uses one simple ridge on the horizon to show this.
-   **Needs verification:** find a NASA/LRO source for polar illumination being interrupted by
-   terrain, and the typical lit fraction near Shackleton.
-3. **Earth in the sky.** Seen from the Moon, Earth stays in nearly the same place in the sky
-   (the Moon always shows the same face to Earth). From the south pole Earth sits near the
-   horizon, and small wobbles (libration) can move it above or below local hills. The game
-   shows Earth fixed, small and low. Earth's real angular size from the Moon is about 2°
-   (Earth diameter 12,742 km ÷ 384,400 km). Source: NASA Earth & Moon Fact Sheets.
-4. **Earth's apparent size vs. Sun.** The Sun is ~0.5° across; Earth from the Moon ~1.9°.
-   Our sky draws them at these relative sizes (scaled up slightly for readability on small
-   screens — **marked game balance** in `gameplay.js`).
+- NASA Open APIs: https://api.nasa.gov/ (DONKI endpoint, e.g. `https://api.nasa.gov/DONKI/FLR?startDate=2024-05-01&endDate=2024-05-31&api_key=...`)
+- DONKI: https://ccmc.gsfc.nasa.gov/tools/DONKI/
+- OSDR: https://osdr.nasa.gov/bio/repo/
+- RadLab API: https://visualization.osdr.nasa.gov/radlab/gui/data-api/ (fields include `absorbed_dose_rate` in μGy/hour and `dose_equivalent_rate` in μSv/hour; CORS support unconfirmed, so plan to ship an archived extract)
+- Moon Trek: https://trek.nasa.gov/moon/
+- CSA food production toolkit (above)
 
----
+## Simplifications in Demo 0 (details left out, nothing false)
+- **Two clocks.** Life support runs 360× faster than real life; the Sun's trip around the sky is sped up more (about 20 real minutes instead of 29.5 days). Both real values are shown on the start and pause screens.
+- **One oxygen supply.** Real suits carry their own tank that is refilled before each walk; the game merges suit + base into one supply.
+- **One ridge.** Dark periods come from one simple ridge on the horizon hiding the low Sun.
+- **Brighter shadows than reality** (until the visual polish pass): a fill light stands in for light bounced off nearby sunlit slopes so kids can see.
+- **Earth fixed in the sky.** Libration (small wobbles) is left out.
 
-## 4. Needs verification (do not ship as facts until checked)
+## Needs verification (do not show until resolved)
+- [x] ~~BVAD per-person oxygen and food values~~ → done, see "Life support numbers" above. (Water values are copied too, for the future water gauge.)
+- Percentage of time the Shackleton rim is sunlit, and a source for terrain-caused dark periods (LRO/LOLA illumination studies).
+- Real spacesuit oxygen duration (xEMU / EMU) if we ever show suit-tank time.
+- BVAD exercise oxygen rates (Tables 3-23 / 3-25) if "sprinting drains oxygen faster" is added.
+- A Moon surface vs ISS dose comparison from a NASA source (for example Artemis I or LRO CRaTER results).
+- Real growth times for lettuce and potato in controlled-environment agriculture.
+- Exact source URLs for every "(add URL)" above.
 
-- [ ] Percentage of time the Shackleton rim is sunlit (LRO/LOLA illumination studies).
-- [x] NASA source for VSAT (vertical solar arrays for lunar south pole) — see §2.
-- [x] NASA source for Veggie / red + blue LED grow lights — see §2.
-- [ ] Real suit oxygen duration (xEMU / EMU PLSS hours) — Demo 0 suit tank size is game balance.
-- [ ] Polar illumination interrupted by terrain (source for the "ridge" simplification).
-
-## 5. Sources reserved for later mini-games (not used in Demo 0)
-
-- NASA Biological & Physical Sciences data hub (OSDR, PSI, Task Book, Space Life Sciences
-  Library): https://science.nasa.gov/biological-physical/data/
-- RadLab (radiation telemetry; ISS values are **low Earth orbit, not the Moon**):
-  https://visualization.osdr.nasa.gov/radlab/gui/overview/
-- DONKI space weather (flares, CMEs, SEPs; "science and prototyping quality" → say "based on"):
-  https://ccmc.gsfc.nasa.gov/donki/
+## Corrections log (mistakes we caught; don't repeat them)
+- ❌ "Dust storms on the Moon" → ✅ dust blasted by landers and rovers.
+- ❌ A powered energy "shield" → ✅ mass shielding (water walls, regolith).
+- ❌ "A 14-day night at the south pole" → ✅ shorter, irregular dark periods on the high ridges.
+- ❌ "Hydrogen is just stored as fuel" → ✅ on the ISS it goes to the Sabatier system (fuel cells are a separate, valid lunar-base idea).

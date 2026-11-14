@@ -34,9 +34,13 @@ export const BVAD = {
   FOOD_KG_PER_DAY_DRY: 0.8, // BVAD Table 3-31, p. 58 (derivation on p. 59)
   // Food energy consumed per crewmember per day.
   FOOD_MJ_PER_DAY: 12.778, // BVAD Table 3-31, p. 58
+  // Food energy burned per crewmember per hour during a spacewalk.
+  FOOD_MJ_PER_HOUR_EVA: 1.062, // BVAD Table 4-70, p. 135
 };
 // Derived: oxygen drains this many times faster outside than inside (≈ 2.31).
 BVAD.EVA_TO_NOMINAL_O2_RATIO = BVAD.O2_KG_PER_HOUR_EVA / (BVAD.O2_KG_PER_DAY_NOMINAL / 24);
+// Derived: food energy is used this many times faster outside (≈ 2.0).
+BVAD.EVA_TO_NOMINAL_FOOD_RATIO = BVAD.FOOD_MJ_PER_HOUR_EVA / (BVAD.FOOD_MJ_PER_DAY / 24);
 
 // ---------------------------------------------------------------------------
 // ASTRONAUT GAUGES (0–100 %)

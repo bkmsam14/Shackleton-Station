@@ -11,6 +11,11 @@ test('oxygen drains ~2.3x faster outside than inside (BVAD ratio)', () => {
   assert.ok(Math.abs(RATES.oxygenOutside / RATES.oxygenInside - BVAD.EVA_TO_NOMINAL_O2_RATIO) < 1e-9);
 });
 
+test('food drains ~2x faster outside (BVAD EVA food energy ratio)', () => {
+  assert.ok(Math.abs(RATES.foodOutside / RATES.foodInside - BVAD.EVA_TO_NOMINAL_FOOD_RATIO) < 1e-9);
+  assert.ok(Math.abs(BVAD.EVA_TO_NOMINAL_FOOD_RATIO - 1.995) < 0.01);
+});
+
 test('outside: oxygen drains, food drains', () => {
   const g = createGauges({ oxygen: 100, food: 100 });
   const r = stepGauges(g, 10, { pressurized: false, ...sunny });

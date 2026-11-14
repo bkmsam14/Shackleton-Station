@@ -5,7 +5,8 @@
 //    topped up from it). The astronaut breathes from it at the BVAD nominal rate inside
 //    and at the BVAD spacewalk rate outside (~2.3× faster). Nothing refills it in Demo 0 —
 //    making oxygen comes with the electrolysis mini-game, which will call addOxygen().
-//  Food: drains at the BVAD daily rate, all the time.
+//  Food: drains at the BVAD daily rate inside, and ~2× faster outside (BVAD spacewalk
+//    food energy, Table 4-70).
 //  Power (whole base): battery charged by the solar array (Sun visible × panel facing),
 //    drained by the base loads.
 
@@ -21,8 +22,9 @@ function percentPerRealSecond(kgPerGameHour, capacityKg) {
 export const RATES = {
   oxygenInside: percentPerRealSecond(BVAD.O2_KG_PER_DAY_NOMINAL / 24, OXYGEN.CAPACITY_KG),
   oxygenOutside: percentPerRealSecond(BVAD.O2_KG_PER_HOUR_EVA, OXYGEN.CAPACITY_KG),
-  food: percentPerRealSecond(BVAD.FOOD_KG_PER_DAY_DRY / 24, FOOD.CAPACITY_KG),
+  foodInside: percentPerRealSecond(BVAD.FOOD_KG_PER_DAY_DRY / 24, FOOD.CAPACITY_KG),
 };
+RATES.foodOutside = RATES.foodInside * BVAD.EVA_TO_NOMINAL_FOOD_RATIO;
 
 export function createGauges(overrides = {}) {
   return {
@@ -66,7 +68,7 @@ export function stepGauges(g, dt, ctx) {
   g.oxygen = clamp(g.oxygen + oxygenRate * dt, 0, 100);
 
   // --- food
-  const foodRate = -RATES.food;
+  const foodRate = -(ctx.pressurized ? RATES.foodInside : RATES.foodOutside);
   g.food = clamp(g.food + foodRate * dt, 0, 100);
 
   // --- power
