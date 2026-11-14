@@ -138,10 +138,24 @@ export function createHorizon() {
  */
 export function createRocks({ count = 260 } = {}) {
   const rand = mulberry32(42);
-  const geo = new THREE.IcosahedronGeometry(1, 0);
-  const mesh = new THREE.InstancedMesh(geo, MAT.rock(), count);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
+  // two rock shapes (one draw call each): a chunky icosahedron and a jittered dodecahedron
+  const jagged = new THREE.DodecahedronGeometry(1, 0);
+  const jp = jagged.attributes.position;
+  const jr = mulberry32(7);
+  for (let i = 0; i < jp.count; i++) {
+    const k = 0.8 + jr() * 0.4;
+    jp.setXYZ(i, jp.getX(i) * k, jp.getY(i) * (0.7 + jr() * 0.3), jp.getZ(i) * k);
+  }
+  jagged.computeVertexNormals();
+  const meshes = [new THREE.IcosahedronGeometry(1, 0), jagged].map((g) => {
+    const m = new THREE.InstancedMesh(g, MAT.rock(), count);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    m.count = 0;
+    return m;
+  });
+  const group = new THREE.Group();
+  group.add(...meshes);
   const dummy = new THREE.Object3D();
   const colliders = [];
   let placed = 0;
@@ -159,12 +173,14 @@ export function createRocks({ count = 260 } = {}) {
     dummy.rotation.set(rand() * 3, rand() * 3, rand() * 3);
     dummy.scale.set(s * (0.8 + rand() * 0.5), s * (0.55 + rand() * 0.4), s * (0.8 + rand() * 0.5));
     dummy.updateMatrix();
-    mesh.setMatrixAt(placed, dummy.matrix);
+    const target = meshes[placed % 2];
+    target.setMatrixAt(target.count++, dummy.matrix);
     if (s > 0.7 && Math.hypot(x, z - 14) < 90) colliders.push({ type: 'circle', x, z, r: s * 0.95 });
     placed++;
   }
-  mesh.count = placed;
-  mesh.instanceMatrix.needsUpdate = true;
-  mesh.computeBoundingSphere();
-  return { mesh, colliders };
+  for (const m of meshes) {
+    m.instanceMatrix.needsUpdate = true;
+    m.computeBoundingSphere();
+  }
+  return { mesh: group, colliders };
 }

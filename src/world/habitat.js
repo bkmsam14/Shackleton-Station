@@ -6,6 +6,7 @@ import { MAT } from './materials.js';
 import { LAYOUT } from './layout.js';
 import { createSign } from './signs.js';
 import { planarUV } from './textures.js';
+import { rbox, addHabitatDetails } from './details.js';
 
 const H = LAYOUT.HABITAT;
 
@@ -80,7 +81,7 @@ export function createHabitatModel() {
   // ---------- airlock (sticks out on the +Z side) ----------
   const A = H.airlock;
   const alDepth = A.zEnd - 1.6;
-  const airlock = shadowed(new THREE.Mesh(new THREE.BoxGeometry(A.width, A.height, alDepth), MAT.hull()));
+  const airlock = shadowed(new THREE.Mesh(rbox(A.width, A.height, alDepth, 0.12), MAT.hull()));
   airlock.position.set(A.x, H.floorY - 0.15 + A.height / 2, 1.6 + alDepth / 2);
   group.add(airlock);
   const alRoofBand = new THREE.Mesh(new THREE.BoxGeometry(A.width + 0.04, 0.22, alDepth + 0.04), MAT.accent());
@@ -137,14 +138,14 @@ export function createHabitatModel() {
   group.add(strip);
 
   // bunk (−X end, −Z side)
-  const bunk = shadowed(new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.5, 0.95), MAT.interiorPanel()));
+  const bunk = shadowed(new THREE.Mesh(rbox(2.1, 0.5, 0.95, 0.06), MAT.interiorPanel()));
   bunk.position.set(-4.4, H.floorY + 0.25, -1.25);
   group.add(bunk);
-  const mattress = new THREE.Mesh(new THREE.BoxGeometry(2, 0.16, 0.85), MAT.fabric());
+  const mattress = new THREE.Mesh(rbox(2, 0.16, 0.85, 0.06), MAT.fabric());
   mattress.position.set(-4.4, H.floorY + 0.58, -1.25);
   group.add(mattress);
   // table + bench
-  const table = shadowed(new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 0.8), MAT.hullDark()));
+  const table = shadowed(new THREE.Mesh(rbox(1.4, 0.08, 0.8, 0.03), MAT.hullDark()));
   table.position.set(-0.8, H.floorY + 0.78, -1.3);
   group.add(table);
   const tableLeg = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.74, 0.1), MAT.metal()));
@@ -152,7 +153,7 @@ export function createHabitatModel() {
   group.add(tableLeg);
   // lockers on the +Z wall (left of airlock hatch)
   for (let i = 0; i < 3; i++) {
-    const locker = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.9, 0.45), MAT.interiorPanel()));
+    const locker = shadowed(new THREE.Mesh(rbox(0.75, 1.9, 0.45, 0.04), MAT.interiorPanel()));
     locker.position.set(-1.3 - i * 0.8, H.floorY + 0.95, 1.45);
     group.add(locker);
     const tag = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.02), MAT.accent());
@@ -174,7 +175,7 @@ export function createHabitatModel() {
   // electrolysis unit (−X end wall) — hook for the future lesson
   const elx = -5.15;
   const unit = new THREE.Group();
-  const cabinet = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, 1.6), MAT.interiorPanel()));
+  const cabinet = shadowed(new THREE.Mesh(rbox(0.8, 1.6, 1.6, 0.06), MAT.interiorPanel()));
   cabinet.position.set(0, 0.8, 0);
   unit.add(cabinet);
   const tankGeo = new THREE.CylinderGeometry(0.22, 0.22, 1.2, 10);
@@ -195,8 +196,9 @@ export function createHabitatModel() {
   unit.position.set(elx, H.floorY, 0);
   group.add(unit);
 
+  const detailObstacles = addHabitatDetails(group);
   group.position.set(H.x, 0, H.z);
-  return { group, doorLamp };
+  return { group, doorLamp, detailObstacles };
 }
 
 export function createHabitat() {
@@ -231,6 +233,7 @@ export function createHabitat() {
         { type: 'box', minX: -5.7, maxX: -4.7, minZ: -0.85, maxZ: 0.85 }, // electrolysis unit
         { type: 'box', minX: -3.8, maxX: -0.9, minZ: 1.2, maxZ: 1.85 }, // lockers
         { type: 'box', minX: -1.5, maxX: -0.1, minZ: -1.85, maxZ: -0.9 }, // table
+        ...model.detailObstacles, // storage crates
       ],
     },
     interactables: [

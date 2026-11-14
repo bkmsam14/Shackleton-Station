@@ -7,6 +7,7 @@ import { LAYOUT } from './layout.js';
 import { createSign } from './signs.js';
 import { mulberry32 } from './heightfield.js';
 import { planarUV } from './textures.js';
+import { rbox, addGreenhouseDetails } from './details.js';
 
 const G = LAYOUT.GREENHOUSE;
 const LED_PINK = 0xd36bff; // what red + blue LED light looks like mixed together
@@ -63,7 +64,7 @@ export function createGreenhouseModel() {
   // vestibule with the outer door (−X end)
   const V = G.vestibule;
   const vLen = V.xEnd - V.xStart;
-  const vest = shadowed(new THREE.Mesh(new THREE.BoxGeometry(vLen, V.height, V.width), MAT.hull()));
+  const vest = shadowed(new THREE.Mesh(rbox(vLen, V.height, V.width, 0.12), MAT.hull()));
   vest.position.set(V.xStart + vLen / 2, fy + V.height / 2, 0);
   group.add(vest);
   const vBand = new THREE.Mesh(new THREE.BoxGeometry(vLen + 0.04, 0.22, V.width + 0.04), MAT.accent());
@@ -187,6 +188,7 @@ export function createGreenhouseModel() {
   rackSign.rotation.y = -Math.PI / 2;
   group.add(rackSign);
 
+  addGreenhouseDetails(group);
   group.position.set(G.x - L / 2, 0, G.z);
   return { group, skylight };
 }

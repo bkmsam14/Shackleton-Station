@@ -10,6 +10,7 @@ import { createHabitat } from './habitat.js';
 import { createGreenhouse } from './greenhouse.js';
 import { mergeStatic } from './mergeStatic.js';
 import { createEnvironments, ENV_INTENSITY } from './environment.js';
+import { createOutdoorDetails } from './details.js';
 import { LAYOUT } from './layout.js';
 import { skyDirection } from '../systems/daycycle.js';
 
@@ -36,7 +37,18 @@ export function createWorld({ quality = 'high', renderer } = {}) {
   mergeStatic(greenhouse.object);
   // Things you can only see from outside (modules have no windows yet): hidden while
   // indoors so the GPU doesn't draw the whole Moon behind the walls.
-  const outdoorOnly = [terrain, horizon, rocks.mesh, sky.group, solarArray.object, createPathLights(), createPowerCable()];
+  const outdoorDetails = createOutdoorDetails();
+  mergeStatic(outdoorDetails.object);
+  const outdoorOnly = [
+    terrain,
+    horizon,
+    rocks.mesh,
+    sky.group,
+    solarArray.object,
+    createPathLights(),
+    createPowerCable(),
+    outdoorDetails.object,
+  ];
   scene.add(...outdoorOnly, habitat.object, greenhouse.object);
   let lastZone = null;
   const env = renderer ? createEnvironments(renderer) : null;
@@ -45,6 +57,7 @@ export function createWorld({ quality = 'high', renderer } = {}) {
   const outdoorColliders = [
     ...rocks.colliders,
     ...solarArray.colliders,
+    ...outdoorDetails.colliders,
     ...habitat.outdoorColliders,
     ...greenhouse.outdoorColliders,
   ];

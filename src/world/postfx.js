@@ -17,8 +17,8 @@ import { N8AOPostPass } from 'n8ao';
 // AO feel per zone (world units). Small radius indoors = contact shadows in corners.
 const AO = {
   outside: { aoRadius: 3.0, distanceFalloff: 1.0, intensity: 3.5 },
-  habitat: { aoRadius: 1.6, distanceFalloff: 1.0, intensity: 5 },
-  greenhouse: { aoRadius: 1.4, distanceFalloff: 1.0, intensity: 4.5 },
+  habitat: { aoRadius: 1.4, distanceFalloff: 1.0, intensity: 3.8 },
+  greenhouse: { aoRadius: 1.3, distanceFalloff: 1.0, intensity: 3.6 },
 };
 
 export function createPostFX(renderer, scene, camera) {
