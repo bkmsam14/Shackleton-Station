@@ -8,7 +8,7 @@ const SHADOW_DISTANCE = 260; // light sits this far toward the Sun
 const OUTDOOR_SKY = 0x8a93a3;
 const OUTDOOR_GROUND = 0x7a766e;
 const INDOOR_FILL = {
-  habitat: { sky: 0xdfe6ee, ground: 0x6f7986, intensity: 0.42 },
+  habitat: { sky: 0xdfe6ee, ground: 0x6f7986, intensity: 0.32 },
   greenhouse: { sky: 0xd9a6ff, ground: 0x6a4f7a, intensity: 0.45 }, // red + blue LED glow
 };
 

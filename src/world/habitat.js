@@ -202,7 +202,7 @@ export function createHabitat() {
   const model = createHabitatModel();
   const lights = [];
   for (const lx of [-3, 2.5]) {
-    const p = new THREE.PointLight(0xfff0d8, 9, 9, 2);
+    const p = new THREE.PointLight(0xfff0d8, 6, 9, 2);
     p.position.set(lx, H.axisY + 1.6, 0); // local to the habitat group
     lights.push(p);
     model.group.add(p);

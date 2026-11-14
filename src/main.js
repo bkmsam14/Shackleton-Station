@@ -20,6 +20,7 @@ import { findInteractable } from './player/interact.js';
 import { createFeedback, wait } from './ui/feedback.js';
 import { createMenus } from './ui/menus.js';
 import { createHud } from './ui/hud.js';
+import { createFpsMeter } from './ui/fpsMeter.js';
 
 // ---------------------------------------------------------------- setup
 let quality = loadSettings().quality === 'low' ? 'low' : 'high';
@@ -28,8 +29,10 @@ const app = document.getElementById('app');
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, QUALITY[quality].pixelRatioCap));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+// AgX keeps bright lights from clipping to flat white (the old interiors blew out).
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 app.appendChild(renderer.domElement);
@@ -302,6 +305,7 @@ function reactToGauges(report, sun) {
 // ---------------------------------------------------------------- loop
 const timer = new THREE.Timer();
 timer.connect(document);
+const fpsMeter = createFpsMeter(renderer);
 
 renderer.setAnimationLoop(() => {
   timer.update();
@@ -351,6 +355,7 @@ renderer.setAnimationLoop(() => {
   });
 
   renderer.render(world.scene, camera);
+  fpsMeter.tick();
 });
 
 window.addEventListener('resize', () => {
@@ -360,5 +365,38 @@ window.addEventListener('resize', () => {
 });
 
 if (import.meta.env.DEV) {
+  // Dev-only helpers for screenshots and render-cost benchmarks (work even when the
+  // tab is hidden and the animation loop is paused). Not included in production builds.
+  const gl = renderer.getContext();
+  const frameAt = (zone, x, z, yawDeg, pitch = 0, frames = 3) => {
+    player.placeAt(zone, x, z, yawDeg);
+    camera.rotation.x = pitch;
+    const sun = getSun(day);
+    for (let i = 0; i < frames; i++) {
+      world.update(0.016, camera, player.position, sun, 0, zone);
+      renderer.shadowMap.needsUpdate = true;
+      renderer.render(world.scene, camera);
+    }
+  };
+  window.__dev = {
+    shot(zone, x, z, yawDeg, pitch = 0) {
+      frameAt(zone, x, z, yawDeg, pitch, 4);
+      return zone;
+    },
+    bench(zone, x, z, yawDeg, pitch = 0, n = 60) {
+      frameAt(zone, x, z, yawDeg, pitch, 5);
+      gl.finish();
+      const t0 = performance.now();
+      for (let i = 0; i < n; i++) frameAt(zone, x, z, yawDeg, pitch, 1);
+      gl.finish();
+      const ms = (performance.now() - t0) / n;
+      return { zone, ms: +ms.toFixed(2), calls: renderer.info.render.calls };
+    },
+    views: {
+      habitat: ['habitat', 4.6, 0.3, 270, -0.05],
+      outside: ['outside', 6, 12, 215, 0.02],
+      greenhouse: ['greenhouse', 1.4, 30, 90, -0.08],
+    },
+  };
   window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor };
 }
