@@ -237,6 +237,10 @@ export function createZapperGame({ canvas, zaps, announce, onComplete }) {
   function step(dt) {
     s.t += dt;
     stepMolecules(dt);
+    for (const b of deco) {
+      b.y -= b.v * dt;
+      if (b.y < CELL.y0 + 14) b.y = CELL.y1 - 6;
+    }
     for (const f of s.flyers) f.t += dt;
     const landed = s.flyers.filter((f) => f.t >= f.dur);
     s.flyers = s.flyers.filter((f) => f.t < f.dur);
@@ -270,43 +274,71 @@ export function createZapperGame({ canvas, zaps, announce, onComplete }) {
   s.raf = requestAnimationFrame(frame);
 
   // ---------------------------------------------------------------- drawing
+  const INK = '#10182c';
+  const FONT = (w, px) => `${w} ${px}px Fredoka, Nunito, sans-serif`;
+  // decorative bubbles drifting up through the water (pure decoration, not gas output)
+  const deco = Array.from({ length: calm ? 0 : 14 }, () => ({
+    x: lerp(CELL.x0 + 30, CELL.x1 - 30, Math.random()),
+    y: lerp(CELL.y0, CELL.y1, Math.random()),
+    r: lerp(2, 5, Math.random()),
+    v: lerp(12, 30, Math.random()),
+  }));
+
   function roundRect(x, y, w, h, r) {
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, r);
   }
 
-  function atom(x, y, r, color, label) {
+  function atom(x, y, r, color, label, glow = false) {
+    if (glow) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(255, 230, 120, 0.95)';
+      ctx.shadowBlur = 18;
+    }
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    if (glow) ctx.restore();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = INK;
     ctx.stroke();
-    ctx.fillStyle = '#10182c';
-    ctx.font = `700 ${Math.round(r * 1.05)}px Fredoka, Nunito, sans-serif`;
+    // little shine so atoms look like shiny toy balls
+    ctx.beginPath();
+    ctx.arc(x - r * 0.35, y - r * 0.38, r * 0.22, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fill();
+    ctx.fillStyle = INK;
+    ctx.font = FONT(700, Math.round(r * 1.05));
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, x, y + 1);
+    ctx.fillText(label, x, y + 2);
   }
+
+  const inZone = (m) => m.x >= ZONE.x0 - 20 && m.x <= ZONE.x1 + 20;
 
   // H–O–H bond angle ≈ 104.5°, so each H sits 52.25° either side of "down".
   const HALF_ANGLE = (104.5 / 2) * (Math.PI / 180);
   function water(m) {
     const d = 30;
+    const glow = inZone(m);
     for (const side of [-1, 1]) {
       const a = m.rot + Math.PI / 2 + side * HALF_ANGLE;
       const hx = m.x + Math.cos(a) * d;
       const hy = m.y + Math.sin(a) * d;
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-      ctx.lineWidth = 5;
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 9;
+      ctx.lineCap = 'round';
       ctx.beginPath();
       ctx.moveTo(m.x, m.y);
       ctx.lineTo(hx, hy);
       ctx.stroke();
-      atom(hx, hy, 14, COLORS.h, 'H');
+      ctx.strokeStyle = '#e8eefb';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      atom(hx, hy, 14, COLORS.h, 'H', glow);
     }
-    atom(m.x, m.y, 22, COLORS.o, 'O');
+    atom(m.x, m.y, 22, COLORS.o, 'O', glow);
   }
 
   function pair(x, y, color, label, r) {
@@ -314,99 +346,284 @@ export function createZapperGame({ canvas, zaps, announce, onComplete }) {
     atom(x + r * 0.7, y, r, color, label);
   }
 
-  function tube(x, count, color, label, sign, gasName) {
-    // glass
-    roundRect(x, TUBE.y0, TUBE.w, TUBE.y1 - TUBE.y0, 18);
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  function badge(x, y, r, fill, text, textColor = INK) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
     ctx.fill();
     ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = INK;
     ctx.stroke();
-    // gas level
+    ctx.fillStyle = textColor;
+    ctx.font = FONT(700, Math.round(r * 1.25));
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, y + 1);
+  }
+
+  function tube(x, count, gas, label, gasName) {
+    const w = TUBE.w;
+    // glass body
+    roundRect(x, TUBE.y0, w, TUBE.y1 - TUBE.y0, 22);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fill();
+    // gas level (fills from the bottom)
     const top = tubeLevelY(count);
     if (count > 0) {
       ctx.save();
-      roundRect(x + 6, top, TUBE.w - 12, TUBE.y1 - 6 - top, 12);
-      ctx.fillStyle = color;
-      ctx.globalAlpha = 0.55;
-      ctx.fill();
+      roundRect(x + 7, top, w - 14, TUBE.y1 - 7 - top, 15);
+      ctx.clip();
+      const g = ctx.createLinearGradient(x, top, x + w, top);
+      g.addColorStop(0, gas[0]);
+      g.addColorStop(1, gas[1]);
+      ctx.fillStyle = g;
+      ctx.fillRect(x, top, w, TUBE.y1 - top);
+      // fizzing bubbles inside the gas
+      if (!calm) {
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        for (let i = 0; i < 6; i++) {
+          const by = TUBE.y1 - (((s.t * 40 + i * 53) % (TUBE.y1 - top)) || 0);
+          ctx.beginPath();
+          ctx.arc(x + 18 + ((i * 19) % (w - 36)), by, 3 + (i % 3), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
       ctx.restore();
     }
-    // labels
-    ctx.fillStyle = COLORS.text;
+    // measuring ticks
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 2;
+    for (let i = 1; i < 10; i++) {
+      const ty = TUBE.y1 - 8 - (i / 10) * (TUBE.y1 - TUBE.y0 - 16);
+      ctx.beginPath();
+      ctx.moveTo(x + w - 8, ty);
+      ctx.lineTo(x + w - (i % 5 === 0 ? 24 : 16), ty);
+      ctx.stroke();
+    }
+    // glass outline + highlight
+    roundRect(x, TUBE.y0, w, TUBE.y1 - TUBE.y0, 22);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    roundRect(x + 2, TUBE.y0 + 2, w - 4, TUBE.y1 - TUBE.y0 - 4, 20);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    roundRect(x + 10, TUBE.y0 + 14, 7, TUBE.y1 - TUBE.y0 - 40, 4);
+    ctx.fill();
+    // name tag on top
+    roundRect(x - 6, TUBE.y0 - 50, w + 12, 44, 14);
+    ctx.fillStyle = gas[1];
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    ctx.fillStyle = INK;
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
-    ctx.font = '700 26px Fredoka, Nunito, sans-serif';
-    ctx.fillText(label, x + TUBE.w / 2, TUBE.y0 - 26);
-    ctx.font = '600 18px Nunito, sans-serif';
-    ctx.fillStyle = COLORS.muted;
-    ctx.fillText(gasName, x + TUBE.w / 2, TUBE.y0 - 6);
-    ctx.font = '700 22px Fredoka, Nunito, sans-serif';
-    ctx.fillStyle = COLORS.text;
-    ctx.fillText(`${count}`, x + TUBE.w / 2, TUBE.y1 + 24);
-    // electrode sign
-    ctx.font = '700 30px Fredoka, Nunito, sans-serif';
-    ctx.fillStyle = sign === '+' ? '#ffb547' : '#9ad7ff';
-    ctx.fillText(sign, sign === '+' ? CELL.x1 + 14 : CELL.x0 - 14, CELL.y0 - 10);
+    ctx.textBaseline = 'middle';
+    ctx.font = FONT(700, 22);
+    ctx.fillText(label, x + w / 2, TUBE.y0 - 36);
+    ctx.font = FONT(600, 14);
+    ctx.fillText(gasName, x + w / 2, TUBE.y0 - 17);
+    // count bubble
+    badge(x + w / 2, TUBE.y1 + 2, 17, '#f6f8ff', `${count}`);
+  }
+
+  function battery(cx, cy) {
+    roundRect(cx - 62, cy - 18, 116, 36, 9);
+    ctx.fillStyle = '#7be0a0';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    roundRect(cx + 54, cy - 8, 8, 16, 3);
+    ctx.fillStyle = INK;
+    ctx.fill();
+    // bolt
+    ctx.beginPath();
+    ctx.moveTo(cx - 30, cy - 13);
+    ctx.lineTo(cx - 42, cy + 3);
+    ctx.lineTo(cx - 32, cy + 3);
+    ctx.lineTo(cx - 36, cy + 14);
+    ctx.lineTo(cx - 20, cy - 4);
+    ctx.lineTo(cx - 29, cy - 4);
+    ctx.closePath();
+    ctx.fillStyle = '#ffd43b';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = INK;
+    ctx.font = FONT(700, 13);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('POWER', cx - 4, cy + 1);
+  }
+
+  function burst(x, y, r, spikes, color) {
+    ctx.beginPath();
+    for (let i = 0; i < spikes * 2; i++) {
+      const a = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
+      const rr = i % 2 ? r * 0.62 : r;
+      ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+    }
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
   }
 
   function draw() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
 
-    // water cell
-    roundRect(CELL.x0, CELL.y0, CELL.x1 - CELL.x0, CELL.y1 - CELL.y0, 22);
-    ctx.fillStyle = COLORS.water;
-    ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = COLORS.waterEdge;
-    ctx.stroke();
+    // lab-screen backdrop: soft grid
+    ctx.strokeStyle = 'rgba(79, 209, 232, 0.07)';
+    ctx.lineWidth = 1;
+    for (let gx = 0; gx <= W; gx += 40) {
+      ctx.beginPath();
+      ctx.moveTo(gx, 0);
+      ctx.lineTo(gx, H);
+      ctx.stroke();
+    }
+    for (let gy = 0; gy <= H; gy += 40) {
+      ctx.beginPath();
+      ctx.moveTo(0, gy);
+      ctx.lineTo(W, gy);
+      ctx.stroke();
+    }
 
-    // electrodes (metal plates on each side)
-    ctx.fillStyle = '#9aa3b5';
-    roundRect(CELL.x0 + 6, CELL.y0 + 16, 10, CELL.y1 - CELL.y0 - 32, 4);
-    ctx.fill();
-    roundRect(CELL.x1 - 16, CELL.y0 + 16, 10, CELL.y1 - CELL.y0 - 32, 4);
-    ctx.fill();
-
-    // battery + wires (top centre)
+    // wires from the battery to the two electrodes
     const bx = W / 2;
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(bx - 40, 40);
-    ctx.lineTo(CELL.x0 + 11, 40);
-    ctx.lineTo(CELL.x0 + 11, CELL.y0 + 16);
-    ctx.moveTo(bx + 40, 40);
-    ctx.lineTo(CELL.x1 - 11, 40);
-    ctx.lineTo(CELL.x1 - 11, CELL.y0 + 16);
-    ctx.stroke();
-    roundRect(bx - 40, 24, 80, 32, 8);
-    ctx.fillStyle = '#7be0a0';
+    const by = 36;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const [x, color] of [
+      [CELL.x0 + 12, '#4fa8ff'],
+      [CELL.x1 - 12, '#ff7a59'],
+    ]) {
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(x, by);
+      ctx.lineTo(x, CELL.y0 + 18);
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 8;
+      ctx.stroke();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      ctx.stroke();
+    }
+    battery(bx, by);
+
+    // water beaker
+    roundRect(CELL.x0, CELL.y0, CELL.x1 - CELL.x0, CELL.y1 - CELL.y0, 26);
+    const wg = ctx.createLinearGradient(0, CELL.y0, 0, CELL.y1);
+    wg.addColorStop(0, 'rgba(79, 168, 255, 0.30)');
+    wg.addColorStop(1, 'rgba(30, 80, 160, 0.45)');
+    ctx.fillStyle = wg;
     ctx.fill();
-    ctx.fillStyle = '#04202a';
-    ctx.font = '700 16px Fredoka, Nunito, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('POWER', bx, 41);
+    // water surface wave
+    ctx.save();
+    roundRect(CELL.x0, CELL.y0, CELL.x1 - CELL.x0, CELL.y1 - CELL.y0, 26);
+    ctx.clip();
+    ctx.beginPath();
+    for (let x = CELL.x0; x <= CELL.x1; x += 10) {
+      const y = CELL.y0 + 10 + Math.sin(x / 34 + (calm ? 0 : s.t * 2)) * 3;
+      if (x === CELL.x0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = 'rgba(200, 235, 255, 0.5)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    // decorative bubbles
+    ctx.fillStyle = 'rgba(220, 240, 255, 0.35)';
+    for (const b of deco) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
 
     // zap zone (Space bar)
-    const glow = calm ? 0.5 : 0.5 + 0.5 * Math.sin(s.t * 4);
-    ctx.fillStyle = COLORS.zone;
+    const glow = calm ? 0.6 : 0.5 + 0.5 * Math.sin(s.t * 4);
+    const zg = ctx.createLinearGradient(ZONE.x0, 0, ZONE.x1, 0);
+    zg.addColorStop(0, 'rgba(255, 212, 59, 0)');
+    zg.addColorStop(0.5, `rgba(255, 212, 59, ${0.12 + 0.12 * glow})`);
+    zg.addColorStop(1, 'rgba(255, 212, 59, 0)');
+    ctx.fillStyle = zg;
     ctx.fillRect(ZONE.x0, CELL.y0 + 4, ZONE.x1 - ZONE.x0, CELL.y1 - CELL.y0 - 8);
-    ctx.strokeStyle = COLORS.zoneEdge;
-    ctx.globalAlpha = 0.4 + 0.6 * glow;
-    ctx.setLineDash([8, 8]);
-    ctx.strokeRect(ZONE.x0, CELL.y0 + 4, ZONE.x1 - ZONE.x0, CELL.y1 - CELL.y0 - 8);
+    ctx.strokeStyle = `rgba(255, 212, 59, ${0.45 + 0.5 * glow})`;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([10, 10]);
+    ctx.lineDashOffset = calm ? 0 : -s.t * 30;
+    ctx.beginPath();
+    ctx.moveTo(ZONE.x0, CELL.y0 + 6);
+    ctx.lineTo(ZONE.x0, CELL.y1 - 6);
+    ctx.moveTo(ZONE.x1, CELL.y0 + 6);
+    ctx.lineTo(ZONE.x1, CELL.y1 - 6);
+    ctx.stroke();
     ctx.setLineDash([]);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = COLORS.muted;
-    ctx.font = '600 16px Nunito, sans-serif';
-    ctx.fillText('Space zone', (ZONE.x0 + ZONE.x1) / 2, CELL.y1 - 18);
+    roundRect((ZONE.x0 + ZONE.x1) / 2 - 58, CELL.y1 - 36, 116, 28, 14);
+    ctx.fillStyle = '#ffd43b';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    ctx.fillStyle = INK;
+    ctx.font = FONT(700, 15);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SPACE ZONE', (ZONE.x0 + ZONE.x1) / 2, CELL.y1 - 21);
+
+    // beaker outline + glass highlight
+    roundRect(CELL.x0, CELL.y0, CELL.x1 - CELL.x0, CELL.y1 - CELL.y0, 26);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = INK;
+    ctx.stroke();
+    roundRect(CELL.x0 + 3, CELL.y0 + 3, CELL.x1 - CELL.x0 - 6, CELL.y1 - CELL.y0 - 6, 23);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(200, 235, 255, 0.45)';
+    ctx.stroke();
+
+    // electrodes: metal plates with − and + badges
+    for (const [x, sign, fill] of [
+      [CELL.x0 + 6, '−', '#4fa8ff'],
+      [CELL.x1 - 18, '+', '#ff7a59'],
+    ]) {
+      const mg = ctx.createLinearGradient(x, 0, x + 12, 0);
+      mg.addColorStop(0, '#c9d4e8');
+      mg.addColorStop(1, '#7b86a3');
+      roundRect(x, CELL.y0 + 18, 12, CELL.y1 - CELL.y0 - 36, 5);
+      ctx.fillStyle = mg;
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = INK;
+      ctx.stroke();
+      badge(x + 6, CELL.y0 + 18, 15, fill, sign);
+    }
 
     // tubes
-    tube(TUBE_H.x, s.hInTube, COLORS.hGas, 'H₂', '−', 'hydrogen');
-    tube(TUBE_O.x, s.oInTube, COLORS.oGas, 'O₂', '+', 'oxygen');
+    tube(TUBE_H.x, s.hInTube, ['#ffffff', '#dfe6f2'], 'H₂', 'hydrogen');
+    tube(TUBE_O.x, s.oInTube, ['#8fe6f5', '#4fd1e8'], 'O₂', 'oxygen');
+
+    // progress pips: one per molecule to split
+    const pipW = Math.min(22, (CELL.x1 - CELL.x0 - 200) / zaps);
+    const pipsX = CELL.x0 + 32;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = FONT(700, 18);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${s.hits}/${zaps}`, pipsX, CELL.y0 + 32);
+    for (let i = 0; i < zaps; i++) {
+      roundRect(pipsX + 52 + i * pipW, CELL.y0 + 24, pipW - 4, 16, 6);
+      ctx.fillStyle = i < s.hits ? '#ffd43b' : 'rgba(255,255,255,0.18)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = INK;
+      ctx.stroke();
+    }
 
     // molecules
     for (const m of s.molecules) water(m);
@@ -414,10 +631,17 @@ export function createZapperGame({ canvas, zaps, announce, onComplete }) {
     // waiting O atom
     if (s.waitingO) {
       atom(WAIT_O.x, WAIT_O.y, 18, COLORS.o, 'O');
-      ctx.fillStyle = COLORS.muted;
-      ctx.font = '600 15px Nunito, sans-serif';
+      roundRect(WAIT_O.x - 120, WAIT_O.y + 26, 132, 26, 13);
+      ctx.fillStyle = '#f6f8ff';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = INK;
+      ctx.stroke();
+      ctx.fillStyle = INK;
+      ctx.font = FONT(600, 14);
       ctx.textAlign = 'center';
-      ctx.fillText('needs a partner', WAIT_O.x - 30, WAIT_O.y + 34);
+      ctx.textBaseline = 'middle';
+      ctx.fillText('needs a partner!', WAIT_O.x - 54, WAIT_O.y + 40);
     }
 
     // flying atoms / gas molecules
@@ -432,61 +656,80 @@ export function createZapperGame({ canvas, zaps, announce, onComplete }) {
 
     // zap bolts from both electrodes to the molecule
     for (const b of s.bolts) {
-      ctx.globalAlpha = 1 - b.t / 0.22;
-      ctx.strokeStyle = COLORS.bolt;
-      ctx.lineWidth = 4;
-      for (const ex of [CELL.x0 + 16, CELL.x1 - 16]) {
+      const a = 1 - b.t / 0.22;
+      ctx.globalAlpha = a;
+      for (const ex of [CELL.x0 + 18, CELL.x1 - 18]) {
         ctx.beginPath();
         ctx.moveTo(ex, b.y);
-        const steps = 5;
+        const steps = 6;
         for (let i = 1; i <= steps; i++) {
           const x = lerp(ex, b.x, i / steps);
-          const jitter = i === steps || calm ? 0 : (Math.random() - 0.5) * 24;
+          const jitter = i === steps || calm ? 0 : (Math.random() - 0.5) * 26;
           ctx.lineTo(x, b.y + jitter);
         }
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 8;
+        ctx.stroke();
+        ctx.strokeStyle = COLORS.bolt;
+        ctx.lineWidth = 4;
         ctx.stroke();
       }
+      if (!calm) burst(b.x, b.y, 30 + b.t * 80, 8, 'rgba(255, 245, 157, 0.85)');
       ctx.globalAlpha = 1;
     }
 
-    // miss sparks (heat)
+    // miss puffs (electricity → heat)
     for (const sp of s.sparks) {
       ctx.globalAlpha = 1 - sp.t / 0.5;
+      const y = sp.y - sp.t * 40;
+      roundRect(sp.x - 38, y - 16, 76, 32, 16);
       ctx.fillStyle = '#ff7a59';
-      ctx.font = '700 28px Fredoka, Nunito, sans-serif';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = INK;
+      ctx.stroke();
+      ctx.fillStyle = INK;
+      ctx.font = FONT(700, 17);
       ctx.textAlign = 'center';
-      ctx.fillText('~heat~', sp.x, sp.y - sp.t * 40);
+      ctx.textBaseline = 'middle';
+      ctx.fillText('heat!', sp.x, y + 1);
       ctx.globalAlpha = 1;
     }
 
-    // HUD: progress + combo
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = COLORS.text;
-    ctx.font = '700 22px Fredoka, Nunito, sans-serif';
-    ctx.fillText(`Split: ${s.hits} / ${zaps}`, CELL.x0 + 24, CELL.y0 + 36);
+    // combo burst
     if (s.combo >= 2 && s.t - s.lastHitAt < ELECTROLYSIS.COMBO_WINDOW_SECONDS) {
-      ctx.fillStyle = '#ffb547';
-      ctx.textAlign = 'right';
-      ctx.fillText(`Combo x${s.combo}!`, CELL.x1 - 24, CELL.y0 + 36);
+      const k = Math.min(1, (s.t - s.lastHitAt) * 6);
+      const r = 46 * (calm ? 1 : 0.7 + 0.3 * k);
+      const cx = CELL.x1 - 70;
+      const cy = CELL.y0 + 70;
+      burst(cx, cy, r, 10, '#ffb547');
+      ctx.fillStyle = INK;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = FONT(700, 14);
+      ctx.fillText('COMBO', cx, cy - 9);
+      ctx.font = FONT(700, 24);
+      ctx.fillText(`x${s.combo}`, cx, cy + 11);
     }
 
-    // pop message
+    // pop message (comic bubble, bottom of the beaker so it never covers the tubes)
     if (s.pop) {
       const a = Math.min(1, s.pop.t * 4, (POP_SECONDS - s.pop.t) * 2);
       ctx.globalAlpha = Math.max(0, a);
-      ctx.font = '700 22px Fredoka, Nunito, sans-serif';
-      const w = Math.min(CELL.x1 - CELL.x0 - 20, ctx.measureText(s.pop.text).width + 40);
-      roundRect(W / 2 - w / 2, CELL.y0 + 54, w, 44, 14);
-      ctx.fillStyle = 'rgba(10,16,32,0.92)';
+      ctx.font = FONT(700, 20);
+      const maxW = CELL.x1 - CELL.x0 - 30;
+      const w = Math.min(maxW, ctx.measureText(s.pop.text).width + 44);
+      const py = CELL.y1 - 92;
+      roundRect(W / 2 - w / 2, py, w, 44, 18);
+      ctx.fillStyle = '#f6f8ff';
       ctx.fill();
-      ctx.strokeStyle = '#4fd1e8';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = INK;
       ctx.stroke();
-      ctx.fillStyle = COLORS.text;
+      ctx.fillStyle = INK;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(s.pop.text, W / 2, CELL.y0 + 77, w - 20);
+      ctx.fillText(s.pop.text, W / 2, py + 23, w - 24);
       ctx.globalAlpha = 1;
     }
   }
