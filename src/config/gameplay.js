@@ -53,7 +53,8 @@ export const OXYGEN = {
   // Size of the full supply. Inside it lasts 3 / 0.0373 kg/h ≈ 80 game h ≈ 13 real min;
   // working outside it lasts 3 / 0.086 kg/h ≈ 35 game h ≈ 6 real min.
   CAPACITY_KG: 3, // GAME BALANCE (not real data)
-  START_PERCENT: 100, // GAME BALANCE (not real data)
+  // 60 % so the first-day tour can make oxygen at the Electrolysis unit right away.
+  START_PERCENT: 60, // GAME BALANCE (not real data)
 };
 
 export const FOOD = {
@@ -184,6 +185,54 @@ export const ELECTROLYSIS = {
 };
 ELECTROLYSIS.KWH_PER_KG_O2_MIN =
   (ELECTROLYSIS.KJ_PER_MOL_WATER * ELECTROLYSIS.MOL_WATER_PER_KG_O2) / 3600; // kJ → kWh (≈ 4.96)
+
+// ---------------------------------------------------------------------------
+// VOLT — the helper robot (behaviour and pacing only; all GAME BALANCE)
+// ---------------------------------------------------------------------------
+export const ASSISTANT = {
+  FOLLOW_BEHIND_M: 1.6, // GAME BALANCE (not real data) — how far behind the player
+  FOLLOW_SIDE_M: 0.8, // GAME BALANCE (not real data) — and to the right
+  TALK_AHEAD_M: 2.8, // GAME BALANCE (not real data) — while talking: this far in front…
+  TALK_SIDE_M: 1.4, // GAME BALANCE (not real data) — …and to the right, so you can see Volt
+  TALK_REACH_M: 3.5, // GAME BALANCE (not real data) — "E to talk" works this close…
+  TALK_AIM_DEG: 22, // GAME BALANCE (not real data) — …when Volt is this near the crosshair
+  SPEED_M_S: 3.4, // GAME BALANCE (not real data) — top rolling speed
+  RADIUS_M: 0.32, // GAME BALANCE (not real data) — collision circle
+  CATCH_UP_M: 8, // GAME BALANCE (not real data) — farther than this → Volt hops to you
+  COOLDOWN_S: 20, // GAME BALANCE (not real data) — quiet time between non-urgent lines
+  TOUR_GAP_S: 2.5, // GAME BALANCE (not real data) — pause before the next tour step
+  TOUR_REMIND_S: 30, // GAME BALANCE (not real data) — repeat a tour step if nothing happens
+  FACT_EVERY_S: 180, // GAME BALANCE (not real data) — an idle science fact this often
+  BUBBLE_BASE_S: 3.5, // GAME BALANCE (not real data) — bubble time = base + per word
+  BUBBLE_PER_WORD_S: 0.3, // GAME BALANCE (not real data)
+  STALE_S: 25, // GAME BALANCE (not real data) — drop queued news older than this
+  TOUR_WALK_M: 3, // GAME BALANCE (not real data) — tour step 1: walk this far
+  NEAR_ARRAY_M: 9, // GAME BALANCE (not real data) — tour step 6: this close to the array
+  TANK_LOW_KG: 2.5, // GAME BALANCE (not real data) — Volt warns when the water tank is this low
+  // Volt's voice — speech engine (eSpeak via meSpeak) + soft Web Audio "friendly robot" effects.
+  // Goal: warm, cute, a little feminine, never scary (no harsh metallic buzz).
+  VOICE_VARIANT: 'f3', // GAME BALANCE (not real data) — eSpeak female 3: the most melodic, friendly
+  VOICE_ENGINE_PITCH: 55, // GAME BALANCE (not real data) — 0–99; measured ≈ 210 Hz before the lift
+  // Heard speed = ENGINE_SPEED × PLAYBACK_RATE ≈ 150 words/min (calm for young listeners).
+  VOICE_ENGINE_SPEED: 137, // GAME BALANCE (not real data) — words per minute before the lift
+  VOICE_PLAYBACK_RATE: 1.1, // GAME BALANCE (not real data) — gentle lift: ≈ 230 Hz, childlike
+  VOICE_VOLUME: 0.9, // GAME BALANCE (not real data)
+  ROBOT_CHORUS_MS: 12, // GAME BALANCE (not real data) — soft "digital" shimmer (a chorus)…
+  ROBOT_CHORUS_DEPTH_MS: 2.5, // GAME BALANCE (not real data)
+  ROBOT_CHORUS_HZ: 0.9, // GAME BALANCE (not real data) — …that slowly sways
+  ROBOT_CHORUS_MIX: 0.35, // GAME BALANCE (not real data) — 0 = clean voice
+  ROBOT_COMB_MS: 3, // GAME BALANCE (not real data) — a faint robot tint, not a tin can
+  ROBOT_COMB_FEEDBACK: 0.2, // GAME BALANCE (not real data)
+  ROBOT_COMB_MIX: 0.12, // GAME BALANCE (not real data)
+  ROBOT_HIGHPASS_HZ: 120, // GAME BALANCE (not real data) — trims rumble only
+  ROBOT_WARMTH_DB: 2, // GAME BALANCE (not real data) — a little warmth around 350 Hz
+  ROBOT_LOWPASS_HZ: 6500, // GAME BALANCE (not real data) — rounds off harsh highs
+  ROBOT_CHIRP: true, // GAME BALANCE (not real data) — soft "bip-bip" before Volt talks
+  ROBOT_CHIRP_GAIN: 0.07, // GAME BALANCE (not real data) — quiet, so it never startles
+  // Fallback only (browser voice, if the robot engine cannot load). Pitch 0–2, rate 0.1–10.
+  VOICE_PITCH: 1.6, // GAME BALANCE (not real data)
+  VOICE_RATE: 0.95, // GAME BALANCE (not real data)
+};
 
 // Feature flags (later demos).
 export const FEATURES = {

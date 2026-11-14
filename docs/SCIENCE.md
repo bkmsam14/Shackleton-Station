@@ -86,6 +86,12 @@ How the game uses them (ratios stay real, amounts are scaled):
 - The Sun looks about 0.53° wide from the Moon. *Source: NASA Sun Fact Sheet — https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html*
 - Earth's axis is tilted 23.44° and it turns once a day. *Source: NASA Earth Fact Sheet*
 
+### Robots and moving on the Moon (used by Volt, the helper robot)
+- **Volt is fictional** (a made-up helper), inspired by real robot helpers. The game says so in the Databank.
+- **Astrobee:** NASA's free-flying robots inside the ISS move with electric fans (impellers) and only work inside the station. *Source: NTRS 20190002711 — https://ntrs.nasa.gov/citations/20190002711*
+- **Fans need air:** a fan or propeller pushes against air; the Moon has almost no air (surface pressure ~3 × 10⁻¹⁵ bar, NASA Moon Fact Sheet), so Volt rolls on wheels everywhere, like real Moon rovers. *Source (rover wheels): NASA Glenn TM on the Apollo Lunar Roving Vehicle wire-mesh wheels — https://ntrs.nasa.gov/citations/20100000019*
+- **Gravity is the same inside the base** (about 1/6 g): it comes from the Moon's mass; walls and air don't change it. *Source: NASA Moon Fact Sheet*
+
 ### Communication
 - A signal takes about **1.3 seconds** to travel one way between the Moon and Earth.
 - Between Mars and Earth it takes from about 3 to about 22 minutes one way, depending on the planets' positions.

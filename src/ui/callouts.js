@@ -10,6 +10,7 @@ export function createCallouts(root) {
   const text = el.querySelector('.callout-text');
   const queue = [];
   let busy = false;
+  let idleListener = null;
 
   const seen = () => loadSettings().seenCallouts ?? {};
   function markSeen(id) {
@@ -17,9 +18,15 @@ export function createCallouts(root) {
   }
 
   function showNext() {
-    if (busy || !queue.length) return;
-    const { id, target, label, side } = queue.shift();
-    if (seen()[id] || !target || target.offsetParent === null) return showNext();
+    if (busy) return;
+    if (!queue.length) {
+      const fn = idleListener;
+      idleListener = null;
+      fn?.();
+      return;
+    }
+    const { id, target, label, side, force } = queue.shift();
+    if ((!force && seen()[id]) || !target || target.offsetParent === null) return showNext();
     busy = true;
     markSeen(id);
     const r = target.getBoundingClientRect();
@@ -47,10 +54,15 @@ export function createCallouts(root) {
 
   return {
     /** Queue a callout; shown once ever (per browser). side: 'above' | 'right' | 'below' */
-    add(id, target, label, side = 'right') {
-      if (seen()[id]) return;
-      queue.push({ id, target, label, side });
+    add(id, target, label, side = 'right', { force = false } = {}) {
+      if (!force && seen()[id]) return;
+      queue.push({ id, target, label, side, force });
       showNext();
+    },
+    /** Call fn once, when every queued callout has been shown (used by Volt's tour). */
+    whenIdle(fn) {
+      idleListener = fn;
+      if (!busy && !queue.length) showNext();
     },
   };
 }

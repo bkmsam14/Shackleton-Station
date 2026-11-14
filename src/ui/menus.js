@@ -8,7 +8,7 @@ const CONTROLS = `
     <div><span class="keycap">Mouse</span> Look around</div>
     <div><span class="keycap">Space</span> Jump (Moon gravity!)</div>
     <div><span class="keycap">Shift</span> Hop faster</div>
-    <div><span class="keycap">E</span> Use / open doors</div>
+    <div><span class="keycap">E</span> Use / open doors / talk to Volt</div>
     <div><span class="keycap">Tab</span> PDA: stats + science</div>
     <div><span class="keycap">Esc</span> Pause</div>
   </div>`;
@@ -44,7 +44,26 @@ function qualityToggle(id) {
     </div></div>`;
 }
 
-export function createMenus(root, { onStart, onResume, onQuality, getQuality }) {
+function voltRow() {
+  return `<div class="menu-row"><span class="label">Volt talks</span>
+    <div class="seg" role="group" aria-label="How often Volt talks">
+      <button type="button" data-volt="chatty">Chatty</button>
+      <button type="button" data-volt="helpful">Helpful</button>
+      <button type="button" data-volt="quiet">Quiet</button>
+    </div>
+    <button type="button" class="link-btn" data-action="tour"></button></div>`;
+}
+
+/** Volt's voice on/off (browser text-to-speech). Hidden if the browser can't speak. */
+function voiceRow() {
+  return `<div class="menu-row"><span class="label">Volt’s voice</span>
+    <div class="seg" role="group" aria-label="Volt speaks out loud">
+      <button type="button" data-voice="on">On</button>
+      <button type="button" data-voice="off">Off</button>
+    </div></div>`;
+}
+
+export function createMenus(root, { onStart, onResume, onQuality, getQuality, volt = null }) {
   const start = document.createElement('div');
   start.className = 'menu';
   start.innerHTML = `
@@ -70,6 +89,8 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality }) 
       <button type="button" class="btn btn-big" data-action="resume">▶ Resume</button>
       <div class="menu-hint" data-hint></div>
       ${qualityToggle('pause')}
+      ${volt ? voltRow() : ''}
+      ${volt?.voiceSupported ? voiceRow() : ''}
       ${CONTROLS}
       ${TIME_NOTE}
       ${CREDITS}
@@ -88,6 +109,34 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality }) 
     }),
   );
   syncQuality();
+  // Volt settings (pause menu): chattiness + replay/skip the first-day tour
+  function syncVolt() {
+    if (!volt) return;
+    const level = volt.getChattiness();
+    pause.querySelectorAll('[data-volt]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.volt === level)));
+    pause.querySelector('[data-action="tour"]').textContent = volt.tourActive() ? 'Skip Volt’s tour' : 'Replay Volt’s tour';
+    const voiceOn = volt.getVoice?.() ? 'on' : 'off';
+    pause.querySelectorAll('[data-voice]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.voice === voiceOn)));
+  }
+  if (volt) {
+    pause.querySelectorAll('[data-volt]').forEach((b) =>
+      b.addEventListener('click', () => {
+        volt.setChattiness(b.dataset.volt);
+        syncVolt();
+      }),
+    );
+    pause.querySelectorAll('[data-voice]').forEach((b) =>
+      b.addEventListener('click', () => {
+        volt.setVoice(b.dataset.voice === 'on');
+        syncVolt();
+      }),
+    );
+    pause.querySelector('[data-action="tour"]').addEventListener('click', () => {
+      if (volt.tourActive()) volt.skipTour();
+      else volt.replayTour();
+      syncVolt();
+    });
+  }
   start.querySelector('[data-action="start"]').addEventListener('click', onStart);
   pause.querySelector('[data-action="resume"]').addEventListener('click', onResume);
 
@@ -97,7 +146,10 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality }) 
     },
     showPause(v) {
       pause.hidden = !v;
-      if (v) pause.querySelector('[data-hint]').textContent = '';
+      if (v) {
+        pause.querySelector('[data-hint]').textContent = '';
+        syncVolt();
+      }
     },
     hint(text) {
       root.querySelectorAll('[data-hint]').forEach((h) => (h.textContent = text));

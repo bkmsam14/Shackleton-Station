@@ -43,6 +43,8 @@ const WATER_SVG = `
  */
 export function createElectrolysisInstance({ root, ctx, done }) {
   const { gauges, station, mastery } = ctx;
+  // Volt speaks his bubble lines out loud (browser voice; silent if off or unsupported)
+  const speak = (text) => ctx.voice?.speak(text);
   const visit = mastery.get('electrolysis');
   const quiz = QUIZ[visit.runs % QUIZ.length];
 
@@ -116,6 +118,7 @@ export function createElectrolysisInstance({ root, ctx, done }) {
 
   // ---------------------------------------------------------------- screens
   function showIntro() {
+    speak(`${TEXT.introTitle}! ${TEXT.intro[0]} ${TEXT.intro[1]}`);
     setScreen('intro');
     body.innerHTML = `
       ${say('wow', `<h3 class="ez-h3">${TEXT.introTitle}</h3><p>${TEXT.intro[0]}</p>`)}
@@ -163,6 +166,7 @@ export function createElectrolysisInstance({ root, ctx, done }) {
     }).join('');
     const mood = allFull || tankEmpty ? 'think' : 'happy';
     const line = allFull ? TEXT.allFull : tankEmpty ? TEXT.tankEmpty : TEXT.chooseSub;
+    speak(`${TEXT.chooseTitle} ${line}`);
     body.innerHTML = `
       ${say(mood, `<h3 class="ez-h3">${TEXT.chooseTitle}</h3><p>${line}</p>`)}
       <div class="ez-meters">
@@ -231,6 +235,7 @@ export function createElectrolysisInstance({ root, ctx, done }) {
 
   function showQuiz() {
     setScreen('quiz');
+    speak(`Quick question! ${quiz.q}`);
     round.quizTries = 0;
     const order = shuffledOptions(quiz); // display position → original option index
     const letters = ['A', 'B', 'C', 'D'];
@@ -273,6 +278,7 @@ export function createElectrolysisInstance({ root, ctx, done }) {
         ex.innerHTML = say('happy', `<p><b class="ez-try">Not quite — try again!</b> ${quiz.hint}</p>`, 'ez-say-small');
         left[0].focus();
         announce(`Not quite. Hint: ${quiz.hint}`);
+        speak(`Not quite. Try again! ${quiz.hint}`);
         return;
       }
       // only the right answer is left: show it
@@ -310,6 +316,7 @@ export function createElectrolysisInstance({ root, ctx, done }) {
     });
     ex.querySelector('[data-next]').focus();
     announce(`${head} ${quiz.explain}`);
+    speak(`${head.replace("+1", "plus one")} ${quiz.explain}`);
   }
 
   function showResult() {
@@ -320,6 +327,7 @@ export function createElectrolysisInstance({ root, ctx, done }) {
     setMedal(m.level);
     const p = round.paid;
     const cheer = ['', 'Oxygen made — nice work!', 'Great zapping!', 'Perfect run — superstar!'][stars];
+    speak(`${cheer} You split water into oxygen to breathe. You got ${stars} ${stars === 1 ? 'star' : 'stars'}!`);
     const heat = p.heatKwh > 0 ? ` <small>(${p.heatKwh.toFixed(2)} lost as heat)</small>` : '';
     body.innerHTML = `
       ${say('cheer', `<h3 class="ez-h3">${cheer}</h3><p>You split water into oxygen to breathe.</p>`)}
@@ -367,6 +375,7 @@ export function createElectrolysisInstance({ root, ctx, done }) {
   return {
     onKey,
     destroy() {
+      ctx.voice?.stop();
       game?.destroy();
       game = null;
     },

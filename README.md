@@ -30,6 +30,7 @@ To publish: *Actions → Deploy to GitHub Pages → Run workflow* (and set
 | E | Use / open doors / start a station mini-game |
 | Click or Space | Zap water molecules in the Electrolysis mini-game (Esc leaves it) |
 | Tab | PDA: detailed stats, Databank (science + NASA sources), log |
+| E (looking at Volt) | Ask Volt for a tip |
 | Esc | Pause (credits + time notes, Low/High graphics) |
 
 ## Performance check
@@ -54,6 +55,11 @@ calls. Measurements and the cost of each effect are in `docs/PERFORMANCE.md`.
   base power (physics minimum 4.96 kWh per kg O₂, NIST), and the base clock moves on by the real
   ISS production time.
 - The grow racks still show a "Coming soon" lesson toast.
+- **Volt, the helper robot (v0.4.0):** a small wheeled robot follows you, runs a 7-step
+  learn-by-doing first-day tour, warns when a gauge gets low (and says how to fix it), and shares
+  sourced science facts now and then. Look at Volt and press E for a tip. Volt speaks out loud
+  in a cute robot voice (eSpeak engine + robot effects; GPL-3.0, see public/CREDITS.md). Pause menu: how often
+  Volt talks (Chatty / Helpful / Quiet), his voice On / Off, and Replay / Skip the tour.
 
 ## Where things live
 
