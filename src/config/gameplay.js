@@ -64,7 +64,7 @@ export const WARNING_THRESHOLD_PERCENT = 25; // GAME BALANCE (not real data)
 // BASE POWER (whole base, not the astronaut). Units: kW and kWh in GAME time.
 // ---------------------------------------------------------------------------
 export const POWER = {
-  BATTERY_CAPACITY_KWH: 120, // GAME BALANCE (not real data)
+  BATTERY_CAPACITY_KWH: 80, // GAME BALANCE (not real data) — a dark period can nearly empty it
   START_PERCENT: 70, // GAME BALANCE (not real data)
   // Loads (always on unless the battery is empty).
   HABITAT_LOAD_KW: 3, // GAME BALANCE (not real data)

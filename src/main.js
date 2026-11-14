@@ -11,13 +11,15 @@ import * as THREE from 'three';
 import { UI } from './config/gameplay.js';
 import { createWorld, QUALITY } from './world/World.js';
 import { LAYOUT } from './world/layout.js';
-import { createDayCycle, stepDayCycle, getSun } from './systems/daycycle.js';
+import { createDayCycle, stepDayCycle, getSun, getClock } from './systems/daycycle.js';
+import { createGauges, stepGauges } from './systems/gauges.js';
 import { loadSettings, saveSettings } from './systems/save.js';
 import { createInput } from './player/input.js';
 import { createPlayerController } from './player/controller.js';
 import { findInteractable } from './player/interact.js';
 import { createFeedback, wait } from './ui/feedback.js';
 import { createMenus } from './ui/menus.js';
+import { createHud } from './ui/hud.js';
 
 // ---------------------------------------------------------------- setup
 let quality = loadSettings().quality === 'low' ? 'low' : 'high';
@@ -41,7 +43,10 @@ const day = createDayCycle();
 const uiRoot = document.createElement('div');
 uiRoot.className = 'ui-root';
 document.body.appendChild(uiRoot);
+const hud = createHud(uiRoot);
+hud.setVisible(false);
 const feedback = createFeedback(uiRoot);
+const gauges = createGauges();
 
 // ---------------------------------------------------------------- game state
 // 'start' → 'playing' ⇄ 'paused';  'busy' while a door/wake-up fade runs.
@@ -92,6 +97,7 @@ function startDragMode() {
   }
 }
 function enterPlay() {
+  hud.setVisible(true);
   menus.showStart(false);
   menus.showPause(false);
   feedback.setCrosshairVisible(true);
@@ -191,6 +197,61 @@ function handleInteraction() {
   }
 }
 
+// ---------------------------------------------------------------- gauge reactions
+let wasPowered = true;
+let sunWasUp = true;
+function reactToGauges(report, sun) {
+  const c = report.crossedLow;
+  if (c.oxygen) {
+    feedback.toast(
+      player.zoneId === 'outside'
+        ? '<strong>Oxygen low!</strong> Head back inside the habitat or greenhouse to refill.'
+        : '<strong>Oxygen low!</strong> The air system needs base power to refill your tank.',
+      { kind: 'warn', icon: '⚠️', key: 'o2low', seconds: 6 },
+    );
+  }
+  if (c.food) {
+    feedback.toast('<strong>Food is low!</strong> In a later update you will grow and cook your own food.', {
+      kind: 'warn',
+      icon: '⚠️',
+      key: 'foodlow',
+      seconds: 6,
+    });
+  }
+  if (c.power) {
+    feedback.toast('<strong>Base power is low!</strong> The battery needs sunlight on the solar array.', {
+      kind: 'warn',
+      icon: '🔋',
+      key: 'powerlow',
+      seconds: 6,
+    });
+  }
+  if (wasPowered !== report.hasPower) {
+    wasPowered = report.hasPower;
+    world.greenhouse.setPowered(report.hasPower);
+    if (!report.hasPower) {
+      feedback.toast('<strong>Base power ran out.</strong> Grow lights and the air system switch off until the Sun charges the battery.', {
+        kind: 'warn',
+        icon: '🔌',
+        key: 'power',
+        seconds: 7,
+      });
+    } else {
+      feedback.toast('<strong>Power is back!</strong> The solar array is charging the base again.', { kind: 'good', icon: '⚡', key: 'power' });
+    }
+  }
+  const sunUp = sun.visibility > 0.5;
+  if (sunUp !== sunWasUp) {
+    sunWasUp = sunUp;
+    feedback.toast(
+      sunUp
+        ? '<strong>The Sun is back</strong> above the ridge. The solar array is making power again.'
+        : '<strong>The Sun went behind the ridge.</strong> The base runs on its battery until it comes back.',
+      { kind: sunUp ? 'good' : 'info', icon: sunUp ? '☀️' : '🌑', key: 'sun', seconds: 6 },
+    );
+  }
+}
+
 // ---------------------------------------------------------------- loop
 const timer = new THREE.Timer();
 timer.connect(document);
@@ -217,7 +278,24 @@ renderer.setAnimationLoop(() => {
   }
 
   const sun = getSun(day);
-  world.update(dt, camera, player.position, sun, (day.gameSeconds / 86400) * Math.PI * 2, player.zoneId);
+  const alignment = world.update(dt, camera, player.position, sun, (day.gameSeconds / 86400) * Math.PI * 2, player.zoneId);
+
+  // ---- survival gauges (pure logic) + reactions
+  const zoneId = player.zoneId;
+  const report = stepGauges(gauges, dt, {
+    pressurized: zoneId !== 'outside',
+    sunVisibility: sun.visibility,
+    alignment,
+  });
+  if (running) reactToGauges(report, sun);
+  hud.update({
+    gauges,
+    report,
+    sun,
+    zone: zoneId === 'outside' ? { id: 'outside' } : { id: zoneId, name: world.zones[zoneId].name },
+    clock: getClock(day),
+  });
+
   renderer.render(world.scene, camera);
 });
 
@@ -228,5 +306,5 @@ window.addEventListener('resize', () => {
 });
 
 if (import.meta.env.DEV) {
-  window.__game = { renderer, world, player, day, camera, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor };
+  window.__game = { renderer, world, player, day, camera, gauges, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor };
 }
