@@ -15,8 +15,9 @@ npm run build    # production build in dist/ (base path /Shackleton-Station/)
 If `npm install` cannot reach registry.npmjs.org on your network, add
 `--registry=https://registry.yarnpkg.com` (official npm mirror).
 
-GitHub Pages: `.github/workflows/deploy.yml` builds and deploys on every push to `main`
-(enable *Settings → Pages → Source: GitHub Actions* once).
+GitHub Pages: `.github/workflows/deploy.yml` is **manual only** — pushing does not deploy.
+To publish: *Actions → Deploy to GitHub Pages → Run workflow* (and set
+*Settings → Pages → Source: GitHub Actions* once).
 
 ## Controls
 
