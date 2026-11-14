@@ -6,6 +6,7 @@ import '@fontsource/fredoka/700.css';
 import '@fontsource/nunito/400.css';
 import '@fontsource/nunito/700.css';
 import './ui/ui.css';
+import './ui/hud.css';
 
 import * as THREE from 'three';
 import { UI, RECOVERY, TIME } from './config/gameplay.js';
@@ -22,6 +23,8 @@ import { createFeedback, wait } from './ui/feedback.js';
 import { createMenus } from './ui/menus.js';
 import { createHud } from './ui/hud.js';
 import { createFpsMeter } from './ui/fpsMeter.js';
+import { createPda } from './ui/pda.js';
+import { createCallouts } from './ui/callouts.js';
 
 // ---------------------------------------------------------------- setup
 let quality = loadSettings().quality === 'low' ? 'low' : 'high';
@@ -60,10 +63,19 @@ document.body.appendChild(uiRoot);
 const hud = createHud(uiRoot);
 hud.setVisible(false);
 const feedback = createFeedback(uiRoot);
+const pda = createPda(uiRoot);
+const callouts = createCallouts(uiRoot);
 const gauges = createGauges();
+const two = (n) => String(n).padStart(2, '0');
+feedback.setClock(() => {
+  const c = getClock(day);
+  return 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute);
+});
+let lastHudState = null; // latest gauge snapshot (used by the PDA)
 
 // ---------------------------------------------------------------- game state
-// 'start' → 'playing' ⇄ 'paused';  'busy' while a door/wake-up fade runs.
+// 'start' → 'playing' ⇄ 'paused';  'busy' while a door/wake-up fade runs; 'pda' while the
+// PDA is open (world paused).
 let mode = 'start';
 let pausedFromBusy = false;
 
@@ -103,10 +115,9 @@ function startDragMode() {
   player.dragLook = true;
   enterPlay();
   if (first) {
-    feedback.toast('Mouse lock is not available here. <strong>Hold the mouse button and drag</strong> to look around.', {
-      icon: '🖱️',
-      seconds: 7,
-      key: 'drag',
+    feedback.notify('Hold the mouse button and drag to look', {
+      long: 'Mouse lock is not available in this browser, so hold the mouse button and drag to look around.',
+      seconds: 5,
     });
   }
 }
@@ -116,15 +127,36 @@ function enterPlay() {
   menus.showPause(false);
   feedback.setCrosshairVisible(true);
   if (mode === 'start') {
-    feedback.toast('<strong>Welcome to Shackleton Station!</strong> Walk to the orange hatch and press <strong>E</strong> to go outside.', {
-      icon: '👩‍🚀',
-      seconds: 6,
+    hud.showLocation('habitat');
+    feedback.notify('Find the orange hatch to go outside', {
+      long: 'Welcome to Shackleton Station! Walk to the orange hatch and press E to go outside. Press Tab any time for your PDA.',
+      seconds: 4,
     });
+    // one-time labels the first time each gauge is shown
+    callouts.add('oxygen', hud.rings.oxygen, 'Oxygen: drops faster outside!', 'above');
+    callouts.add('food', hud.rings.food, 'Food: lasts longer when you rest inside', 'above');
+    callouts.add('power', hud.powerEl, 'Base power: charges in sunlight', 'below');
   }
   mode = pausedFromBusy ? 'busy' : 'playing';
   pausedFromBusy = false;
 }
+function togglePda() {
+  if (mode === 'pda') {
+    pda.close();
+    mode = 'playing';
+    feedback.setCrosshairVisible(true);
+  } else if (mode === 'playing' && lastHudState) {
+    pda.open(lastHudState, feedback.log);
+    mode = 'pda';
+    input.clear();
+    feedback.setCrosshairVisible(false);
+  }
+}
 function enterPause() {
+  if (mode === 'pda') {
+    pda.close();
+    mode = 'playing';
+  }
   if (mode === 'playing' || mode === 'busy') {
     pausedFromBusy = mode === 'busy';
     mode = 'paused';
@@ -177,25 +209,21 @@ async function useDoor(action) {
 }
 
 function onZoneEntered(zoneId) {
-  if (zoneId === 'outside') {
-    feedback.toast('<strong>You are outside.</strong> Your suit is full, but working out here uses the oxygen supply about 2× faster.', {
-      kind: 'warn',
-      icon: '🧑‍🚀',
-      key: 'zone',
-    });
-  } else {
-    const name = world.zones[zoneId].name;
-    feedback.toast(`<strong>${name}</strong> — pressurized. You breathe slower in here, so the oxygen supply lasts longer.`, {
-      kind: 'good',
-      icon: '🏠',
-      key: 'zone',
-    });
-  }
+  hud.showLocation(zoneId); // location name fades in for ~2 s — no sentence on screen
+  const c = getClock(day);
+  feedback.log.unshift({
+    time: 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute),
+    text:
+      zoneId === 'outside'
+        ? 'Went outside. Your suit is full, but working out here uses the oxygen supply about 2× faster.'
+        : 'Entered the ' + world.zones[zoneId].name + '. You breathe slower in here, so the oxygen supply lasts longer.',
+  });
 }
 
 function useStation(action) {
-  const comingSoon = action.toast.startsWith('Coming soon');
-  feedback.toast(action.toast, { icon: comingSoon ? '🚧' : '💡', kind: 'info', key: action.station, seconds: comingSoon ? 5 : 8 });
+  // a few words on screen; the full text goes to the PDA log
+  const short = action.caption ?? action.toast.split('!')[0];
+  feedback.notify(short, { long: action.toast, seconds: 3.5 });
 }
 
 // ---------------------------------------------------------------- gentle failure
@@ -237,10 +265,8 @@ async function gentleFailure(reason) {
   player.frozen = false;
   if (mode === 'busy') mode = 'playing';
   else pausedFromBusy = false;
-  feedback.toast(`You lost ${RECOVERY.REST_GAME_HOURS} hours resting. Keep an eye on your gauges!`, {
-    kind: 'info',
-    icon: '🛏️',
-    key: 'rest',
+  feedback.notify('Rested ' + RECOVERY.REST_GAME_HOURS + ' hours', {
+    long: why + ' You lost ' + RECOVERY.REST_GAME_HOURS + ' hours resting. ' + tip,
   });
 }
 
@@ -264,53 +290,42 @@ let wasPowered = true;
 let sunWasUp = true;
 function reactToGauges(report, sun) {
   const c = report.crossedLow;
+  // the rings themselves turn amber/red; these add a short line and a log entry
   if (c.oxygen) {
-    feedback.toast(
-      player.zoneId === 'outside'
-        ? '<strong>Oxygen supply low!</strong> Working outside uses it up about 2× faster — head back inside.'
-        : '<strong>Oxygen supply low!</strong> Soon you will make more with electrolysis (coming in a later update).',
-      { kind: 'warn', icon: '⚠️', key: 'o2low', seconds: 6 },
-    );
+    feedback.notify('Oxygen supply low', {
+      tone: 'low',
+      long:
+        player.zoneId === 'outside'
+          ? 'Oxygen supply low! Working outside uses it up about 2× faster — head back inside.'
+          : 'Oxygen supply low! Soon you will make more with electrolysis (coming in a later update).',
+    });
   }
   if (c.food) {
-    feedback.toast('<strong>Food is low!</strong> In a later update you will grow and cook your own food.', {
-      kind: 'warn',
-      icon: '⚠️',
-      key: 'foodlow',
-      seconds: 6,
-    });
+    feedback.notify('Food low', { tone: 'low', long: 'Food is low! In a later update you will grow and cook your own food.' });
   }
   if (c.power) {
-    feedback.toast('<strong>Base power is low!</strong> The battery needs sunlight on the solar array.', {
-      kind: 'warn',
-      icon: '🔋',
-      key: 'powerlow',
-      seconds: 6,
-    });
+    feedback.notify('Base power low', { tone: 'low', long: 'Base power is low! The battery needs sunlight on the solar array.' });
   }
   if (wasPowered !== report.hasPower) {
     wasPowered = report.hasPower;
     world.greenhouse.setPowered(report.hasPower);
     if (!report.hasPower) {
-      feedback.toast('<strong>Base power ran out.</strong> Grow lights and the air system switch off until the Sun charges the battery.', {
-        kind: 'warn',
-        icon: '🔌',
-        key: 'power',
-        seconds: 7,
+      feedback.notify('Base power out', {
+        tone: 'critical',
+        long: 'Base power ran out. The grow lights switch off until the Sun charges the battery.',
       });
     } else {
-      feedback.toast('<strong>Power is back!</strong> The solar array is charging the base again.', { kind: 'good', icon: '⚡', key: 'power' });
+      feedback.notify('Power restored', { long: 'Power is back! The solar array is charging the base again.' });
     }
   }
   const sunUp = sun.visibility > 0.5;
   if (sunUp !== sunWasUp) {
     sunWasUp = sunUp;
-    feedback.toast(
-      sunUp
-        ? '<strong>The Sun is back</strong> above the ridge. The solar array is making power again.'
-        : '<strong>The Sun went behind the ridge.</strong> The base runs on its battery until it comes back.',
-      { kind: sunUp ? 'good' : 'info', icon: sunUp ? '☀️' : '🌑', key: 'sun', seconds: 6 },
-    );
+    feedback.notify(sunUp ? 'Sun is back' : 'Sun behind the ridge', {
+      long: sunUp
+        ? 'The Sun is back above the ridge. The solar array is making power again.'
+        : 'The Sun went behind the ridge. The base runs on its battery until it comes back.',
+    });
   }
 }
 
@@ -346,11 +361,12 @@ renderer.setAnimationLoop(() => {
     handleInteraction();
     if (player.hitMapEdge && elapsed - edgeToastAt > 6) {
       edgeToastAt = elapsed;
-      feedback.toast('That is far enough for now — the base is behind you!', { icon: '🧭', key: 'edge' });
+      feedback.notify('Too far — head back to base', { long: 'That is far enough for now — the base is behind you!' });
     }
   } else {
     input.consumeInteract();
   }
+  if (input.consumeTab()) togglePda();
 
   const sun = getSun(day);
   const alignment = world.update(dt, camera, player.position, sun, (day.gameSeconds / 86400) * Math.PI * 2, player.zoneId);
@@ -370,13 +386,14 @@ renderer.setAnimationLoop(() => {
   const outdoors = zoneId === 'outside';
   if (outdoors && !renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = true;
   renderer.shadowMap.autoUpdate = outdoors;
-  hud.update({
+  lastHudState = {
     gauges,
     report,
     sun,
     zone: zoneId === 'outside' ? { id: 'outside' } : { id: zoneId, name: world.zones[zoneId].name },
     clock: getClock(day),
-  });
+  };
+  hud.update(lastHudState);
 
   renderFrame(frameDt);
   fpsMeter.tick();

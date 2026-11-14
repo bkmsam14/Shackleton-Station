@@ -17,6 +17,7 @@ const MOVE = {
 export function createInput() {
   const held = { forward: false, back: false, left: false, right: false, run: false, jump: false };
   let interactPressed = false;
+  let tabPressed = false;
 
   function onDown(e) {
     const k = MOVE[e.code];
@@ -25,6 +26,10 @@ export function createInput() {
       if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
     }
     if (e.code === 'KeyE' && !e.repeat) interactPressed = true;
+    if (e.code === 'Tab') {
+      e.preventDefault(); // keep focus in the game
+      if (!e.repeat) tabPressed = true;
+    }
   }
   function onUp(e) {
     const k = MOVE[e.code];
@@ -33,6 +38,7 @@ export function createInput() {
   function clear() {
     for (const k of Object.keys(held)) held[k] = false;
     interactPressed = false;
+    tabPressed = false;
   }
   window.addEventListener('keydown', onDown);
   window.addEventListener('keyup', onUp);
@@ -44,6 +50,12 @@ export function createInput() {
     consumeInteract() {
       const v = interactPressed;
       interactPressed = false;
+      return v;
+    },
+    /** true once per Tab press */
+    consumeTab() {
+      const v = tabPressed;
+      tabPressed = false;
       return v;
     },
     clear,

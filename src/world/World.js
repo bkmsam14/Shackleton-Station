@@ -75,6 +75,7 @@ export function createWorld({ quality = 'high', renderer } = {}) {
       action: {
         type: 'station',
         station: 'solar',
+        caption: 'Vertical solar array · Tab for details',
         // facts.json: "vertical-solar" (NASA VSAT) + "sun-loop" (NASA Moon Fact Sheet)
         toast:
           '<strong>Vertical solar array.</strong> At the south pole the Sun stays low and circles the sky, so this tall panel stands up straight and turns to face it. NASA is testing arrays like this for the Moon.',

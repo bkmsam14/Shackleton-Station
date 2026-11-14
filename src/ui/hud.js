@@ -1,165 +1,150 @@
-// hud.js — on-screen gauges. Reads game state; contains no game rules.
-//  • Astronaut panel (bottom-left): OXYGEN (shared base + suit supply) + FOOD
-//  • BASE POWER panel (top-right, different style): battery + charging/draining
-//  • Clock + location (top-left)
-import { POWER, TIME, WARNING_THRESHOLD_PERCENT } from '../config/gameplay.js';
-import { secondsUntilEmpty } from '../systems/gauges.js';
+// hud.js — minimal in-world HUD (no cards, borders, pills, emoji or sentences).
+//  • bottom-left: big OXYGEN ring + smaller FOOD ring (line icon + number)
+//  • top-centre: BASE POWER battery + % + arrow — only inside a module; outside a tiny battery
+//  • top-left: day/time · top-centre: location name fades in for ~2 s on zone change
+//  • warnings: < 25 % amber + pulse; < 10 % red + screen-edge tint + one short line
+// One typeface (Fredoka). Colour only shows state: normal / low / critical.
+import { POWER, WARNING_THRESHOLD_PERCENT } from '../config/gameplay.js';
+import { ICONS, batteryIcon } from './icons.js';
+import { voiceLine } from './voice.js';
 
-const ICON = {
-  oxygen: `<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="13" cy="17" r="9" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="24" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2.5"/><text x="13" y="21.5" text-anchor="middle" font-size="10" font-weight="800" fill="currentColor" font-family="Fredoka, sans-serif">O₂</text></svg>`,
-  food: `<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 9c-3-3-10-2-10 6 0 6 4 12 7 12 1.3 0 2-.6 3-.6s1.7.6 3 .6c3 0 7-6 7-12 0-8-7-9-10-6z" fill="currentColor"/><path d="M16 9c0-3 1.5-5 4-6" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`,
-  bolt: `<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M18 2 6 18h8l-2 12 12-16h-8z" fill="currentColor"/></svg>`,
-  astronaut: `<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="3"/><rect x="10" y="9" width="12" height="7" rx="3.5" fill="currentColor"/><path d="M6 30c1-6 5-9 10-9s9 3 10 9" fill="none" stroke="currentColor" stroke-width="3"/></svg>`,
-};
+const CRITICAL = 10;
+const RING_R = 44;
+const RING_C = 2 * Math.PI * RING_R;
 
-function fmtMinutes(seconds) {
-  if (!isFinite(seconds)) return null;
-  if (seconds < 60) return 'less than 1 min';
-  const m = Math.round(seconds / 60);
-  return `about ${m} min`;
-}
-
-function gaugeRow(id, label, icon) {
+function ring(id, label) {
   return `
-    <div class="gauge" data-gauge="${id}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100">
-      <div class="gauge-head">
-        <span class="gauge-icon">${icon}</span>
-        <span class="gauge-label">${label}</span>
-        <span class="gauge-value" data-value>100%</span>
+    <div class="ring ring-${id}" data-ring="${id}" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100">
+      <svg class="ring-svg" viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="ring-track" cx="50" cy="50" r="${RING_R}"/>
+        <circle class="ring-fill" cx="50" cy="50" r="${RING_R}" stroke-dasharray="${RING_C.toFixed(2)}" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
+      </svg>
+      <div class="ring-center">
+        <span class="ring-icon">${ICONS[id]}</span>
+        <span class="ring-value" data-value>100</span>
       </div>
-      <div class="bar"><div class="bar-fill" data-fill></div></div>
-      <div class="gauge-status" data-status></div>
     </div>`;
 }
+
+export function stateOf(pct) {
+  if (pct < CRITICAL) return 'critical';
+  if (pct < WARNING_THRESHOLD_PERCENT) return 'low';
+  return 'normal';
+}
+
+const ZONE_TITLE = { outside: 'Lunar surface', habitat: 'Habitat', greenhouse: 'Greenhouse' };
 
 export function createHud(root) {
   const wrap = document.createElement('div');
   wrap.className = 'hud';
   wrap.innerHTML = `
-    <div class="hud-topleft">
-      <div class="chip clock"><span data-clock>DAY 1 · 07:00</span><span class="speed">⏩ 1 day here = ${Math.round(TIME.REAL_SECONDS_PER_GAME_DAY / 60)} min</span></div>
-      <div class="chip where" data-where></div>
+    <div class="hud-vignette" data-vignette></div>
+    <div class="hud-time" data-time>Day 1 · 07:00</div>
+    <div class="hud-power" data-power role="meter" aria-label="Base power" aria-valuemin="0" aria-valuemax="100">
+      <span class="power-battery" data-battery></span>
+      <span class="power-value" data-power-value>70%</span>
+      <span class="power-arrow" data-arrow></span>
     </div>
-
-    <section class="panel astro" aria-label="Astronaut">
-      <div class="panel-title"><span class="title-icon">${ICON.astronaut}</span>ASTRONAUT</div>
-      ${gaugeRow('oxygen', 'OXYGEN', ICON.oxygen)}
-      ${gaugeRow('food', 'FOOD', ICON.food)}
-    </section>
-
-    <section class="panel base" aria-label="Base power">
-      <div class="panel-title"><span class="title-icon">${ICON.bolt}</span>BASE POWER<span class="tag">whole base</span></div>
-      <div class="power-main" data-gauge="power" role="meter" aria-label="Base power" aria-valuemin="0" aria-valuemax="100">
-        <div class="battery"><div class="cells" data-cells>${'<i></i>'.repeat(10)}</div><div class="battery-nub"></div></div>
-        <div class="gauge-value big" data-value>70%</div>
-      </div>
-      <div class="flow" data-flow></div>
-      <div class="sunline" data-sun></div>
-      <div class="loads" data-loads></div>
-    </section>`;
+    <div class="hud-location" data-location></div>
+    <div class="hud-rings">
+      ${ring('oxygen', 'Oxygen supply')}
+      ${ring('food', 'Food')}
+      <div class="hud-warning" data-warning role="status" aria-live="polite"></div>
+    </div>`;
   root.appendChild(wrap);
 
   const q = (s) => wrap.querySelector(s);
-  const gauges = {
-    oxygen: q('[data-gauge="oxygen"]'),
-    food: q('[data-gauge="food"]'),
-    power: q('[data-gauge="power"]'),
-  };
-  const cells = [...q('[data-cells]').children];
-  const els = {
-    clock: q('[data-clock]'),
-    where: q('[data-where]'),
-    flow: q('[data-flow]'),
-    sun: q('[data-sun]'),
-    loads: q('[data-loads]'),
+  const rings = { oxygen: q('[data-ring="oxygen"]'), food: q('[data-ring="food"]') };
+  const el = {
+    time: q('[data-time]'),
+    power: q('[data-power]'),
+    battery: q('[data-battery]'),
+    powerValue: q('[data-power-value]'),
+    arrow: q('[data-arrow]'),
+    location: q('[data-location]'),
+    warning: q('[data-warning]'),
+    vignette: q('[data-vignette]'),
   };
   const last = {};
-  const setText = (el, key, text) => {
-    if (last[key] !== text) {
-      last[key] = text;
-      el.textContent = text;
+  const set = (key, value, apply) => {
+    if (last[key] !== value) {
+      last[key] = value;
+      apply(value);
     }
   };
-  const setHtml = (el, key, html) => {
-    if (last[key] !== html) {
-      last[key] = html;
-      el.innerHTML = html;
-    }
-  };
+  let locationTimer = 0;
 
-  function setGauge(id, pct) {
-    const g = gauges[id];
+  function setRing(id, pct) {
+    const r = rings[id];
     const shown = Math.ceil(pct);
-    setText(g.querySelector('[data-value]'), id + 'v', `${shown}%`);
-    g.setAttribute('aria-valuenow', String(shown));
-    const fill = g.querySelector('[data-fill]');
-    if (fill) fill.style.transform = `scaleX(${Math.max(0, Math.min(1, pct / 100))})`;
-    g.classList.toggle('is-low', pct < WARNING_THRESHOLD_PERCENT);
+    set(`${id}v`, shown, (v) => {
+      r.querySelector('[data-value]').textContent = String(v);
+      r.setAttribute('aria-valuenow', String(v));
+    });
+    const off = (RING_C * (1 - Math.max(0, Math.min(1, pct / 100)))).toFixed(1);
+    set(`${id}o`, off, (v) => r.querySelector('.ring-fill').setAttribute('stroke-dashoffset', v));
+    const st = stateOf(pct);
+    set(`${id}s`, st, (v) => {
+      r.dataset.state = v;
+      if (v !== 'normal') voiceLine(`${id}-${v}`);
+    });
+    return st;
   }
 
   return {
+    element: wrap,
+    rings,
+    powerEl: el.power,
     setVisible(v) {
       wrap.style.display = v ? '' : 'none';
     },
-    /**
-     * @param s {object} { gauges, report, zone: {id,name}, clock: {day,hour,minute}, sun, alignment }
-     */
+    /** Location name fades in for ~2 s. */
+    showLocation(zoneId) {
+      el.location.textContent = ZONE_TITLE[zoneId] ?? '';
+      el.location.classList.remove('is-on');
+      void el.location.offsetWidth;
+      el.location.classList.add('is-on');
+      clearTimeout(locationTimer);
+      locationTimer = setTimeout(() => el.location.classList.remove('is-on'), 2000);
+    },
+    /** s: { gauges, report, zone: {id}, clock } */
     update(s) {
       const { gauges: g, report: r } = s;
-      // ---- clock + location
       const hh = String(s.clock.hour).padStart(2, '0');
       const mm = String(s.clock.minute).padStart(2, '0');
-      setText(els.clock, 'clock', `DAY ${s.clock.day} · ${hh}:${mm}`);
-      const outside = s.zone.id === 'outside';
-      setText(els.where, 'where', outside ? '📍 Outside · in your suit' : `📍 ${s.zone.name} · pressurized`);
-      els.where.classList.toggle('is-outside', outside);
+      set('time', `Day ${s.clock.day} · ${hh}:${mm}`, (v) => (el.time.textContent = v));
 
-      // ---- oxygen
-      setGauge('oxygen', g.oxygen);
-      let o2;
-      const o2Left = fmtMinutes(secondsUntilEmpty(g.oxygen, r.rates.oxygen));
-      if (outside) o2 = `Suit full · supply drains faster outside · ${o2Left} left`;
-      else o2 = `Base + suit supply · ${o2Left} left`;
-      if (g.oxygen < WARNING_THRESHOLD_PERCENT) {
-        o2 = outside ? '⚠ Low! Go inside — you breathe less there' : '⚠ Low! Making oxygen comes in a later update';
-      }
-      setText(gauges.oxygen.querySelector('[data-status]'), 'o2s', o2);
+      const o2 = setRing('oxygen', g.oxygen);
+      const food = setRing('food', g.food);
 
-      // ---- food
-      setGauge('food', g.food);
-      const foodLeft = fmtMinutes(secondsUntilEmpty(g.food, r.rates.food));
-      const food = g.food < WARNING_THRESHOLD_PERCENT ? '⚠ Low! Eating comes in a later update' : `Lasts ${foodLeft}`;
-      setText(gauges.food.querySelector('[data-status]'), 'fs', food);
+      // one short warning line + edge tint only when something is critical
+      const critical = o2 === 'critical' ? 'Oxygen low' : food === 'critical' ? 'Food low' : '';
+      set('warn', critical, (v) => {
+        el.warning.textContent = v;
+        el.warning.classList.toggle('is-on', Boolean(v));
+        el.vignette.classList.toggle('is-on', Boolean(v));
+      });
 
-      // ---- base power
+      // base power: full readout inside a module, tiny battery outside
       const pp = (g.batteryKwh / POWER.BATTERY_CAPACITY_KWH) * 100;
-      setText(gauges.power.querySelector('[data-value]'), 'pv', `${Math.ceil(pp)}%`);
-      gauges.power.setAttribute('aria-valuenow', String(Math.ceil(pp)));
-      const lit = Math.ceil(pp / 10 - 1e-9);
-      cells.forEach((c, i) => c.classList.toggle('on', i < lit));
-      gauges.power.classList.toggle('is-low', pp < WARNING_THRESHOLD_PERCENT);
+      const inside = s.zone.id !== 'outside';
+      set('pmode', inside, (v) => el.power.classList.toggle('is-mini', !v));
+      const level = Math.round(pp / 5) / 20;
+      set('pbat', level, (v) => (el.battery.innerHTML = batteryIcon(v)));
+      set('pval', Math.ceil(pp), (v) => {
+        el.powerValue.textContent = `${v}%`;
+        el.power.setAttribute('aria-valuenow', String(v));
+      });
       const net = r.flow.netKw;
-      const charging = net > 0.05;
-      const kw = Math.abs(net).toFixed(1);
-      let flow;
-      if (!r.hasPower) flow = '<span class="down">⚠ EMPTY · base systems off</span>';
-      else if (charging && pp >= 99.9) flow = '<span class="up">● FULL · solar covers the base</span>';
-      else if (charging) flow = `<span class="up">▲ CHARGING +${kw} kW</span>`;
-      else flow = `<span class="down">▼ DRAINING −${kw} kW</span>`;
-      setHtml(els.flow, 'flow', flow);
-      els.flow.parentElement.classList.toggle('is-charging', charging);
-
-      const sunTxt =
-        s.sun.visibility > 0.5
-          ? `☀ Sun up · panel makes ${r.flow.solarKw.toFixed(1)} kW`
-          : '🌑 Sun behind the ridge · no solar power';
-      setText(els.sun, 'sun', sunTxt);
-      const L = r.flow.loads;
-      setText(
-        els.loads,
-        'loads',
-        `Using: habitat ${L.habitat} kW · grow lights ${L.greenhouse} kW`,
-      );
+      const dir = !r.hasPower ? 'down' : net > 0.05 ? (pp >= 99.9 ? 'full' : 'up') : 'down';
+      set('parrow', dir, (v) => {
+        el.arrow.innerHTML = v === 'up' ? ICONS.arrowUp : v === 'down' ? ICONS.arrowDown : '';
+        el.power.dataset.flow = v;
+      });
+      set('pstate', stateOf(pp), (v) => {
+        el.power.dataset.state = v;
+        if (v === 'low') voiceLine('power-low');
+      });
     },
   };
 }

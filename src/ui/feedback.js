@@ -1,22 +1,41 @@
-// feedback.js — crosshair, interaction prompt, toasts and the screen fade.
-import { UI } from '../config/gameplay.js';
+// feedback.js — crosshair, minimal interaction prompt, one-line captions, screen fade.
+// Captions replace the old toast cards: a few words, no box. The full sentence goes to the
+// PDA log (Tab), so the main HUD stays clean.
 
 export function createFeedback(root) {
   const crosshair = el('div', 'crosshair');
   const prompt = el('div', 'prompt');
   prompt.setAttribute('role', 'status');
-  prompt.innerHTML = '<span class="keycap">E</span><span class="prompt-text"></span>';
+  prompt.innerHTML = '<span class="keycap-line">E</span><span class="prompt-text"></span>';
   const promptText = prompt.querySelector('.prompt-text');
-  const toasts = el('div', 'toast-stack');
-  toasts.setAttribute('aria-live', 'polite');
+  const caption = el('div', 'caption');
+  caption.setAttribute('aria-live', 'polite');
   const fade = el('div', 'fade');
   const card = el('div', 'fade-card');
   fade.appendChild(card);
-  root.append(crosshair, prompt, toasts, fade);
+  root.append(crosshair, prompt, caption, fade);
 
   let currentPrompt = null;
+  let captionTimer = 0;
+  const log = [];
+  let clock = () => '';
+
+  function setCaption(text, seconds, tone) {
+    caption.textContent = text;
+    caption.dataset.tone = tone;
+    caption.classList.remove('is-on');
+    void caption.offsetWidth;
+    caption.classList.add('is-on');
+    clearTimeout(captionTimer);
+    captionTimer = setTimeout(() => caption.classList.remove('is-on'), seconds * 1000);
+  }
 
   return {
+    log,
+    /** Provide a function that returns the in-game time label for log entries. */
+    setClock(fn) {
+      clock = fn;
+    },
     setPrompt(text) {
       if (text === currentPrompt) return;
       currentPrompt = text;
@@ -34,27 +53,18 @@ export function createFeedback(root) {
       crosshair.style.display = v ? '' : 'none';
       if (!v) this.setPrompt(null);
     },
-    /** kind: 'warn' | 'info' | 'good' */
-    toast(html, { kind = 'info', icon = 'ℹ️', seconds = UI.TOAST_SECONDS, key } = {}) {
-      if (key) {
-        const old = toasts.querySelector(`[data-key="${key}"]`);
-        if (old) old.remove();
-      }
-      const t = el('div', `toast is-${kind}`);
-      if (key) t.dataset.key = key;
-      t.innerHTML = `<span class="toast-icon" aria-hidden="true">${icon}</span><div>${html}</div>`;
-      toasts.appendChild(t);
-      while (toasts.children.length > 3) toasts.firstChild.remove();
-      setTimeout(() => {
-        t.classList.add('is-leaving');
-        setTimeout(() => t.remove(), 320);
-      }, seconds * 1000);
+    /**
+     * short: a few words shown on screen; long: optional full sentence for the PDA log.
+     * tone: 'normal' | 'low' | 'critical' (colour only shows state)
+     */
+    notify(short, { long = null, seconds = 3, tone = 'normal' } = {}) {
+      setCaption(short, seconds, tone);
+      log.unshift({ time: clock(), text: long ?? short });
+      if (log.length > 14) log.length = 14;
     },
-    /** Fade to black (or back). Resolves when done. */
     fadeTo(on, seconds) {
       fade.style.transitionDuration = `${seconds}s`;
       fade.style.pointerEvents = on ? 'auto' : 'none';
-      // force style flush so the transition runs
       void fade.offsetWidth;
       fade.classList.toggle('is-on', on);
       return wait(seconds * 1000);
