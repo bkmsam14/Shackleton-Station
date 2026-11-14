@@ -101,7 +101,8 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **Two clocks.** Life support runs 360× faster than real life; the Sun's trip around the sky is sped up more (about 20 real minutes instead of 29.5 days). Both real values are shown on the start and pause screens.
 - **One oxygen supply.** Real suits carry their own tank that is refilled before each walk; the game merges suit + base into one supply.
 - **One ridge.** Dark periods come from one simple ridge on the horizon hiding the low Sun.
-- **Brighter shadows than reality** (until the visual polish pass): a fill light stands in for light bounced off nearby sunlit slopes so kids can see.
+- **Shadows are near-black** outside (no atmosphere), lit only by faint earthshine — whose strength follows Earth's phase — and the regolith around you. A **helmet lamp** lights the way in shadow (real spacesuit helmets carry lights; we don't state a brightness).
+- **Earthshine strength** is scaled by Earth's lit fraction as seen from the Moon: (1 − cos(angle between Sun and Earth)) / 2 — geometry, not a measured brightness.
 - **Earth fixed in the sky.** Libration (small wobbles) is left out.
 
 ## Needs verification (do not show until resolved)

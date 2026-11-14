@@ -315,7 +315,7 @@ function reactToGauges(report, sun) {
 }
 
 // ---------------------------------------------------------------- adaptive quality
-// AO is the most expensive effect. If frames average > ~19 ms for a few seconds on High,
+// AO is the most expensive effect. If frames average > ~17.5 ms for a few seconds on High,
 // switch AO off (bloom stays) so slower laptops keep a smooth frame rate.
 let frameEma = 1 / 60;
 let watchTime = 0;
@@ -323,7 +323,7 @@ function watchFrameTime(frameDt) {
   if (!postfx.enabled || !postfx.aoAllowed || frameDt <= 0 || document.hidden) return;
   watchTime += frameDt;
   frameEma += (frameDt - frameEma) * 0.03;
-  if (watchTime > 4 && frameEma > 0.019) postfx.disableAO();
+  if (watchTime > 4 && frameEma > 0.0175) postfx.disableAO();
 }
 
 // ---------------------------------------------------------------- loop

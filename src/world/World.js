@@ -111,7 +111,7 @@ export function createWorld({ quality = 'high', renderer } = {}) {
       const d = skyDirection(sun.azimuthDeg, sun.elevationDeg);
       sunDir.set(d.x, d.y, d.z);
       sky.update(camera, sunDir, earthSpin);
-      lighting.update(focus, sunDir, sun.visibility, zoneId);
+      lighting.update(focus, sunDir, sun.visibility, zoneId, camera);
       return solarArray.update(dt, sun.azimuthDeg);
     },
     add(obj) {
