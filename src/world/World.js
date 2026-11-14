@@ -6,6 +6,8 @@ import { createLighting } from './lighting.js';
 import { createSolarArray } from './solarArray.js';
 import { createPathLights, createPowerCable } from './props.js';
 import { heightAt } from './heightfield.js';
+import { createHabitat } from './habitat.js';
+import { createGreenhouse } from './greenhouse.js';
 import { LAYOUT } from './layout.js';
 import { skyDirection } from '../systems/daycycle.js';
 
@@ -25,10 +27,30 @@ export function createWorld({ quality = 'high' } = {}) {
   const sky = createSky({ starCount: q.stars });
   const lighting = createLighting(scene, { shadowMapSize: q.shadowMap });
   const solarArray = createSolarArray(heightAt(LAYOUT.SOLAR_ARRAY.x, LAYOUT.SOLAR_ARRAY.z));
-  scene.add(terrain, horizon, rocks.mesh, sky.group, solarArray.object, createPathLights(), createPowerCable());
+  const habitat = createHabitat();
+  const greenhouse = createGreenhouse();
+  scene.add(
+    terrain,
+    horizon,
+    rocks.mesh,
+    sky.group,
+    solarArray.object,
+    createPathLights(),
+    createPowerCable(),
+    habitat.object,
+    greenhouse.object,
+  );
 
   // Outdoor colliders (solid things you cannot walk through when outside).
-  const outdoorColliders = [...rocks.colliders, ...solarArray.colliders];
+  const outdoorColliders = [
+    ...rocks.colliders,
+    ...solarArray.colliders,
+    ...habitat.outdoorColliders,
+    ...greenhouse.outdoorColliders,
+  ];
+  // Pressurized interiors. 'outside' is the surface.
+  const zones = { habitat: habitat.zone, greenhouse: greenhouse.zone };
+  const interactables = [...habitat.interactables, ...greenhouse.interactables];
 
   const sunDir = new THREE.Vector3();
 
@@ -37,12 +59,18 @@ export function createWorld({ quality = 'high' } = {}) {
     lighting,
     solarArray,
     outdoorColliders,
-    /** Called once per frame. sun = getSun(); returns solar alignment 0..1. */
-    update(dt, camera, focus, sun, earthSpin) {
+    zones,
+    interactables,
+    greenhouse,
+    /**
+     * Called once per frame. sun = getSun(); zoneId = where the player is.
+     * Returns solar alignment 0..1.
+     */
+    update(dt, camera, focus, sun, earthSpin, zoneId = 'outside') {
       const d = skyDirection(sun.azimuthDeg, sun.elevationDeg);
       sunDir.set(d.x, d.y, d.z);
       sky.update(camera, sunDir, earthSpin);
-      lighting.update(focus, sunDir, sun.visibility);
+      lighting.update(focus, sunDir, sun.visibility, zoneId);
       return solarArray.update(dt, sun.azimuthDeg);
     },
     add(obj) {

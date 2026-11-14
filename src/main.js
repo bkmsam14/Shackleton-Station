@@ -31,7 +31,7 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(timer.getDelta(), 0.1);
   stepDayCycle(day, dt * speed);
   const sun = getSun(day);
-  world.update(dt * speed, camera, controls.target, sun, (day.gameSeconds / 86400) * Math.PI * 2);
+  world.update(dt * speed, camera, controls.target, sun, (day.gameSeconds / 86400) * Math.PI * 2, window.__debug?.zone);
   controls.update();
   renderer.render(world.scene, camera);
 });
@@ -48,6 +48,13 @@ window.__debug = {
   day,
   camera,
   controls,
+  zone: 'outside',
+  view(pos, target, zone = 'outside') {
+    camera.position.set(...pos);
+    controls.target.set(...target);
+    controls.update();
+    this.zone = zone;
+  },
   look(az, el = 1.5, from = [-2, 2.2, 10]) {
     const a = (az * Math.PI) / 180;
     camera.position.set(...from);

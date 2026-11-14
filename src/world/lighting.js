@@ -5,6 +5,12 @@ import * as THREE from 'three';
 const SUN_INTENSITY = 3.4;
 const SHADOW_HALF = 55; // metres around the player that get shadows
 const SHADOW_DISTANCE = 260; // light sits this far toward the Sun
+const OUTDOOR_SKY = 0x8a93a3;
+const OUTDOOR_GROUND = 0x7a766e;
+const INDOOR_FILL = {
+  habitat: { sky: 0xdfe6ee, ground: 0x6f7986, intensity: 0.42 },
+  greenhouse: { sky: 0xd9a6ff, ground: 0x6a4f7a, intensity: 0.45 }, // red + blue LED glow
+};
 
 export function createLighting(scene, { shadowMapSize = 2048 } = {}) {
   const sun = new THREE.DirectionalLight(0xfff4e6, SUN_INTENSITY);
@@ -27,7 +33,7 @@ export function createLighting(scene, { shadowMapSize = 2048 } = {}) {
   // No atmosphere, so there is no blue sky light — keep the sky colour very dark.
   // (Readability tuning: real polar ground is darker — this fill stands in for light
   //  reflected from nearby sunlit slopes so kids can see where they walk.)
-  const fill = new THREE.HemisphereLight(0x8a93a3, 0x7a766e, 1.0);
+  const fill = new THREE.HemisphereLight(OUTDOOR_SKY, OUTDOOR_GROUND, 1.0);
   scene.add(fill);
 
   const snap = new THREE.Vector3();
@@ -37,7 +43,7 @@ export function createLighting(scene, { shadowMapSize = 2048 } = {}) {
     sun,
     fill,
     /** focus: player position; sunDir: unit vector to Sun; visibility 0..1 */
-    update(focus, sunDir, visibility) {
+    update(focus, sunDir, visibility, zoneId = 'outside') {
       // snap focus to shadow texels to reduce shimmering while walking
       snap.set(Math.round(focus.x / texel) * texel, focus.y, Math.round(focus.z / texel) * texel);
       sun.target.position.copy(snap);
@@ -46,8 +52,20 @@ export function createLighting(scene, { shadowMapSize = 2048 } = {}) {
         snap.y + sunDir.y * SHADOW_DISTANCE,
         snap.z + sunDir.z * SHADOW_DISTANCE,
       );
-      sun.intensity = SUN_INTENSITY * visibility;
-      fill.intensity = 0.35 + 0.95 * visibility; // regolith bounce fades with the Sun
+      // Inside a module you can't see outside (no windows yet), so the Sun is switched
+      // off there — this stops sunlight leaking onto interior walls — and the fill
+      // becomes steady room light.
+      const indoor = INDOOR_FILL[zoneId];
+      sun.intensity = indoor ? 0 : SUN_INTENSITY * visibility;
+      if (indoor) {
+        fill.color.setHex(indoor.sky);
+        fill.groundColor.setHex(indoor.ground);
+        fill.intensity = indoor.intensity;
+      } else {
+        fill.color.setHex(OUTDOOR_SKY);
+        fill.groundColor.setHex(OUTDOOR_GROUND);
+        fill.intensity = 0.35 + 0.95 * visibility; // regolith bounce fades with the Sun
+      }
     },
     setShadowMapSize(size) {
       sun.shadow.mapSize.set(size, size);

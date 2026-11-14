@@ -18,7 +18,7 @@ export const MAT = {
     std('solarCell', { color: 0x1d3b78, roughness: 0.25, metalness: 0.4, emissive: 0x050b1a }),
   regolithBag: () => std('regolithBag', { color: 0x8f8a80, roughness: 1 }),
   rock: () => std('rock', { color: 0x77756f, roughness: 1 }),
-  interiorWall: () => std('interiorWall', { color: 0xdfe5ea, roughness: 0.8, side: THREE.BackSide }),
+  interiorWall: () => std('interiorWall', { color: 0xc9d2da, roughness: 0.8, side: THREE.BackSide }),
   interiorPanel: () => std('interiorPanel', { color: 0xc5ced6, roughness: 0.7 }),
   floor: () => std('floor', { color: 0x5b6470, roughness: 0.9 }),
   door: () => std('door', { color: 0xd8dde3, roughness: 0.5, metalness: 0.2 }),
