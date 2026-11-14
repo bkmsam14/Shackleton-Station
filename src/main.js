@@ -34,6 +34,7 @@ import { heightAt } from './world/heightfield.js';
 import { createMastery } from './systems/mastery.js';
 import { createInstanceManager } from './instances/InstanceManager.js';
 import { createElectrolysisInstance } from './instances/electrolysis/index.js';
+import { createFarming } from './farming/index.js';
 
 // ---------------------------------------------------------------- setup
 let quality = loadSettings().quality === 'low' ? 'low' : 'high';
@@ -310,6 +311,40 @@ const instances = createInstanceManager(uiRoot, {
   },
 });
 
+// ---------------------------------------------------------------- farming (potato pots)
+// 'farm' mode: close-up pot view, mouse freed, world paused (like a lesson instance).
+const farming = createFarming({
+  world,
+  camera,
+  renderer,
+  root: uiRoot,
+  feedback,
+  gauges,
+  getMode: () => mode,
+  hooks: {
+    onEnter() {
+      voltVoice.stop(); // the world is paused while you tend a pot
+      mode = 'farm';
+      input.clear();
+      feedback.setPrompt(null);
+      feedback.setCrosshairVisible(false);
+      if (!player.dragLook) document.exitPointerLock?.();
+    },
+    onExit(reason) {
+      mode = 'playing';
+      input.clear();
+      if (reason === 'esc') return enterPause();
+      feedback.setCrosshairVisible(true);
+      if (player.dragLook) return;
+      requestLock();
+      setTimeout(() => {
+        if (mode === 'playing' && !player.controls.isLocked) enterPause();
+      }, 600);
+    },
+  },
+});
+world.interactables.push(...farming.interactables);
+
 // ---------------------------------------------------------------- interactions
 let edgeToastAt = -99;
 let elapsed = 0;
@@ -431,14 +466,16 @@ function lookingAtVolt() {
 }
 
 function handleInteraction() {
-  const target =
-    findInteractable(world.interactables.filter(notVolt), player.zoneId, player.position.x, player.position.z, player.forward2d()) ??
-    (lookingAtVolt() ? voltTarget : null);
+  let target = findInteractable(world.interactables.filter(notVolt), player.zoneId, player.position.x, player.position.z, player.forward2d());
+  // a pot stand → the pot you are facing (or nothing, if you look away)
+  if (target?.action.type === 'farm') target = farming.refine(target, player.position.x, player.position.z, player.forward2d());
+  target ??= lookingAtVolt() ? voltTarget : null;
   feedback.setPrompt(target ? promptFor(target) : null);
   if (input.consumeInteract() && target) {
     if (target.action.type === 'door') useDoor(target.action);
     else if (target.action.type === 'station') useStation(target.action);
     else if (target.action.type === 'volt') sayLine(assistant.talk(voltSnapshot()));
+    else if (target.action.type === 'farm') farming.interact(target.action.potId);
   }
 }
 
@@ -460,7 +497,7 @@ function reactToGauges(report, sun) {
       'low',
     );
   }
-  if (c.food) voltEvent('food-low', 'Food low', 'Food is low! In a later update you will grow and cook your own food.', 'low');
+  if (c.food) voltEvent('food-low', 'Food low', 'Food is low! Press F to eat a potato, or grow more in the greenhouse pots.', 'low');
   if (c.power) voltEvent('power-low', 'Base power low', 'Base power is low! The battery needs sunlight on the solar array.', 'low');
   if (wasPowered !== report.hasPower) {
     wasPowered = report.hasPower;
@@ -541,6 +578,7 @@ renderer.setAnimationLoop(() => {
     alignment,
   });
   if (running) reactToGauges(report, sun);
+  farming.update(frameDt, dt, { lit: report.hasPower });
   if (mode === 'playing' && (report.oxygenEmpty || report.foodEmpty)) {
     gentleFailure(report.oxygenEmpty ? 'oxygen' : 'food');
   }

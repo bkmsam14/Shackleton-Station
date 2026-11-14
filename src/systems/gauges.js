@@ -107,6 +107,17 @@ export function addOxygen(g, kg) {
   return stored;
 }
 
+/**
+ * Eat food (kg dry mass, like the BVAD food figures). Returns the kg actually eaten
+ * (the gauge cannot go above full).
+ */
+export function addFood(g, kg) {
+  const space = ((100 - g.food) / 100) * FOOD.CAPACITY_KG;
+  const eaten = clamp(kg, 0, space);
+  g.food += (eaten / FOOD.CAPACITY_KG) * 100;
+  return eaten;
+}
+
 /** Real seconds until a gauge hits 0 at the current rate (Infinity if not draining). */
 export function secondsUntilEmpty(percent, ratePerSecond) {
   return ratePerSecond < 0 ? percent / -ratePerSecond : Infinity;
