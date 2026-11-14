@@ -209,21 +209,26 @@ export const ASSISTANT = {
   TOUR_WALK_M: 3, // GAME BALANCE (not real data) — tour step 1: walk this far
   NEAR_ARRAY_M: 9, // GAME BALANCE (not real data) — tour step 6: this close to the array
   TANK_LOW_KG: 2.5, // GAME BALANCE (not real data) — Volt warns when the water tank is this low
-  // Volt's voice — robot speech engine (eSpeak via meSpeak) + Web Audio robot effects.
-  VOICE_VARIANT: 'klatt', // GAME BALANCE (not real data) — eSpeak's Klatt synthesizer: even, robotic
-  VOICE_ENGINE_PITCH: 92, // GAME BALANCE (not real data) — 0–99; high = small, cute, not male/female
-  // Heard speed = ENGINE_SPEED × PLAYBACK_RATE ≈ 160 words/min (a calm pace for young listeners).
-  VOICE_ENGINE_SPEED: 135, // GAME BALANCE (not real data) — words per minute before the speed-up
-  VOICE_PLAYBACK_RATE: 1.18, // GAME BALANCE (not real data) — lifts pitch + formants: smaller, cuter
+  // Volt's voice — speech engine (eSpeak via meSpeak) + soft Web Audio "friendly robot" effects.
+  // Goal: warm, cute, a little feminine, never scary (no harsh metallic buzz).
+  VOICE_VARIANT: 'f3', // GAME BALANCE (not real data) — eSpeak female 3: the most melodic, friendly
+  VOICE_ENGINE_PITCH: 55, // GAME BALANCE (not real data) — 0–99; measured ≈ 210 Hz before the lift
+  // Heard speed = ENGINE_SPEED × PLAYBACK_RATE ≈ 150 words/min (calm for young listeners).
+  VOICE_ENGINE_SPEED: 137, // GAME BALANCE (not real data) — words per minute before the lift
+  VOICE_PLAYBACK_RATE: 1.1, // GAME BALANCE (not real data) — gentle lift: ≈ 230 Hz, childlike
   VOICE_VOLUME: 0.9, // GAME BALANCE (not real data)
-  ROBOT_RING_HZ: 70, // GAME BALANCE (not real data) — ring-modulator carrier: metallic shimmer
-  ROBOT_RING_MIX: 0.45, // GAME BALANCE (not real data) — 0 = clean voice, 1 = full robot
-  ROBOT_COMB_MS: 6, // GAME BALANCE (not real data) — tiny "tin can" echo
-  ROBOT_COMB_FEEDBACK: 0.35, // GAME BALANCE (not real data)
-  ROBOT_COMB_MIX: 0.3, // GAME BALANCE (not real data)
-  ROBOT_HIGHPASS_HZ: 180, // GAME BALANCE (not real data) — less bass = a small robot
-  ROBOT_PRESENCE_DB: 4, // GAME BALANCE (not real data) — a bit of sparkle around 3 kHz
-  ROBOT_CHIRP: true, // GAME BALANCE (not real data) — "bip-bip" before Volt talks
+  ROBOT_CHORUS_MS: 12, // GAME BALANCE (not real data) — soft "digital" shimmer (a chorus)…
+  ROBOT_CHORUS_DEPTH_MS: 2.5, // GAME BALANCE (not real data)
+  ROBOT_CHORUS_HZ: 0.9, // GAME BALANCE (not real data) — …that slowly sways
+  ROBOT_CHORUS_MIX: 0.35, // GAME BALANCE (not real data) — 0 = clean voice
+  ROBOT_COMB_MS: 3, // GAME BALANCE (not real data) — a faint robot tint, not a tin can
+  ROBOT_COMB_FEEDBACK: 0.2, // GAME BALANCE (not real data)
+  ROBOT_COMB_MIX: 0.12, // GAME BALANCE (not real data)
+  ROBOT_HIGHPASS_HZ: 120, // GAME BALANCE (not real data) — trims rumble only
+  ROBOT_WARMTH_DB: 2, // GAME BALANCE (not real data) — a little warmth around 350 Hz
+  ROBOT_LOWPASS_HZ: 6500, // GAME BALANCE (not real data) — rounds off harsh highs
+  ROBOT_CHIRP: true, // GAME BALANCE (not real data) — soft "bip-bip" before Volt talks
+  ROBOT_CHIRP_GAIN: 0.07, // GAME BALANCE (not real data) — quiet, so it never startles
   // Fallback only (browser voice, if the robot engine cannot load). Pitch 0–2, rate 0.1–10.
   VOICE_PITCH: 1.6, // GAME BALANCE (not real data)
   VOICE_RATE: 0.95, // GAME BALANCE (not real data)

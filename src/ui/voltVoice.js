@@ -2,10 +2,11 @@
 //
 // 1. Words come from eSpeak (via the meSpeak package, GPL-3.0 — see public/CREDITS.md):
 //    a small speech engine that runs inside the page, offline, the same in every browser.
-//    We use its "Klatt" synthesizer at a high pitch: even and robotic, neither male nor female.
-// 2. The sound then goes through a Web Audio "robot" chain: a ring modulator (metallic
-//    shimmer), a tiny comb echo (tin-can sparkle), less bass + a little treble (a small,
-//    cute robot), plus a "bip-bip" chirp before each line.
+//    We use its melodic female-3 voice with a gentle pitch lift: warm, cute, a little
+//    feminine and childlike, so it never sounds scary.
+// 2. The sound then goes through a soft "friendly robot" chain: a slow chorus (shimmery
+//    digital tone), a faint comb (hint of robot), a little warmth, rounded-off highs, plus a
+//    quiet "bip-bip" chirp before each line.
 // 3. If the engine can't load, Volt falls back to the browser's built-in voice.
 //
 // The engine (~5 MB, ~1.5 MB gzipped) is a separate chunk, loaded in the background after
@@ -50,58 +51,62 @@ async function synthesize(text) {
  */
 export function buildRobotChain(ctx, destination) {
   const input = ctx.createGain();
-
-  // ring modulation: voice × sine carrier → metallic robot tone (mixed with the clean voice)
-  const ring = ctx.createGain();
-  ring.gain.value = 0;
-  const carrier = ctx.createOscillator();
-  carrier.type = 'sine';
-  carrier.frequency.value = A.ROBOT_RING_HZ;
-  carrier.connect(ring.gain);
-  carrier.start();
-  const wet = ctx.createGain();
-  wet.gain.value = A.ROBOT_RING_MIX;
-  const dry = ctx.createGain();
-  dry.gain.value = 1 - A.ROBOT_RING_MIX;
   const mix = ctx.createGain();
-  input.connect(ring).connect(wet).connect(mix);
-  input.connect(dry).connect(mix);
+  input.connect(mix); // the clean voice stays the main sound (easy to understand)
 
-  // tiny comb echo: the "tin can" sparkle
-  const delay = ctx.createDelay(0.05);
-  delay.delayTime.value = A.ROBOT_COMB_MS / 1000;
+  // chorus: a copy delayed by ~12 ms that slowly sways → soft, shimmery "digital" voice.
+  // (Gentler than a ring modulator, whose metallic buzz can sound scary to young kids.)
+  const chorus = ctx.createDelay(0.05);
+  chorus.delayTime.value = A.ROBOT_CHORUS_MS / 1000;
+  const lfo = ctx.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.value = A.ROBOT_CHORUS_HZ;
+  const lfoDepth = ctx.createGain();
+  lfoDepth.gain.value = A.ROBOT_CHORUS_DEPTH_MS / 1000;
+  lfo.connect(lfoDepth).connect(chorus.delayTime);
+  lfo.start();
+  const chorusMix = ctx.createGain();
+  chorusMix.gain.value = A.ROBOT_CHORUS_MIX;
+  input.connect(chorus).connect(chorusMix).connect(mix);
+
+  // a faint comb: just a hint of "robot", not a tin can
+  const comb = ctx.createDelay(0.05);
+  comb.delayTime.value = A.ROBOT_COMB_MS / 1000;
   const feedback = ctx.createGain();
   feedback.gain.value = A.ROBOT_COMB_FEEDBACK;
-  const comb = ctx.createGain();
-  comb.gain.value = A.ROBOT_COMB_MIX;
-  mix.connect(delay);
-  delay.connect(feedback).connect(delay);
-  delay.connect(comb);
+  const combMix = ctx.createGain();
+  combMix.gain.value = A.ROBOT_COMB_MIX;
+  input.connect(comb);
+  comb.connect(feedback).connect(comb);
+  comb.connect(combMix).connect(mix);
 
-  // tone: thin out the bass (a small robot), add a little sparkle, keep levels even
-  const sum = ctx.createGain();
-  mix.connect(sum);
-  comb.connect(sum);
+  // tone: trim rumble, add a little warmth, round off harsh highs, keep levels even
   const highpass = ctx.createBiquadFilter();
   highpass.type = 'highpass';
   highpass.frequency.value = A.ROBOT_HIGHPASS_HZ;
-  const presence = ctx.createBiquadFilter();
-  presence.type = 'peaking';
-  presence.frequency.value = 3000;
-  presence.Q.value = 0.9;
-  presence.gain.value = A.ROBOT_PRESENCE_DB;
+  const warmth = ctx.createBiquadFilter();
+  warmth.type = 'peaking';
+  warmth.frequency.value = 350;
+  warmth.Q.value = 0.8;
+  warmth.gain.value = A.ROBOT_WARMTH_DB;
+  const lowpass = ctx.createBiquadFilter();
+  lowpass.type = 'lowpass';
+  lowpass.frequency.value = A.ROBOT_LOWPASS_HZ;
+  lowpass.Q.value = 0.5;
   const compressor = ctx.createDynamicsCompressor();
+  compressor.threshold.value = -20;
+  compressor.ratio.value = 3;
   const out = ctx.createGain();
-  out.gain.value = A.VOICE_VOLUME;
-  sum.connect(highpass).connect(presence).connect(compressor).connect(out).connect(destination);
+  out.gain.value = A.VOICE_VOLUME * 0.8; // three paths are summed: keep the level comfortable
+  mix.connect(highpass).connect(warmth).connect(lowpass).connect(compressor).connect(out).connect(destination);
   return { input };
 }
 
-/** The cute "bip-bip" before Volt talks. Returns its length in seconds. */
+/** The soft, cute "bip-bip" before Volt talks (two rising notes). Returns its length in s. */
 function chirp(ctx, destination, at) {
   const notes = [
-    [1050, 1500, 0.06],
-    [1500, 1900, 0.05],
+    [880, 1175, 0.07], // A5 → D6
+    [1175, 1480, 0.07], // D6 → F#6: a friendly "major" lift
   ];
   let t = at;
   for (const [f0, f1, len] of notes) {
@@ -111,7 +116,7 @@ function chirp(ctx, destination, at) {
     osc.frequency.setValueAtTime(f0, t);
     osc.frequency.exponentialRampToValueAtTime(f1, t + len);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.18, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(A.ROBOT_CHIRP_GAIN, t + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0001, t + len);
     osc.connect(g).connect(destination);
     osc.start(t);
