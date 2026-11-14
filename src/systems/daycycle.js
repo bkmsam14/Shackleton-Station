@@ -1,0 +1,88 @@
+// daycycle.js — pure logic (no Three.js). Tracks game time and where the Sun is.
+//
+// Two clocks (both shown honestly in the UI):
+//  - Life-support clock: 1 game day = TIME.REAL_SECONDS_PER_GAME_DAY real seconds (360×).
+//  - Sun clock: the Sun circles the horizon once per SKY.GAME_SUN_LOOP_REAL_SECONDS
+//    (real life: one synodic month, ~29.5 days).
+
+import { TIME, SKY } from '../config/gameplay.js';
+
+export function wrapDeg(a) {
+  return ((a % 360) + 360) % 360;
+}
+
+/** Signed smallest difference a − b in degrees, in (−180, 180]. */
+export function deltaDeg(a, b) {
+  let d = wrapDeg(a - b);
+  if (d > 180) d -= 360;
+  return d;
+}
+
+function smoothstep(e0, e1, x) {
+  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * How much of the Sun is visible (0 = hidden behind the ridge, 1 = fully visible).
+ * The ridge covers [RIDGE_START, RIDGE_END] with a soft edge of RIDGE_FADE degrees.
+ */
+export function sunVisibility(azimuthDeg, sky = SKY) {
+  const width = wrapDeg(sky.RIDGE_END_AZIMUTH_DEG - sky.RIDGE_START_AZIMUTH_DEG);
+  const centre = sky.RIDGE_START_AZIMUTH_DEG + width / 2;
+  const d = Math.abs(deltaDeg(azimuthDeg, centre)); // degrees from the ridge centre
+  const half = width / 2;
+  return smoothstep(half - sky.RIDGE_FADE_DEG, half + sky.RIDGE_FADE_DEG, d);
+}
+
+export function createDayCycle({ startHour = TIME.START_HOUR } = {}) {
+  return {
+    gameSeconds: startHour * 3600, // life-support clock
+    sunRealSeconds: 0, // sun clock
+  };
+}
+
+/** Advance both clocks by dtReal real seconds. Returns the same state object. */
+export function stepDayCycle(state, dtReal) {
+  state.gameSeconds += dtReal * TIME.SCALE;
+  state.sunRealSeconds += dtReal;
+  return state;
+}
+
+/** Skip game time (e.g. resting after a gentle failure). Sun moves by the matching real time. */
+export function skipGameHours(state, hours) {
+  const realSeconds = (hours * 3600) / TIME.SCALE;
+  stepDayCycle(state, realSeconds);
+  return realSeconds;
+}
+
+export function sunAzimuthDeg(state, sky = SKY) {
+  return wrapDeg(sky.SUN_START_AZIMUTH_DEG + (360 * state.sunRealSeconds) / sky.GAME_SUN_LOOP_REAL_SECONDS);
+}
+
+/** Sun info for this moment. */
+export function getSun(state, sky = SKY) {
+  const azimuth = sunAzimuthDeg(state, sky);
+  return {
+    azimuthDeg: azimuth,
+    elevationDeg: sky.SUN_ELEVATION_DEG,
+    visibility: sunVisibility(azimuth, sky),
+  };
+}
+
+/** Day number (from 1) and clock time for the HUD. */
+export function getClock(state) {
+  const total = state.gameSeconds;
+  const day = Math.floor(total / 86400) + 1;
+  const secOfDay = total - (day - 1) * 86400;
+  const hour = Math.floor(secOfDay / 3600);
+  const minute = Math.floor((secOfDay % 3600) / 60);
+  return { day, hour, minute };
+}
+
+/** Unit vector toward a sky direction, y up. Azimuth 0 = −Z, 90 = +X. */
+export function skyDirection(azimuthDeg, elevationDeg) {
+  const az = (azimuthDeg * Math.PI) / 180;
+  const el = (elevationDeg * Math.PI) / 180;
+  return { x: Math.sin(az) * Math.cos(el), y: Math.sin(el), z: -Math.cos(az) * Math.cos(el) };
+}

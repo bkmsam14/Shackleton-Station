@@ -8,6 +8,14 @@ export default defineConfig(({ command }) => ({
     target: 'es2020',
     chunkSizeWarningLimit: 1200,
   },
+  // Pre-bundle three + the addons together so the dev server never loads two copies.
+  optimizeDeps: {
+    include: [
+      'three',
+      'three/addons/controls/OrbitControls.js',
+      'three/addons/controls/PointerLockControls.js',
+    ],
+  },
   server: {
     port: 5173,
     strictPort: false,
