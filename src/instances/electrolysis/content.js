@@ -56,48 +56,85 @@ export const TEXT = {
   allFull: 'The oxygen supply is almost full. Come back when it gets lower — no need to use water yet!',
 };
 
-// Rotating end-of-round questions. One per visit (visit number % length).
+// Rotating end-of-round questions — one per visit (visit number % length).
+// Written for ages 7–12: each one can be answered from what the kid just SAW in the
+// intro or the game (no outside knowledge needed). Short answers with a picture each,
+// shown in a random order. A wrong answer gets Volt's hint and a second try; the bonus
+// star is only for a right first try. Harder facts (Sabatier, salt → chlorine) stay in
+// the PDA Databank for curious older kids.
+// option.icon = a key of IC in icons.js (or null).
 export const QUIZ = [
   {
-    q: 'Which tube filled up faster?',
-    options: ['The hydrogen tube (−)', 'The oxygen tube (+)', 'Both the same'],
-    answer: 0,
-    explain: 'Each water molecule has 2 hydrogen atoms but only 1 oxygen atom, so you get twice as much hydrogen gas as oxygen gas.',
+    q: 'How many hydrogen atoms are in one water molecule?',
+    options: [
+      { text: '1', icon: null },
+      { text: '2', icon: null },
+      { text: '3', icon: null },
+    ],
+    answer: 1,
+    big: true, // short number answers shown as big tiles
+    hint: 'Look at the little number after the H in H₂O!',
+    explain: 'H₂O means 2 hydrogen atoms (H) and 1 oxygen atom (O).',
     source: SOURCES.rscWater,
   },
   {
-    q: 'On the Space Station, what happens to the leftover hydrogen?',
+    q: 'What splits the water apart?',
     options: [
-      'It can be joined with the CO₂ astronauts breathe out to make water again',
-      'It is turned back into oxygen',
-      'It powers the lights',
+      { text: 'Electricity', icon: 'power' },
+      { text: 'Fire', icon: 'heat' },
+      { text: 'Ice', icon: 'snow' },
     ],
     answer: 0,
-    explain:
-      'A machine called the Sabatier reactor joins hydrogen with carbon dioxide to make water (and methane, which is let out into space). Hydrogen it can’t use is let out into space too.',
+    hint: 'Think about the zaps you made in the game!',
+    explain: 'Electricity pulls water molecules apart. That is what electrolysis means: splitting with electricity!',
+    source: SOURCES.rscWater,
+  },
+  {
+    q: 'Which tube filled up faster?',
+    options: [
+      { text: 'Hydrogen', icon: 'h2' },
+      { text: 'Oxygen', icon: 'oxygen' },
+      { text: 'Both the same', icon: 'equal' },
+    ],
+    answer: 0,
+    hint: 'Look back at the two tubes. Which one was taller?',
+    explain: 'Every water molecule has 2 hydrogen atoms but only 1 oxygen atom — so you get twice as much hydrogen.',
+    source: SOURCES.rscWater,
+  },
+  {
+    q: 'Which gas from the machine do you need to breathe?',
+    options: [
+      { text: 'Oxygen', icon: 'oxygen' },
+      { text: 'Hydrogen', icon: 'h2' },
+    ],
+    answer: 0,
+    hint: 'It is the gas in the blue tube on the + side!',
+    explain: 'The oxygen goes into the base air for you to breathe. The Space Station’s oxygen machine does the same thing.',
     source: SOURCES.eclss,
   },
   {
-    q: 'Why not add salt to the water to help the electricity flow?',
+    q: 'Where could a Moon base find water?',
     options: [
-      'Salt water makes chlorine gas instead of oxygen — and chlorine is poisonous',
-      'Salt would make the oxygen taste salty',
-      'Salt makes the water freeze',
+      { text: 'Ice in dark craters', icon: 'snow' },
+      { text: 'Rain', icon: 'cloud' },
+      { text: 'Rivers', icon: 'wave' },
     ],
     answer: 0,
-    explain:
-      'With salt water, the + side makes chlorine instead of oxygen. That is why oxygen machines use very clean water.',
-    source: SOURCES.rscBrine,
-  },
-  {
-    q: 'Where could a Moon base find water to make oxygen?',
-    options: ['Ice in craters that never get sunlight', 'Lakes on the Moon', 'Rain clouds'],
-    answer: 0,
-    explain:
-      'Craters near the Moon’s south pole stay in shadow and are so cold that they hold water ice. That is one reason Artemis is going there.',
+    hint: 'The Moon has no air, so it never rains there. Where could water hide?',
+    explain: 'Some craters near the Moon’s south pole never get sunlight. They are so cold that water stays frozen as ice.',
     source: SOURCES.moonIce,
   },
 ];
+
+/** Shuffle the options for display (so the right answer is not always in the same spot). */
+export function shuffledOptions(question, random = Math.random) {
+  const order = question.options.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order; // display position → original option index
+}
 
 /** Kid-friendly "real time" line: rounds to the nearest half hour. */
 export function realTimeLine(hours) {

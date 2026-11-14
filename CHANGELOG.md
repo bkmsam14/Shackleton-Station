@@ -14,7 +14,13 @@
   zaps lose a little power as heat (capped at 25% of the batch). The base clock moves on by the
   real ISS production time (5.4 kg O₂/day), so a Big batch costs about 6½ in-game hours.
 - **Learning beats:** a "Meet H₂O" intro on the first visit, a mid-round "Why?" bubble, and a
-  rotating quiz question (2:1 ratio, Sabatier, why not salt water, Moon ice) with its source.
+  rotating kid-level quiz question that can be answered from what the player just saw (how many
+  H in H₂O, what splits water, which tube filled faster, which gas you breathe, where a Moon base
+  finds water). Short picture answers in random order; a wrong answer gets Volt's hint and a
+  second try (the bonus star is for a right first try). Harder facts (Sabatier, salt → chlorine)
+  live in the PDA Databank.
+- **Look:** "toy lab console" UI with custom sticker icons and Volt, a helper robot who speaks
+  the lesson lines.
 - **Stars and mastery:** 1 star for finishing, +1 for accurate zapping, +1 for the quiz. Best stars
   give bronze / silver / gold, saved in localStorage and shown on the station prompt.
 - Click/tap or Space to zap; Esc leaves (nothing is made or paid). Simple WebAudio sound effects.

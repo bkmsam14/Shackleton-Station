@@ -8,7 +8,7 @@ import { powerPercent } from '../../systems/gauges.js';
 import { batchCost, checkAfford, applyBatch, scoreRound } from '../../systems/electrolysis.js';
 import { sfx } from '../../ui/sfx.js';
 import { createZapperGame } from './game.js';
-import { TEXT, QUIZ, realTimeLine } from './content.js';
+import { TEXT, QUIZ, realTimeLine, shuffledOptions } from './content.js';
 import { IC, starIcon, medalIcon, flaskIcon, voltBot } from './icons.js';
 
 const MEDAL_NAME = { bronze: 'Bronze', silver: 'Silver', gold: 'Gold' };
@@ -231,45 +231,75 @@ export function createElectrolysisInstance({ root, ctx, done }) {
 
   function showQuiz() {
     setScreen('quiz');
+    round.quizTries = 0;
+    const order = shuffledOptions(quiz); // display position → original option index
     const letters = ['A', 'B', 'C', 'D'];
     body.innerHTML = `
       ${say('think', `<h3 class="ez-h3">Quick question!</h3><p class="ez-q">${quiz.q}</p>`)}
-      <div class="ez-answers">
-        ${quiz.options
-          .map(
-            (o, i) =>
-              `<button class="ez-answer" data-i="${i}" style="--i:${i}"><span class="ez-letter">${letters[i]}</span><span class="ez-answer-txt">${o}</span><span class="ez-answer-mark"></span></button>`,
-          )
+      <div class="ez-answers ${quiz.big ? 'is-big' : ''}" style="--n:${order.length}">
+        ${order
+          .map((oi, pos) => {
+            const o = quiz.options[oi];
+            const pic = o.icon ? IC[o.icon] : `<span class="ez-num">${o.text}</span>`;
+            return `<button class="ez-answer" data-i="${oi}" style="--i:${pos}" aria-label="${letters[pos]}: ${o.text}">
+                <span class="ez-letter">${letters[pos]}</span>
+                <span class="ez-answer-pic">${pic}</span>
+                ${o.icon ? `<span class="ez-answer-txt">${o.text}</span>` : ''}
+                <span class="ez-answer-mark"></span>
+              </button>`;
+          })
           .join('')}
       </div>
       <div class="ez-explain" hidden></div>`;
     body.querySelectorAll('.ez-answer').forEach((btn) =>
-      btn.addEventListener('click', () => answer(Number(btn.dataset.i))),
+      btn.addEventListener('click', () => answer(Number(btn.dataset.i), btn)),
     );
     focusFirst();
   }
 
-  function answer(i) {
+  /** Wrong first try → Volt gives a hint and the kid tries again. Star only for a right first try. */
+  function answer(i, btn) {
+    round.quizTries++;
     const right = i === quiz.answer;
-    round.quizCorrect = right;
-    right ? sfx.success() : sfx.miss();
-    body.querySelectorAll('.ez-answer').forEach((btn, j) => {
+    const ex = body.querySelector('.ez-explain');
+    if (!right) {
+      sfx.miss();
       btn.disabled = true;
-      const mark = btn.querySelector('.ez-answer-mark');
-      if (j === quiz.answer) {
-        btn.classList.add('is-right');
-        mark.innerHTML = IC.check;
-      } else if (j === i) {
-        btn.classList.add('is-wrong');
-        mark.innerHTML = IC.cross;
+      btn.classList.add('is-wrong');
+      btn.querySelector('.ez-answer-mark').innerHTML = IC.cross;
+      const left = [...body.querySelectorAll('.ez-answer:not([disabled])')];
+      if (left.length > 1) {
+        ex.hidden = false;
+        ex.innerHTML = say('happy', `<p><b class="ez-try">Not quite — try again!</b> ${quiz.hint}</p>`, 'ez-say-small');
+        left[0].focus();
+        announce(`Not quite. Hint: ${quiz.hint}`);
+        return;
+      }
+      // only the right answer is left: show it
+      reveal(false);
+      return;
+    }
+    reveal(true);
+  }
+
+  function reveal(right) {
+    const firstTry = right && round.quizTries === 1;
+    round.quizCorrect = firstTry;
+    if (right) sfx.success();
+    body.querySelectorAll('.ez-answer').forEach((b) => {
+      b.disabled = true;
+      if (Number(b.dataset.i) === quiz.answer) {
+        b.classList.add('is-right');
+        b.querySelector('.ez-answer-mark').innerHTML = IC.check;
       }
     });
+    const head = firstTry ? 'Yes! +1 star' : right ? 'You got it!' : 'Here’s the answer!';
     const ex = body.querySelector('.ez-explain');
     ex.hidden = false;
     ex.innerHTML = `
       ${say(
         right ? 'cheer' : 'happy',
-        `<p><b class="${right ? 'ez-yes' : 'ez-try'}">${right ? 'Yes! +1 star' : 'Good try!'}</b> ${quiz.explain}</p>
+        `<p><b class="${right ? 'ez-yes' : 'ez-try'}">${head}</b> ${quiz.explain}</p>
          <p class="ez-source">${IC.link}<span>Source: <a href="${quiz.source.url}" target="_blank" rel="noopener">${quiz.source.label}</a></span></p>`,
         'ez-say-small',
       )}
@@ -279,7 +309,7 @@ export function createElectrolysisInstance({ root, ctx, done }) {
       showResult();
     });
     ex.querySelector('[data-next]').focus();
-    announce(right ? 'Correct!' : 'Not quite.');
+    announce(`${head} ${quiz.explain}`);
   }
 
   function showResult() {

@@ -30,6 +30,30 @@ export const IC = {
     `<path d="M16 3c1 5 7 7.5 7 15a7 7 0 0 1-14 0c0-4 2-6 3.5-8 .5 3 2 4 3 4.5C15 10 15.5 6.5 16 3z" fill="#ff7a59" ${O}/>
      <path d="M16 18c1.5 1.5 3 3 3 5a3 3 0 0 1-6 0c0-1.5 1.2-3 3-5z" fill="#ffd43b"/>`,
   ),
+  // two white H atoms joined = hydrogen gas (H₂), matching the game's atoms
+  h2: svg(
+    `<path d="M11 16h10" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>
+     <circle cx="9.5" cy="16" r="7" fill="#f2f5ff" ${O}/><circle cx="22.5" cy="16" r="7" fill="#f2f5ff" ${O}/>
+     <text x="9.5" y="20" text-anchor="middle" font-size="10" font-weight="700" fill="${INK}" font-family="Fredoka, sans-serif">H</text>
+     <text x="22.5" y="20" text-anchor="middle" font-size="10" font-weight="700" fill="${INK}" font-family="Fredoka, sans-serif">H</text>`,
+  ),
+  snow: svg(
+    `<circle cx="16" cy="16" r="13" fill="#d9edff" ${O}/>
+     <path d="M16 7v18M8.2 11.5l15.6 9M8.2 20.5l15.6-9" stroke="#2b6fb3" stroke-width="2.6" stroke-linecap="round"/>
+     <path d="M13.5 8.5 16 11l2.5-2.5M13.5 23.5 16 21l2.5 2.5" fill="none" stroke="#2b6fb3" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+  ),
+  cloud: svg(
+    `<path d="M9 21a5 5 0 0 1 .8-9.9A7 7 0 0 1 23 10.5a5.3 5.3 0 0 1 .5 10.5z" fill="#e8eefb" ${O}/>
+     <path d="M11 25l-1.5 3M17 25l-1.5 3M23 25l-1.5 3" stroke="#4fa8ff" stroke-width="2.6" stroke-linecap="round"/>`,
+  ),
+  wave: svg(
+    `<rect x="3" y="6" width="26" height="20" rx="6" fill="#4fa8ff" ${O}/>
+     <path d="M6 13q2.5-3 5 0t5 0 5 0 5 0M6 20q2.5-3 5 0t5 0 5 0 5 0" fill="none" stroke="#d9edff" stroke-width="2.4" stroke-linecap="round"/>`,
+  ),
+  equal: svg(
+    `<rect x="3" y="3" width="26" height="26" rx="8" fill="#e8eefb" ${O}/>
+     <path d="M10 13h12M10 19h12" stroke="${INK}" stroke-width="3.2" stroke-linecap="round"/>`,
+  ),
   back: svg(`<path d="M19 7 10 16l9 9" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>`),
   check: svg(`<path d="M7 16.5 13.5 23 25.5 9.5" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`),
   cross: svg(`<path d="M9 9l14 14M23 9 9 23" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>`),
