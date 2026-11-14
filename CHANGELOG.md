@@ -1,5 +1,36 @@
 # Changelog — Shackleton Station
 
+## 0.4.0 — Volt, the helper robot
+
+### Gameplay
+- **Volt follows you around the base.** The same robot as in the mini-game, now in 3D as a small
+  wheeled rover. Real science: the Moon has almost no air, so fans can't fly outside; Volt rolls
+  on wheels everywhere, like real Moon rovers. Volt rides through the airlock with you, rolls into
+  view when he talks, and waits when you look at him.
+- **First-day tour (learn by doing, 7 steps):** walk → meet the three gauge rings → open the PDA
+  → make oxygen at Electrolysis → go out through the airlock → visit the solar array → visit the
+  greenhouse. A cyan arrow and ring mark the next spot. Skip or replay it from the pause menu.
+- **Tips and lessons:** Volt warns when oxygen, food, power or the water tank get low (and says
+  how to fix it), reacts to the Sun going behind the ridge, says something new on the first visit
+  to a place, and shares a sourced science fact about every 3 minutes. He stays quiet in menus,
+  the PDA and mini-games, and never chatters (cooldown).
+- **Talk to Volt:** look at him and press E for the most useful tip right now.
+- **Pause menu:** "Volt talks: Chatty / Helpful / Quiet" (saved) and "Replay / Skip Volt's tour".
+- Oxygen now starts at 60% (game balance) so the tour can make oxygen on day one.
+
+### Code
+- `systems/assistant.js` (Volt's brain: tour state machine, priority queue, cooldown, chattiness;
+  pure logic, 15 tests), `data/voltLines.js` (every line; ≤ 14 words; facts point at sourced
+  Databank entries), `world/volt.js` (model, following, tour marker), `ui/voltBubble.js`
+  (in-world speech bubble that docks at the screen edge when Volt is out of view).
+- Event captions now come from Volt, with the old caption as a fallback in Quiet mode.
+- Volt costs about 6 draw calls.
+
+### Science
+- New sourced Databank entries: gravity is the same inside the base, Astrobee robots fly on fans
+  inside the ISS and rovers use wheels on the airless Moon, Moon ice, why the sky is black, why
+  grow lights are pink.
+
 ## 0.3.0 — Electrolysis mini-game (Molecule Zapper)
 
 ### Gameplay
