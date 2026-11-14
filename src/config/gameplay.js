@@ -170,6 +170,8 @@ export const ELECTROLYSIS = {
   ],
   // Each missed zap wastes a little electricity (electrolysers lose some energy as heat).
   MISS_EXTRA_KWH: 0.05, // GAME BALANCE (not real data)
+  // ...but never more than this share of the batch's power cost (button-mashing stays fair).
+  MAX_HEAT_FRACTION: 0.25, // GAME BALANCE (not real data)
   // A batch is only allowed if the battery stays above this after paying for it.
   POWER_FLOOR_PERCENT: 5, // GAME BALANCE (not real data)
   // Arcade feel.

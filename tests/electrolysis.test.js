@@ -29,21 +29,29 @@ test('unknown batch id throws a clear error', () => {
   assert.throws(() => batchCost('huge'), /Unknown electrolysis batch/);
 });
 
-test('checkAfford: ok when there is water and power', () => {
-  const g = createGauges();
+test('checkAfford: ok when there is water, power and room for the oxygen', () => {
+  const g = createGauges({ oxygen: 40 });
   assert.deepEqual(checkAfford(g, createElectrolysisState(), 'big'), { ok: true, reason: null });
 });
 
 test('checkAfford: refuses when the tank lacks water', () => {
-  const g = createGauges();
+  const g = createGauges({ oxygen: 40 });
   const r = checkAfford(g, { tankKg: 1 }, 'big');
   assert.equal(r.ok, false);
   assert.equal(r.reason, 'water');
 });
 
+test('checkAfford: refuses a batch that would not fit in the oxygen supply (no wasted water)', () => {
+  const g = createGauges({ oxygen: 90 }); // 0.3 kg of space left; Small makes 0.5 kg
+  const r = checkAfford(g, createElectrolysisState(), 'small');
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, 'full');
+  assert.equal(checkAfford(createGauges({ oxygen: 50 }), createElectrolysisState(), 'big').ok, true);
+});
+
 test('checkAfford: refuses if paying would drop the battery under the floor', () => {
   const floorKwh = (ELECTROLYSIS.POWER_FLOOR_PERCENT / 100) * POWER.BATTERY_CAPACITY_KWH;
-  const g = createGauges({ batteryKwh: floorKwh + 1 }); // 1 kWh spare, Small needs ~2.5
+  const g = createGauges({ oxygen: 40, batteryKwh: floorKwh + 1 }); // 1 kWh spare, Small needs ~2.5
   const r = checkAfford(g, createElectrolysisState(), 'small');
   assert.equal(r.ok, false);
   assert.equal(r.reason, 'power');
@@ -61,12 +69,18 @@ test('applyBatch pays water + power and adds oxygen through addOxygen', () => {
   assert.ok(g.oxygen > 50);
 });
 
-test('applyBatch never overfills the oxygen supply and never drives power below 0', () => {
-  const g = createGauges({ oxygen: 95, batteryKwh: 12 }); // affordable, but 1000 misses would overspend
+test('applyBatch fills to exactly full and never drives power below 0', () => {
+  const g = createGauges({ oxygen: 50, batteryKwh: 12 }); // affordable, but 1000 misses would overspend
   applyBatch(g, createElectrolysisState(), 'big', 1000);
-  assert.equal(g.oxygen, 100);
+  assert.ok(near(g.oxygen, 100));
   assert.ok(g.batteryKwh >= 0);
   assert.ok(powerPercent(g) >= 0);
+});
+
+test('heat from misses is capped at a share of the batch power', () => {
+  const g = createGauges({ oxygen: 40 });
+  const res = applyBatch(g, createElectrolysisState(), 'small', 10000);
+  assert.ok(near(res.heatKwh, res.kwh * ELECTROLYSIS.MAX_HEAT_FRACTION));
 });
 
 test('applyBatch refuses a batch it cannot afford (no free oxygen)', () => {

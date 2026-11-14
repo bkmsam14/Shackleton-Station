@@ -5,7 +5,7 @@
 //  - power comes from the base battery (physics minimum 4.96 kWh per kg of O₂, NIST);
 //  - missed zaps waste a little extra power (lost as heat).
 // All numbers live in src/config/gameplay.js → ELECTROLYSIS.
-import { ELECTROLYSIS, POWER, TIME } from '../config/gameplay.js';
+import { ELECTROLYSIS, POWER, TIME, OXYGEN } from '../config/gameplay.js';
 import { addOxygen } from './gauges.js';
 
 export function createElectrolysisState(overrides = {}) {
@@ -39,11 +39,14 @@ export function batchCost(batchId) {
 }
 
 /**
- * Can the base pay for this batch? reason: null | 'water' | 'power'.
- * Power must stay above the floor so electrolysis never empties the battery.
+ * Can the base run this batch? reason: null | 'full' | 'water' | 'power'.
+ *  - 'full': the oxygen would not fit in the supply (no water or power wasted on it);
+ *  - power must stay above the floor so electrolysis never empties the battery.
  */
 export function checkAfford(gauges, state, batchId) {
   const c = batchCost(batchId);
+  const spaceKg = ((100 - gauges.oxygen) / 100) * OXYGEN.CAPACITY_KG;
+  if (spaceKg + 1e-9 < c.o2Kg) return { ok: false, reason: 'full' };
   if (state.tankKg + 1e-9 < c.waterKg) return { ok: false, reason: 'water' };
   const floorKwh = (ELECTROLYSIS.POWER_FLOOR_PERCENT / 100) * POWER.BATTERY_CAPACITY_KWH;
   if (gauges.batteryKwh - c.kwh < floorKwh) return { ok: false, reason: 'power' };
@@ -58,7 +61,10 @@ export function applyBatch(gauges, state, batchId, misses = 0) {
   const afford = checkAfford(gauges, state, batchId);
   if (!afford.ok) throw new Error(`Cannot afford electrolysis batch "${batchId}" (${afford.reason})`);
   const c = batchCost(batchId);
-  const heatKwh = Math.max(0, misses) * ELECTROLYSIS.MISS_EXTRA_KWH;
+  const heatKwh = Math.min(
+    Math.max(0, misses) * ELECTROLYSIS.MISS_EXTRA_KWH,
+    c.kwh * ELECTROLYSIS.MAX_HEAT_FRACTION,
+  );
   state.tankKg = Math.max(0, state.tankKg - c.waterKg);
   gauges.batteryKwh = Math.max(0, gauges.batteryKwh - c.kwh - heatKwh);
   const storedKg = addOxygen(gauges, c.o2Kg);
