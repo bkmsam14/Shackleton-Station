@@ -1,0 +1,21 @@
+{
+  "name": "shackleton-station",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Browser-based 3D survival sandbox for kids at the Moon's south pole (NASA Space Apps 2026).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test \"tests/**/*.test.js\""
+  },
+  "dependencies": {
+    "@fontsource/fredoka": "5.3.0",
+    "@fontsource/nunito": "5.3.0",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.8"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "_note": "Every in-game fact with its source. Add new facts here at the same time as you add them to the game.",
+  "facts": [
+    {
+      "id": "moon-gravity",
+      "text": "Moon gravity is about 1/6 of Earth's, so you jump high and fall slowly.",
+      "value": "1.62 m/s² (Earth 9.81 m/s²)",
+      "source": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html"
+    },
+    {
+      "id": "oxygen-per-day",
+      "text": "An astronaut breathes in about 0.9 kg of oxygen every day.",
+      "value": "0.895 kg per crewmember per day (BVAD Table 3-31, p. 58)",
+      "source": "https://ntrs.nasa.gov/citations/20210024855"
+    },
+    {
+      "id": "oxygen-eva",
+      "text": "Working outside in a spacesuit is hard work, so you use oxygen about 2 times faster.",
+      "value": "0.086 kg per hour on a spacewalk (BVAD Table 4-70, p. 135) vs 0.037 kg per hour inside",
+      "source": "https://ntrs.nasa.gov/citations/20210024855"
+    },
+    {
+      "id": "food-per-day",
+      "text": "An astronaut eats about 0.8 kg of food per day (not counting the water in it).",
+      "value": "0.800 kg dry mass per crewmember per day (BVAD Table 3-31, p. 58)",
+      "source": "https://ntrs.nasa.gov/citations/20210024855"
+    },
+    {
+      "id": "sun-loop",
+      "text": "At the Moon's south pole the Sun stays low and slowly circles the sky. In real life one trip around takes about 29.5 days.",
+      "value": "Synodic period 29.53 days",
+      "source": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html"
+    },
+    {
+      "id": "black-sky",
+      "text": "The Moon has almost no air, so the sky is black even when the Sun is up, and shadows are sharp.",
+      "value": "Surface pressure about 3 × 10⁻¹⁵ bar",
+      "source": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html"
+    },
+    {
+      "id": "electrolysis",
+      "text": "Electrolysis uses electricity to split water into hydrogen and oxygen.",
+      "value": "2 H₂O → 2 H₂ + O₂ (the ISS Oxygen Generation Assembly does this to make breathing oxygen)",
+      "source": "https://ntrs.nasa.gov/citations/20200002346"
+    },
+    {
+      "id": "plant-light",
+      "text": "Space greenhouses like NASA's Veggie light plants with red and blue LEDs, which is why the greenhouse glows pink-purple.",
+      "value": "Veggie tests different red:blue light ratios (VEG-04, 2019)",
+      "source": "https://ntrs.nasa.gov/citations/20190033231"
+    },
+    {
+      "id": "vertical-solar",
+      "text": "At the south pole the Sun is always low, so NASA is testing tall vertical solar arrays that turn to follow it.",
+      "value": "NASA Vertical Solar Array Technology (VSAT) project",
+      "source": "https://ntrs.nasa.gov/api/citations/20230012849/downloads/GCD%20Annual%20Review%20VSAT%20September%202023%20Final.pdf"
+    }
+  ]
+}
