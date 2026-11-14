@@ -33,8 +33,7 @@ export function createWorld({ quality = 'high', renderer } = {}) {
   const habitat = createHabitat();
   const greenhouse = createGreenhouse();
   // fewer draw calls: merge each building's static parts by material
-  mergeStatic(habitat.object);
-  mergeStatic(greenhouse.object);
+  for (const part of [habitat.exterior, habitat.interior, greenhouse.exterior, greenhouse.interior]) mergeStatic(part);
   // Things you can only see from outside (modules have no windows yet): hidden while
   // indoors so the GPU doesn't draw the whole Moon behind the walls.
   const outdoorDetails = createOutdoorDetails();
@@ -102,8 +101,13 @@ export function createWorld({ quality = 'high', renderer } = {}) {
         lastZone = zoneId;
         const outside = zoneId === 'outside';
         for (const o of outdoorOnly) o.visible = outside;
-        habitat.object.visible = outside || zoneId === 'habitat';
-        greenhouse.object.visible = outside || zoneId === 'greenhouse';
+        // no windows: draw building exteriors only outside, each interior only inside it
+        habitat.exterior.visible = outside;
+        habitat.interior.visible = zoneId === 'habitat';
+        greenhouse.exterior.visible = outside;
+        greenhouse.interior.visible = zoneId === 'greenhouse';
+        habitat.setActive(zoneId === 'habitat');
+        greenhouse.setActive(zoneId === 'greenhouse');
         if (env) {
           scene.environment = outside ? env.outdoor : env.indoor;
           scene.environmentIntensity = ENV_INTENSITY[zoneId] ?? ENV_INTENSITY.outside;

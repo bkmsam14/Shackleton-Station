@@ -266,3 +266,28 @@
     padding: 20px 18px;
   }
 }
+
+.menu-version {
+  margin: 4px 0 0;
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+/* keycaps in the menus (base style; the controls grid tints them) */
+.keycap {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: var(--cyan);
+  color: #04202a; /* 10.8:1 on cyan */
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 20px;
+  white-space: nowrap;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.25);
+}

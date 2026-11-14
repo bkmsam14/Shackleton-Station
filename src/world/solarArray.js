@@ -41,7 +41,7 @@ export function createSolarArrayModel() {
   group.name = 'solarArray';
 
   // tripod base
-  const legGeo = new THREE.CylinderGeometry(0.09, 0.12, 3.2, 6);
+  const legGeo = new THREE.CylinderGeometry(0.08, 0.11, 3.2, 14);
   for (let i = 0; i < 3; i++) {
     const a = (i / 3) * Math.PI * 2;
     const leg = new THREE.Mesh(legGeo, MAT.metal());
@@ -50,17 +50,17 @@ export function createSolarArrayModel() {
     leg.castShadow = true;
     group.add(leg);
   }
-  const foot = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.4, 0.3, 8), MAT.darkMetal());
+  const foot = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.4, 0.3, 40), MAT.darkMetal());
   foot.position.y = 0.15;
   foot.receiveShadow = true;
   group.add(foot);
 
   // mast
-  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, L.mastHeight, 8), MAT.hullDark());
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, L.mastHeight, 24), MAT.hullDark());
   mast.position.y = L.mastHeight / 2;
   mast.castShadow = true;
   group.add(mast);
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.5, 8), MAT.accent());
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.5, 24), MAT.accent());
   band.position.y = 2.6;
   group.add(band);
 
@@ -96,7 +96,7 @@ export function createSolarArrayModel() {
   const arm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.5), MAT.metal());
   arm.position.set(0, panel.position.y, 0.12);
   head.add(arm);
-  const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.6, 8), MAT.accent());
+  const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.6, 28), MAT.accent());
   motor.position.y = L.mastHeight + 0.2;
   head.add(motor);
   const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), MAT.glow(0xff5a4a, 5));

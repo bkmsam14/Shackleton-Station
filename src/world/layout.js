@@ -6,22 +6,27 @@ export const LAYOUT = {
   // Flattened, bulldozed pad around the base.
   FLAT_AREA: { minX: -32, maxX: 26, minZ: -14, maxZ: 42, blend: 16 },
 
+  // v0.2.1: a roomier module — sleeping nook (−X), lounge + galley (middle),
+  // work bay with life support and the airlock (+X), split by an open bulkhead.
   HABITAT: {
     x: 0,
     z: 0,
-    length: 12, // along X
-    radius: 2.6, // outer shell
-    innerRadius: 2.45,
-    axisY: 2.9, // module lies on short legs
-    floorY: 1.3,
+    length: 20, // along X
+    radius: 3.6, // outer shell
+    innerRadius: 3.45,
+    axisY: 3.9, // module lies on short legs
+    floorY: 2.3,
     // Walkable interior rectangle (player centre is kept RADIUS inside it).
-    interior: { minX: -5.7, maxX: 5.7, minZ: -1.85, maxZ: 1.85, ceilingY: 4.6 },
-    airlock: { x: 2.5, zStart: 2.2, zEnd: 4.6, width: 2.6, height: 2.6 },
-    spawn: { x: -3.4, z: 0, yawDeg: 90 }, // facing +X, toward the airlock side
-    innerDoor: { x: 2.5, z: 1.8 },
-    insideArrive: { x: 2.5, z: 0.6, yawDeg: 0 }, // after entering: facing −Z, into the room
-    outsideArrive: { x: 2.5, z: 7.2, yawDeg: 180 }, // after exiting: facing +Z, away from the hab
-    outerDoor: { x: 2.5, z: 6.0 },
+    interior: { minX: -9.7, maxX: 9.7, minZ: -2.95, maxZ: 2.95, ceilingY: 6.6 },
+    bulkheadX: 3.0, // open bulkhead between lounge and work bay
+    bulkheadDoorHalf: 1.0, // half-width of its doorway
+    // starts at the hull (z 3.5) so it never pokes into the interior
+    airlock: { x: 6.5, zStart: 3.5, zEnd: 6.0, width: 2.8, height: 2.9 },
+    spawn: { x: -3.2, z: 0.4, yawDeg: 90 }, // lounge, facing +X toward the work bay + airlock
+    innerDoor: { x: 6.5, z: 2.95 },
+    insideArrive: { x: 6.5, z: 1.7, yawDeg: 0 }, // after entering: facing −Z, into the bay
+    outsideArrive: { x: 6.5, z: 8.9, yawDeg: 180 }, // after exiting: facing +Z, away from the hab
+    outerDoor: { x: 6.5, z: 8.0 },
   },
 
   GREENHOUSE: {
@@ -49,8 +54,10 @@ export const LAYOUT = {
 
   // Small lamp posts that guide the way between doors.
   PATH_LIGHTS: [
-    [3.5, 9.5], [1.5, 13], [0, 17], [-1, 21], [-2, 25], [-3.6, 28],
-    [-2.5, 9], [-7.5, 10.5], [-12.5, 12], [-16.5, 13],
+    // habitat airlock → greenhouse door
+    [8.2, 10.9], [6.0, 14], [4.0, 17.5], [2.0, 21], [0.0, 24.5], [-1.8, 27.6],
+    // habitat airlock → solar array
+    [4.6, 10.2], [-0.5, 10.6], [-6, 11.4], [-11.5, 12.4], [-16.4, 13.4],
   ],
 
   // Far hills ring (also hides the Sun during the ridge period).

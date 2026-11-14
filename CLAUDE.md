@@ -76,7 +76,7 @@ Keep the systems (`systems/`) as pure logic with no Three.js imports, so they ca
 - One feature per session. Make a small commit after each working step, with a clear message.
 - After every change: `npm run dev` must start with no console errors. Check the browser console.
 - Performance budget: 60 fps on a mid-range laptop. One shadow-casting directional light, low-poly models, textures 1024px at most, total download around 30 MB at most. Add a Low/High quality toggle.
-- Placeholder art is fine: simple boxes, cylinders and domes in a consistent low-poly style. A teammate will swap in real models (glTF) later. Keep model loading behind one function so swapping is easy.
+- Placeholder art is fine: simple shapes in one **clean, smooth-shaded style** (v0.2.1 team decision: rounded/bevelled edges, smooth shading, no faceted low-poly look; rocks may stay angular). A teammate will swap in real models (glTF) later. Keep model loading behind one function so swapping is easy.
 - When you add an in-game fact, add it to `public/data/facts.json` with a `source` URL at the same time.
 - If something in the design conflicts with these rules, the rules win. Mention the conflict to the user.
 

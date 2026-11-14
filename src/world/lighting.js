@@ -16,7 +16,7 @@ const EARTHSHINE_MAX = 0.12; // at full Earth — faint, bluish
 const OUTDOOR_FILL = 0.035; // almost nothing: shadows stay near-black
 const HELMET_LAMP = 14; // candela-ish; reaches ~15 m
 const INDOOR_FILL = {
-  habitat: { sky: 0xdfe6ee, ground: 0x6f7986, intensity: 0.12 },
+  habitat: { sky: 0xffe8d0, ground: 0x857a6e, intensity: 0.14 }, // warm, homey
   greenhouse: { sky: 0xd9a6ff, ground: 0x6a4f7a, intensity: 0.38 }, // red + blue LED glow
 };
 

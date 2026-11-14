@@ -31,11 +31,13 @@ export function mergeStatic(group) {
       after += 1;
       continue;
     }
+    // keep only the attributes every mesh in this bucket has (e.g. leaf vertex colours)
+    const common = ['position', 'normal', 'uv', 'color'].filter((n) => meshes.every((m) => m.geometry.attributes[n]));
     const geos = meshes.map((m) => {
       let g = m.geometry.clone();
       if (g.index === null) g = BufferGeometryUtils.mergeVertices(g);
       for (const name of Object.keys(g.attributes)) {
-        if (name !== 'position' && name !== 'normal' && name !== 'uv') g.deleteAttribute(name);
+        if (!common.includes(name)) g.deleteAttribute(name);
       }
       g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(toLocal, m.matrixWorld));
       return g;

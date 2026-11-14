@@ -1,5 +1,6 @@
 // menus.js — click-to-start screen and Esc pause menu (with honest time notes + credits).
 import { TIME, SKY } from '../config/gameplay.js';
+import { version } from '../../package.json';
 
 const CONTROLS = `
   <div class="controls-grid">
@@ -49,6 +50,7 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality }) 
   start.innerHTML = `
     <div class="menu-card" role="dialog" aria-labelledby="title-start">
       <h1 class="menu-title" id="title-start">Shackleton <span>Station</span></h1>
+      <p class="menu-version">v${version}</p>
       <p class="menu-sub">You are the astronaut at a small base at the Moon's south pole. Keep your oxygen, food and base power up!</p>
       <button type="button" class="btn btn-big" data-action="start">▶ Click to start</button>
       <div class="menu-hint" data-hint></div>
@@ -63,6 +65,7 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality }) 
   pause.innerHTML = `
     <div class="menu-card" role="dialog" aria-labelledby="title-pause">
       <h2 class="menu-title" id="title-pause">Paused</h2>
+      <p class="menu-version">Shackleton Station v${version}</p>
       <p class="menu-sub">Time is stopped. Take a breath!</p>
       <button type="button" class="btn btn-big" data-action="resume">▶ Resume</button>
       <div class="menu-hint" data-hint></div>

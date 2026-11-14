@@ -56,7 +56,7 @@ export function createTerrain({ segments = 220 } = {}) {
     vertexColors: true,
     roughness: 1,
     metalness: 0,
-    flatShading: true,
+    flatShading: false,
     ...pbrSet('regolith', { parts: ['map', 'normal', 'orm'] }),
   });
   mat.normalScale.set(1.2, 1.2); // fine regolith detail on top of the low-poly shape

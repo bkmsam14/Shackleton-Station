@@ -8,8 +8,8 @@ export function createPathLights() {
   const pts = LAYOUT.PATH_LIGHTS;
   const group = new THREE.Group();
   group.name = 'pathLights';
-  const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.05, 0.07, 0.9, 6), MAT.metal(), pts.length);
-  const caps = new THREE.InstancedMesh(new THREE.BoxGeometry(0.18, 0.12, 0.18), MAT.glow(0x6fe9ff, 3), pts.length);
+  const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.045, 0.065, 0.9, 16), MAT.metal(), pts.length);
+  const caps = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.1, 0.1, 0.12, 20), MAT.glow(0x6fe9ff, 3), pts.length);
   posts.castShadow = true;
   const m = new THREE.Matrix4();
   pts.forEach(([x, z], i) => {
@@ -29,7 +29,7 @@ export function createPowerCable() {
   const n = 24;
   for (let i = 0; i <= n; i++) {
     const t = i / n;
-    const x = A.x + (H.x - 6.4 - A.x) * t;
+    const x = A.x + (H.x - H.length / 2 - 0.5 - A.x) * t;
     const z = A.z + (H.z - A.z) * t + Math.sin(t * Math.PI) * 3;
     pts.push(new THREE.Vector3(x, heightAt(x, z) + 0.06, z));
   }
