@@ -273,6 +273,39 @@ export const RADIATION = {
   FX_CLICKS_PER_SECOND: 14, // GAME BALANCE (not real data) — dosimeter ticks per second
 };
 
+// ---------------------------------------------------------------------------
+// FARMING — optional potato pots in the greenhouse (src/farming/)
+// ---------------------------------------------------------------------------
+export const FARMING = {
+  START_SEED_POTATOES: 3, // GAME BALANCE (not real data)
+  // Each leafy stem comes up with a potato on its roots; one per harvest is replanted,
+  // so only YIELD − 1 can be eaten. (HARVEST_YIELD is set below: stems × per stem.)
+  POTATOES_PER_STEM: 1, // GAME BALANCE (not real data)
+  POT_COUNT: 4, // pots in the greenhouse (2 stands × 2) — level layout
+  TENDING_REAL_SECONDS: 30, // time to plant, cover, water and harvest one pot — GAME BALANCE (not real data)
+  // Share of the astronaut's food (resting inside) the greenhouse supplies when all pots
+  // are kept busy. 1 = a full farm exactly feeds you; less = you must also ration.
+  FARM_FOOD_COVERAGE: 1, // GAME BALANCE (not real data)
+  // Real potato plants take far longer. No real number is shown until SCIENCE.md has a
+  // verified source ("Real growth times for lettuce and potato" is in Needs verification).
+  GROW_REAL_SECONDS: 150, // GAME BALANCE (not real data)
+  COVER_LOADS: 3, // handfuls of soil to cover the seed potato — GAME BALANCE (not real data)
+  WATER_NEEDED: 120, // water drops that must land on the soil — GAME BALANCE (not real data)
+  POUR_ANGLE_DEG: 35, // the can pours once tilted past this — GAME BALANCE (not real data)
+  CUTS_TO_HARVEST: 3, // leafy stems to cut (each one brings up its potato) — GAME BALANCE (not real data)
+};
+FARMING.HARVEST_YIELD = FARMING.CUTS_TO_HARVEST * FARMING.POTATOES_PER_STEM; // potatoes per plant
+// Food value of one potato, DERIVED (not a free number). In one growing cycle the
+// astronaut eats (cycle ÷ day length) × the BVAD daily food; the full farm's spare
+// potatoes (pots × (yield − 1)) must cover FARM_FOOD_COVERAGE of that.
+// Today: 180 s ÷ 240 s × 0.8 kg = 0.6 kg per cycle ÷ 8 spare potatoes = 0.075 kg dry
+// ≈ 3 % of the food gauge ≈ 2 game hours of food per potato.
+FARMING.CYCLE_REAL_SECONDS = FARMING.GROW_REAL_SECONDS + FARMING.TENDING_REAL_SECONDS;
+FARMING.FOOD_KG_PER_POTATO =
+  (FARMING.FARM_FOOD_COVERAGE * BVAD.FOOD_KG_PER_DAY_DRY * FARMING.CYCLE_REAL_SECONDS) /
+  TIME.REAL_SECONDS_PER_GAME_DAY /
+  (FARMING.POT_COUNT * (FARMING.HARVEST_YIELD - 1));
+
 // Feature flags (later demos).
 export const FEATURES = {
   ENABLE_WATER_GAUGE: false,

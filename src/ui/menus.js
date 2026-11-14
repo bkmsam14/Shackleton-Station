@@ -10,6 +10,7 @@ const CONTROLS = `
     <div><span class="keycap">Shift</span> Hop faster</div>
     <div><span class="keycap">E</span> Use / open doors / talk to Volt</div>
     <div><span class="keycap">Tab</span> PDA: stats + science</div>
+    <div><span class="keycap">F</span> Eat a potato</div>
     <div><span class="keycap">Esc</span> Pause</div>
   </div>`;
 
