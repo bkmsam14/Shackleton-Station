@@ -1,0 +1,243 @@
+/* farm.css — close-up planting view. Same tokens as ui.css (navy panel, Fredoka/Nunito,
+   body ≥ 16px, touch targets ≥ 44px). Bottom-centre so the HUD rings stay visible. */
+
+.farm-view {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+.farm-view[hidden] {
+  display: none;
+}
+.farm-view[data-tool='drag'] {
+  cursor: grabbing;
+}
+.farm-view[data-tool='can'],
+.farm-view[data-tool='cutters'] {
+  cursor: crosshair;
+}
+
+.farm-panel {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px));
+  padding: 14px 18px 16px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow);
+  cursor: default;
+}
+
+.farm-steps {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.farm-steps li {
+  flex: 1;
+  padding: 4px 0 6px;
+  text-align: center;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.15);
+}
+.farm-steps li.is-active {
+  color: var(--text);
+  border-color: var(--green);
+}
+.farm-steps li.is-done {
+  color: var(--green);
+  border-color: rgba(123, 224, 160, 0.5);
+}
+
+.farm-instr {
+  margin: 4px 0 10px;
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.farm-meter {
+  height: 12px;
+  margin: 0 0 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.farm-meter[hidden] {
+  display: none;
+}
+.farm-meter span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 6px;
+  background: var(--cyan);
+  transition: width 0.15s linear;
+}
+
+.farm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.farm-actions [hidden] {
+  display: none;
+}
+.farm-btn {
+  min-height: 48px;
+  padding: 0 20px;
+  font-size: 20px;
+}
+
+/* the seed card you drag into the pot */
+.farm-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 16px 0 12px;
+  border: 2px dashed var(--green);
+  border-radius: 14px;
+  background: rgba(123, 224, 160, 0.12);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: grab;
+  touch-action: none;
+}
+.farm-item:active {
+  cursor: grabbing;
+}
+.farm-item b {
+  color: var(--green);
+}
+.farm-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.farm-potato-icon {
+  display: inline-block;
+  width: 26px;
+  height: 19px;
+  border-radius: 55% 45% 50% 50% / 60% 55% 45% 40%;
+  background: radial-gradient(circle at 35% 35%, #e3c08a, #b48550 70%);
+  box-shadow: inset -2px -2px 0 rgba(0, 0, 0, 0.18);
+}
+
+.farm-done {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.farm-done .keycap {
+  min-width: 30px;
+  height: 30px;
+  font-size: 16px;
+}
+.farm-done.is-primary {
+  background: var(--green);
+  color: #062414;
+}
+.farm-done:focus-visible,
+.farm-item:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+/* inventory chip (top-right) */
+.farm-bag {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 18px;
+  cursor: default;
+}
+.farm-bag b {
+  font-size: 22px;
+  color: var(--green);
+}
+.farm-bag.is-pop {
+  animation: farm-pop 0.5s ease;
+}
+@keyframes farm-pop {
+  40% {
+    transform: scale(1.18);
+    border-color: var(--green);
+  }
+}
+
+/* small inventory panel (bottom-right, during play) */
+.inv-panel {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 14px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  font-family: var(--font-head);
+  font-weight: 500;
+  font-size: 18px;
+}
+.inv-panel[hidden] {
+  display: none;
+}
+.inv-count {
+  font-size: 22px;
+  color: var(--green);
+  min-width: 1.2em;
+}
+.inv-eat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 10px;
+  border-left: 1px solid var(--panel-border);
+  color: var(--text-muted);
+}
+.inv-eat .keycap {
+  min-width: 30px;
+  height: 30px;
+  font-size: 16px;
+}
+.inv-eat.is-off {
+  opacity: 0.45;
+}
+.inv-panel.is-pop {
+  animation: farm-pop 0.5s ease;
+}
