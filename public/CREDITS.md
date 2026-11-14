@@ -25,3 +25,8 @@ See the in-game pause menu and `docs/SCIENCE.md` for every NASA data source
 ## Code libraries
 
 - three.js (MIT), postprocessing by pmndrs (Zlib), n8ao (CC0 / MIT), Vite (MIT).
+- Volt's voice: **meSpeak** by Norbert Landsteiner (npm package by Mikola Lysenko), based on
+  speak.js by Alon Zakai and the **eSpeak** speech synthesizer by Jonathan Duddington —
+  GNU **GPL-3.0**. https://www.masswerk.at/mespeak/ · https://github.com/espeak-ng/espeak-ng
+  Because this GPL code ships inside the game, the game itself must be shared under the GPL-3.0
+  (or a compatible licence) when it is published.

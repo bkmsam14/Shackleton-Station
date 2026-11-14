@@ -154,6 +154,7 @@ function enterPlay() {
     hud.showLocation('habitat');
     // Volt runs the first-day tour (it points at the gauge rings in step 2), or says hello.
     volt.hopTo(player);
+    voltVoice.prewarm(); // load Volt's robot voice engine in the background
     assistant.startIfNeeded();
   }
   mode = pausedFromBusy ? 'busy' : 'playing';

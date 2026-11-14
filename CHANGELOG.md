@@ -15,9 +15,12 @@
   to a place, and shares a sourced science fact about every 3 minutes. He stays quiet in menus,
   the PDA and mini-games, and never chatters (cooldown).
 - **Talk to Volt:** look at him and press E for the most useful tip right now.
-- **Volt speaks out loud** with the browser's built-in voice (free, no download), tuned to a
-  friendly robot pitch, with a talking mouth. Prefers voices installed on the computer (offline,
-  private). Symbols are read as words ("2×" → "2 times", "H₂O" → "H 2 O"). He stops talking when
+- **Volt speaks out loud with a cute robot voice** — neither male nor female, the same in every
+  browser, offline. Words come from the eSpeak speech engine (meSpeak, Klatt voice, high pitch);
+  a Web Audio "robot" chain adds a metallic ring-modulator shimmer, a tiny tin-can echo, less
+  bass, a little sparkle and a "bip-bip" chirp before each line. The engine (~600 KB gzipped) is
+  loaded in the background after the game starts; if it fails, Volt falls back to the browser
+  voice. Talking mouth on the 3D face. Symbols are read as words ("2×" → "2 times", "H₂O" → "H 2 O"). He stops talking when
   you pause, open the PDA or go through a door; the bubble stays up until he finishes. Volt in the
   Molecule Zapper speaks too (intro, question, hint, answer, result). Pause menu: "Volt's voice:
   On / Off" (saved).
