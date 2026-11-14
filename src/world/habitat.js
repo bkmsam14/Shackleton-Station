@@ -230,6 +230,60 @@ function buildSleepingNook(group) {
   group.add(rug);
 }
 
+// ---------------------------------------------------------------- storm shelter water walls
+// Three tall tanks along the nook's +Z wall. Their water level shows how much water is
+// stored in the shelter walls (setWaterLevel). Mass shielding: water between you and the
+// Sun's particles. The moving water meshes are marked dynamic (not merged).
+function buildWaterWall(group) {
+  const W = H.waterWall;
+  const n = 3;
+  const gap = 0.06;
+  const tankW = (W.x1 - W.x0 - gap * (n - 1)) / n;
+  const tankH = 1.9;
+  const depth = 0.26;
+  // glass doesn't write depth and draws after the water, so the water inside stays visible
+  const glass = new THREE.MeshStandardMaterial({ color: 0xbfe6ff, roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.32, depthWrite: false });
+  const waterMat = new THREE.MeshStandardMaterial({ color: 0x2d8fe0, roughness: 0.25, emissive: 0x0c3f7a, emissiveIntensity: 0.6, transparent: true, opacity: 0.85 });
+  const fills = [];
+  for (let i = 0; i < n; i++) {
+    const cx = W.x0 + tankW / 2 + i * (tankW + gap);
+    // frame + glass front
+    group.add(mesh(rbox(tankW + 0.06, 0.08, depth + 0.06, 0.03), MAT.metal(), cx, FY + 0.04, W.z));
+    group.add(mesh(rbox(tankW + 0.06, 0.08, depth + 0.06, 0.03), MAT.metal(), cx, FY + tankH + 0.12, W.z));
+    const g = mesh(rbox(tankW, tankH, depth, 0.05), glass, cx, FY + 0.08 + tankH / 2, W.z, { cast: false });
+    g.userData.dynamic = true;
+    g.renderOrder = 2;
+    group.add(g);
+    // water: a box anchored at the bottom, scaled in height
+    const geo = rbox(tankW - 0.05, 1, depth - 0.05, 0.03);
+    geo.translate(0, 0.5, 0);
+    const water = mesh(geo, waterMat, cx, FY + 0.1, W.z, { cast: false });
+    water.userData.dynamic = true;
+    water.renderOrder = 1;
+    water.scale.y = 0.001;
+    group.add(water);
+    fills.push({ water, max: tankH - 0.06 });
+  }
+  // control panel + sign
+  const panel = mesh(new THREE.PlaneGeometry(0.5, 0.32), screenMaterial('waterwall', 'WATER WALLS', ['Tank ⇄ walls', 'Pump: power']), W.panelX, FY + 2.32, W.z - 0.14, { cast: false });
+  panel.rotation.y = Math.PI;
+  group.add(panel);
+  const sign = createSign(['STORM SHELTER', 'water walls block radiation'], 1.6, 0.5);
+  sign.position.set((W.x0 + W.x1) / 2 - 1.0, FY + 2.42, W.z - 0.13);
+  sign.rotation.y = Math.PI;
+  group.add(sign);
+  return {
+    /** fraction 0..1 of the wall capacity that is filled */
+    setWaterLevel(fraction) {
+      const f = Math.max(0, Math.min(1, fraction));
+      for (const t of fills) {
+        t.water.scale.y = Math.max(0.001, f * t.max);
+        t.water.visible = f > 0.002;
+      }
+    },
+  };
+}
+
 // ---------------------------------------------------------------- lounge + galley (middle)
 function buildLounge(group) {
   // sofa along the −Z wall
@@ -428,10 +482,11 @@ export function createHabitatModel() {
   buildExterior(exterior);
   buildInteriorShell(interior);
   buildSleepingNook(interior);
+  const waterWall = buildWaterWall(interior);
   buildLounge(interior);
   buildWorkBay(interior);
   group.position.set(H.x, 0, H.z);
-  return { group, exterior, interior };
+  return { group, exterior, interior, waterWall };
 }
 
 export function createHabitat() {
@@ -459,6 +514,10 @@ export function createHabitat() {
     object: model.group,
     exterior: model.exterior,
     interior: model.interior,
+    waterWall: model.waterWall,
+    /** Storm shelter rectangle in world coordinates (the sleeping nook). */
+    shelterRect: { minX: H.x + H.shelter.minX, maxX: H.x + H.shelter.maxX, minZ: H.z + H.shelter.minZ, maxZ: H.z + H.shelter.maxZ },
+    shelterSpawn: toWorld(H.shelter.spawn),
     lights,
     setActive(on) {
       for (const p of lights) p.intensity = on ? p.userData.on : 0;
@@ -481,6 +540,7 @@ export function createHabitat() {
         { type: 'box', minX: bx - 0.14, maxX: bx + 0.14, minZ: dh, maxZ: 3.1 },
         { type: 'box', minX: -9.7, maxX: -7.25, minZ: -3.0, maxZ: -1.72 }, // bunk + curtain
         { type: 'box', minX: -9.7, maxX: -8.33, minZ: 2.2, maxZ: 3.0 }, // wardrobe
+        { type: 'box', minX: H.waterWall.x0 - 0.05, maxX: H.waterWall.x1 + 0.05, minZ: H.waterWall.z - 0.16, maxZ: 3.2 }, // water-wall tanks
         { type: 'box', minX: -7.22, maxX: -6.74, minZ: -3.0, maxZ: -2.38 }, // nightstand
         { type: 'box', minX: -3.95, maxX: -0.85, minZ: -3.0, maxZ: -1.98 }, // sofa
         { type: 'circle', x: -2.4, z: -1.25, r: 0.52 }, // coffee table
@@ -522,6 +582,15 @@ export function createHabitat() {
         y: FY + 1.1,
         prompt: 'Press E to make oxygen (Electrolysis)',
         action: { type: 'station', station: 'electrolysis' }, // opens the Molecule Zapper instance
+      },
+      {
+        id: 'water-walls',
+        zone: 'habitat',
+        x: H.x + H.waterWall.panelX,
+        z: H.z + H.waterWall.z - 0.75,
+        y: FY + 1.2,
+        prompt: 'Press E to set the water walls',
+        action: { type: 'station', station: 'water-walls' },
       },
     ],
   };

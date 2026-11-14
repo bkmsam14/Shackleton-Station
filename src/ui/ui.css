@@ -302,3 +302,11 @@
 .instance-host[hidden] {
   display: none;
 }
+
+/* start screen: Sun picker (real space-weather data) */
+.sun-row .seg {
+  flex-wrap: wrap;
+}
+.sun-note {
+  margin-top: 6px;
+}

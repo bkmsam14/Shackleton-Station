@@ -13,6 +13,27 @@ function minutes(sec) {
 const perMin = (ratePerSec) => `${(Math.abs(ratePerSec) * 60).toFixed(1)} % per min`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
+/** Radiation: storms (real data), dose, water walls. s.radiation from main.js radiationHud(). */
+function radiationStat(s) {
+  const r = s.radiation;
+  if (!r) return '';
+  const label = s.sun?.label ?? 'Loading space-weather data…';
+  let status = 'No particle storm right now.';
+  if (r.phase === 'warning') status = 'A flare was seen — particles are on their way. Go to the storm shelter!';
+  else if (r.phase === 'storm') status = `Particle storm now: ${Math.round(r.dosePct)}% of the storm safety limit so far.`;
+  else if (r.next) {
+    const hours = r.next.warnGameHour - r.nowHour;
+    status = hours < 24 ? 'Space-weather watch: a storm may come soon.' : 'Space-weather watch: the Sun is calm for now.';
+  } else if (s.sun) status = 'No more particle storms in this data.';
+  return `
+    <div class="pda-stat">
+      <div class="pda-stat-top"><b>Radiation</b><span>${Math.round(r.missionDose)}%</span></div>
+      <div class="pda-stat-line">${esc(status)}</div>
+      <p>Mission total: ${Math.round(r.missionDose)}% of one storm limit — dose adds up and never goes down. Water in the shelter walls: ${r.wallKg.toFixed(1)} kg (it can’t make oxygen while it’s there).</p>
+      <p class="pda-note">${esc(label)}. Based on NASA DONKI and RadLab data.</p>
+    </div>`;
+}
+
 export function createPda(root) {
   const el = document.createElement('div');
   el.className = 'pda';
@@ -55,6 +76,7 @@ export function createPda(root) {
               <div class="pda-stat-line">Enough for about ${(s.station.tankKg / ELECTROLYSIS.WATER_PER_KG_O2).toFixed(1)} kg of oxygen · ${batchCost('small').waterKg.toFixed(2)} kg per Small batch</div>
               <p>Every 1 kg of oxygen uses ${ELECTROLYSIS.WATER_PER_KG_O2} kg of water (2 H₂O → 2 H₂ + O₂). Nothing refills the tank yet — ice mining comes later.</p>
             </div>
+            ${radiationStat(s)}
             <div class="pda-stat">
               <div class="pda-stat-top"><b>Food</b><span>${Math.ceil(g.food)}%</span></div>
               <div class="pda-stat-line">${minutes(secondsUntilEmpty(g.food, r.rates.food))} left · ${perMin(r.rates.food)}</div>

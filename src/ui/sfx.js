@@ -58,6 +58,13 @@ export const sfx = {
   success() {
     [523, 659, 784, 1047].forEach((f, i) => tone({ freq: f, type: 'triangle', seconds: 0.22, gain: 0.7, delay: i * 0.1 }));
   },
+  /** Storm warning: a soft two-tone "dee-doo" ×3 — noticeable, not scary. */
+  alarm() {
+    for (let i = 0; i < 3; i++) {
+      tone({ freq: 880, type: 'triangle', seconds: 0.22, gain: 0.8, delay: i * 0.55 });
+      tone({ freq: 660, type: 'triangle', seconds: 0.26, gain: 0.8, delay: i * 0.55 + 0.24 });
+    }
+  },
   click() {
     tone({ freq: 700, to: 500, type: 'sine', seconds: 0.05, gain: 0.4 });
   },
