@@ -27,7 +27,8 @@ The challenge brief: kids must experience real engineering trade-offs (life supp
 ## Tech stack
 
 - **Vite** + **Three.js** (ES modules, plain JavaScript, no TypeScript unless the team decides otherwise)
-- `three/examples/jsm` addons: `PointerLockControls`, `GLTFLoader`, `EffectComposer` (bloom only, keep it light)
+- `three/examples/jsm` addons: `PointerLockControls`, `GLTFLoader`, `RoomEnvironment` (PMREM)
+- Post-processing (team decision, polish pass): pmndrs `postprocessing` + `n8ao` — N8AO ambient occlusion (indoors only) + subtle bloom + AgX tone mapping + FXAA, **High quality only**; AO switches itself off if frames get slow. Low quality renders directly.
 - HTML/CSS for the HUD and all instances. Keep game logic out of the DOM code.
 - Physics: none at first. Use a simple ground-height sample plus capsule collision. Add `@dimforge/rapier3d-compat` only if it is really needed.
 - Save data: `localStorage`, wrapped in try/catch (it can be unavailable)

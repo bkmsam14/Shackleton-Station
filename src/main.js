@@ -10,6 +10,7 @@ import './ui/ui.css';
 import * as THREE from 'three';
 import { UI, RECOVERY, TIME } from './config/gameplay.js';
 import { createWorld, QUALITY } from './world/World.js';
+import { createPostFX } from './world/postfx.js';
 import { LAYOUT } from './world/layout.js';
 import { createDayCycle, stepDayCycle, getSun, getClock } from './systems/daycycle.js';
 import { createGauges, stepGauges, applyRecovery } from './systems/gauges.js';
@@ -34,11 +35,21 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.AgXToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
+// Shader info logs (e.g. harmless ANGLE/D3D compiler warnings) only matter while developing.
+renderer.debug.checkShaderErrors = import.meta.env.DEV;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 app.appendChild(renderer.domElement);
 
 const world = createWorld({ quality, renderer });
 const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 3000);
+// High quality: N8AO + bloom through pmndrs postprocessing. Low: plain render.
+const postfx = createPostFX(renderer, world.scene, camera);
+postfx.setEnabled(quality === 'high');
+function renderFrame(dt = 0) {
+  postfx.setZone(player?.zoneId ?? 'habitat');
+  if (postfx.enabled) postfx.render(dt);
+  else renderer.render(world.scene, camera);
+}
 const input = createInput();
 const player = createPlayerController(camera, document.body, world, input);
 const day = createDayCycle();
@@ -133,6 +144,7 @@ const menus = createMenus(uiRoot, {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, QUALITY[q].pixelRatioCap));
     renderer.setSize(window.innerWidth, window.innerHeight);
     world.setQuality(q);
+    postfx.setEnabled(q === 'high');
   },
 });
 document.addEventListener('pointerlockerror', onLockFailed);
@@ -302,6 +314,18 @@ function reactToGauges(report, sun) {
   }
 }
 
+// ---------------------------------------------------------------- adaptive quality
+// AO is the most expensive effect. If frames average > ~19 ms for a few seconds on High,
+// switch AO off (bloom stays) so slower laptops keep a smooth frame rate.
+let frameEma = 1 / 60;
+let watchTime = 0;
+function watchFrameTime(frameDt) {
+  if (!postfx.enabled || !postfx.aoAllowed || frameDt <= 0 || document.hidden) return;
+  watchTime += frameDt;
+  frameEma += (frameDt - frameEma) * 0.03;
+  if (watchTime > 4 && frameEma > 0.019) postfx.disableAO();
+}
+
 // ---------------------------------------------------------------- loop
 const timer = new THREE.Timer();
 timer.connect(document);
@@ -354,14 +378,16 @@ renderer.setAnimationLoop(() => {
     clock: getClock(day),
   });
 
-  renderer.render(world.scene, camera);
+  renderFrame(frameDt);
   fpsMeter.tick();
+  watchFrameTime(frameDt);
 });
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  postfx.setSize(window.innerWidth, window.innerHeight);
 });
 
 if (import.meta.env.DEV) {
@@ -374,8 +400,8 @@ if (import.meta.env.DEV) {
     const sun = getSun(day);
     for (let i = 0; i < frames; i++) {
       world.update(0.016, camera, player.position, sun, 0, zone);
-      renderer.shadowMap.needsUpdate = true;
-      renderer.render(world.scene, camera);
+      renderer.shadowMap.needsUpdate = zone === 'outside'; // like the real loop
+      renderFrame(0.016);
     }
   };
   window.__dev = {
@@ -398,5 +424,5 @@ if (import.meta.env.DEV) {
       greenhouse: ['greenhouse', 1.4, 30, 90, -0.08],
     },
   };
-  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor };
+  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor };
 }

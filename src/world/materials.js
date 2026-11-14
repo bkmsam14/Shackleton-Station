@@ -23,9 +23,18 @@ export const MAT = {
   floor: () => std('floor', { color: 0x5b6470, roughness: 0.9 }),
   door: () => std('door', { color: 0xd8dde3, roughness: 0.35, metalness: 0.5 }),
   doorFrame: () => std('doorFrame', { color: 0xff8a3d, roughness: 0.5 }),
-  glow: (color) =>
-    cache.get('glow' + color) ??
-    (cache.set('glow' + color, new THREE.MeshBasicMaterial({ color })), cache.get('glow' + color)),
+  // Unlit "light source" material. strength > 1 makes it HDR-bright so bloom picks it up
+  // (bloom threshold is 1.0); strength 1 = just a flat colour.
+  glow: (color, strength = 1) => {
+    const key = `glow${color}x${strength}`;
+    if (!cache.has(key)) {
+      const m = new THREE.MeshBasicMaterial({ color });
+      m.color.multiplyScalar(strength);
+      cache.set(key, m);
+    }
+    return cache.get(key);
+  },
+  fabric: () => std('fabric', { color: 0x3c6fb4, roughness: 0.95 }),
   greenhouseSkin: () => std('ghSkin', { color: 0xf1efe9, roughness: 0.7 }),
   plant: () => std('plant', { color: 0x4fb35a, roughness: 0.8 }),
   plantDark: () => std('plantDark', { color: 0x2f8a45, roughness: 0.8 }),

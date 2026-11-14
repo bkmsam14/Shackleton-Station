@@ -40,7 +40,7 @@ export function createGreenhouseModel() {
   // pink skylight along the ridge (LED glow visible from outside — good for finding it)
   const skyGeo = new THREE.CylinderGeometry(R + 0.03, R + 0.03, L - 1.2, 16, 1, true, Math.PI / 2 - 0.22, 0.44);
   skyGeo.rotateZ(Math.PI / 2);
-  const skylight = new THREE.Mesh(skyGeo, MAT.glow(0xe08cff));
+  const skylight = new THREE.Mesh(skyGeo, MAT.glow(0xe08cff, 1.6));
   skylight.userData.dynamic = true; // switches off when base power runs out
   skylight.position.set(L / 2, fy, 0);
   group.add(skylight);
@@ -74,7 +74,7 @@ export function createGreenhouseModel() {
   const oDoor = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.95, 1.1), MAT.door());
   oDoor.position.set(V.xStart - 0.05, fy + 1.02, 0);
   group.add(oDoor);
-  const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.5), MAT.glow(0x6fe9ff));
+  const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.5), MAT.glow(0x6fe9ff, 3));
   lamp.position.set(V.xStart - 0.08, fy + 2.3, 0);
   group.add(lamp);
   const sign = createSign('GREENHOUSE', 1.6, 0.42, { accent: '#d36bff' });
@@ -149,7 +149,7 @@ export function createGreenhouseModel() {
           [0xff3b5c, -0.08],
           [0x4a6bff, 0.08],
         ]) {
-          const led = new THREE.Mesh(ledGeo, MAT.glow(col));
+          const led = new THREE.Mesh(ledGeo, MAT.glow(col, 3));
           led.scale.x = len - 0.2;
           led.position.set(cx, fy + sy + 0.45, z + dz);
           group.add(led);

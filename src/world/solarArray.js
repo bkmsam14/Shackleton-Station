@@ -99,7 +99,7 @@ export function createSolarArrayModel() {
   const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.6, 8), MAT.accent());
   motor.position.y = L.mastHeight + 0.2;
   head.add(motor);
-  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), MAT.glow(0xff5a4a));
+  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), MAT.glow(0xff5a4a, 5));
   beacon.position.y = L.mastHeight + 0.65;
   head.add(beacon);
   group.add(head);

@@ -15,7 +15,7 @@ import { skyDirection } from '../systems/daycycle.js';
 
 export const QUALITY = {
   low: { terrainSegments: 140, rocks: 140, stars: 1200, shadowMap: 1024, pixelRatioCap: 1 },
-  high: { terrainSegments: 220, rocks: 260, stars: 2600, shadowMap: 2048, pixelRatioCap: 2 },
+  high: { terrainSegments: 220, rocks: 260, stars: 2600, shadowMap: 2048, pixelRatioCap: 1.5 },
 };
 
 export function createWorld({ quality = 'high', renderer } = {}) {

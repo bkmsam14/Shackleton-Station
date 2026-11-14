@@ -9,7 +9,7 @@ export function createPathLights() {
   const group = new THREE.Group();
   group.name = 'pathLights';
   const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.05, 0.07, 0.9, 6), MAT.metal(), pts.length);
-  const caps = new THREE.InstancedMesh(new THREE.BoxGeometry(0.18, 0.12, 0.18), MAT.glow(0x6fe9ff), pts.length);
+  const caps = new THREE.InstancedMesh(new THREE.BoxGeometry(0.18, 0.12, 0.18), MAT.glow(0x6fe9ff, 3), pts.length);
   posts.castShadow = true;
   const m = new THREE.Matrix4();
   pts.forEach(([x, z], i) => {

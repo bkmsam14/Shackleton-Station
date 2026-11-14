@@ -44,5 +44,5 @@ export function createEnvironments(renderer) {
 export const ENV_INTENSITY = {
   outside: 0.6,
   habitat: 0.22,
-  greenhouse: 0.18, // keep the red + blue LED colour dominant
+  greenhouse: 0.05, // keep the red + blue LED colour dominant
 };

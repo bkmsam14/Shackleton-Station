@@ -128,6 +128,7 @@ export function createSky({ starCount = 2600 } = {}) {
       toneMapped: false,
     }),
   );
+  sunCore.material.color.setScalar(10); // HDR-bright: the Sun blooms
   sunCore.scale.setScalar(sunR * 2 * 2);
   const sunGlow = new THREE.Sprite(
     new THREE.SpriteMaterial({
@@ -144,6 +145,7 @@ export function createSky({ starCount = 2600 } = {}) {
       toneMapped: false,
     }),
   );
+  sunGlow.material.color.setScalar(1.6);
   sunGlow.scale.setScalar(sunR * 2 * 22);
   const sun = new THREE.Group();
   sun.add(sunGlow, sunCore);

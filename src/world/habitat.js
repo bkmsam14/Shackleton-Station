@@ -55,7 +55,7 @@ export function createHabitatModel() {
   const winGeo = new THREE.CircleGeometry(0.32, 10);
   for (const wx of [-3.2, -0.6]) {
     for (const sz of [-1, 1]) {
-      const w = new THREE.Mesh(winGeo, MAT.glow(0xffe3a8));
+      const w = new THREE.Mesh(winGeo, MAT.glow(0xffe3a8, 1.8));
       const a = 0.35; // radians above the side
       w.position.set(wx, H.axisY + Math.sin(a) * (R + 0.01), sz * Math.cos(a) * (R + 0.01));
       w.lookAt(wx, H.axisY + Math.sin(a) * 5, sz * Math.cos(a) * 5);
@@ -92,7 +92,7 @@ export function createHabitatModel() {
   const outerDoor = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.95, 0.14), MAT.door());
   outerDoor.position.set(A.x, H.floorY + 1.02, A.zEnd + 0.05);
   group.add(outerDoor);
-  const doorLamp = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.12), MAT.glow(0x6fe9ff));
+  const doorLamp = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.12), MAT.glow(0x6fe9ff, 3));
   doorLamp.position.set(A.x, H.floorY + 2.3, A.zEnd + 0.08);
   group.add(doorLamp);
   const alSign = createSign('AIRLOCK', 1.2, 0.36);
@@ -131,7 +131,7 @@ export function createHabitatModel() {
   stripe.position.set(-1.5, H.floorY + 0.006, 0);
   group.add(stripe);
   // ceiling light strip
-  const strip = new THREE.Mesh(new THREE.BoxGeometry(9, 0.06, 0.35), MAT.glow(0xfff4dc));
+  const strip = new THREE.Mesh(new THREE.BoxGeometry(9, 0.06, 0.35), MAT.glow(0xfff4dc, 3.5));
   strip.position.set(0, H.axisY + ri - 0.08, 0);
   group.add(strip);
 
@@ -139,7 +139,7 @@ export function createHabitatModel() {
   const bunk = shadowed(new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.5, 0.95), MAT.interiorPanel()));
   bunk.position.set(-4.4, H.floorY + 0.25, -1.25);
   group.add(bunk);
-  const mattress = new THREE.Mesh(new THREE.BoxGeometry(2, 0.16, 0.85), MAT.glow(0x3c6fb4));
+  const mattress = new THREE.Mesh(new THREE.BoxGeometry(2, 0.16, 0.85), MAT.fabric());
   mattress.position.set(-4.4, H.floorY + 0.58, -1.25);
   group.add(mattress);
   // table + bench
@@ -183,7 +183,7 @@ export function createHabitatModel() {
   const o2Tank = shadowed(new THREE.Mesh(tankGeo, MAT.glow(0x9fe8ff)));
   o2Tank.position.set(0.15, 0.95, -0.55);
   unit.add(o2Tank);
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.36), MAT.glow(0x38d9f5));
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.36), MAT.glow(0x38d9f5, 1.6));
   screen.position.set(0.41, 1.25, 0);
   screen.rotation.y = Math.PI / 2;
   unit.add(screen);
