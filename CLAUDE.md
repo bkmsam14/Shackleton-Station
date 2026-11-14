@@ -108,7 +108,7 @@ Demo 0 only needs the BVAD (for realistic *relative* drain rates). Use the other
 | https://visualization.osdr.nasa.gov/radlab/gui/overview/ | RadLab: radiation telemetry from several space agencies (ISS/LEO and beyond-LEO instruments), with a Data API and CSV/TSV/JSON export | Radiation dose facts and the flare/shelter event. ISS values are low Earth orbit, **not** Moon values: label them that way. |
 | https://ccmc.gsfc.nasa.gov/donki/ | DONKI space weather database (flares, CMEs, SEPs), with web search and an API (also through https://api.nasa.gov/) | Real solar flare events for the radiation QTE. DONKI calls its real-time data "science and prototyping quality", so say "based on" in the game. |
 
-**Status (Demo 0):** The BVAD values are copied with page numbers into `docs/SCIENCE.md` §1 and used in `src/config/gameplay.js`. The **BPS data hub, RadLab and DONKI are reserved for the upcoming mini-games and events: do not use them in Demo 0.**
+**Status (v0.5.0):** BVAD values are in `docs/SCIENCE.md` §1 and `src/config/gameplay.js`. **DONKI** (flare alerts + SEP events) and **RadLab** (CRaTER on LRO, ISS Timepix) drive the particle-storm feature: archives are made by `scripts/fetch-space-weather.mjs` into `public/data/space-weather-*.json`; Live mode fetches DONKI at runtime. The **BPS data hub** is still unused (planned for the greenhouse, which a teammate is building).
 
 ## Open decisions (ask the user if a task depends on one)
 

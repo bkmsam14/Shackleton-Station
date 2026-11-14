@@ -1,5 +1,38 @@
 # Changelog — Shackleton Station
 
+## 0.5.0 — Solar storms, storm shelter and water walls (real DONKI + RadLab data)
+
+### Gameplay
+- **Pick a Sun on the start screen:** *Calm · Dec 2019*, *Stormy · May 2024* (replays of real
+  NASA data) or *Live · this week* (DONKI fetched now; falls back to the Stormy replay if offline).
+- **Particle storms (QTE):** when a real flare is replayed, Volt warns you, a chip counts down
+  ("Particles in 48 s → storm shelter"), an arrow points to the shelter and a purple **dose ring**
+  (4th gauge, shown only around storms) appears. Storms keep the real spacing between events.
+- **Storm shelter** in the habitat sleeping nook. Being inside protects you; the more water in its
+  walls, the more it protects. If a storm's dose reaches the limit, Volt helps you into the
+  shelter to rest (gentle failure; no free supplies; the dose stays on your record).
+- **Water walls panel:** pump water between the Electrolysis tank and the shelter walls (costs a
+  little power). The real trade-off: water in the walls blocks radiation but can't make oxygen.
+  The three wall tanks show their water level.
+- **"What just happened?" card** after each storm: the real flare (class, date, sunspot region),
+  the real time until particles arrived, and how much NASA's LRO (CRaTER) measured at the Moon,
+  with sources and an honest "Replay of real data / Live" tag.
+- PDA: radiation section (storm status, mission total, wall water, data label). New Volt lines,
+  tips and facts. Gentle "dee-doo" storm alarm.
+
+### Real data
+- `scripts/fetch-space-weather.mjs` archives DONKI flare alerts (`notifications?type=FLR` — the
+  plain FLR endpoint 404s on api.nasa.gov) and SEP events, plus RadLab CRaTER daily dose rates.
+- Stormy Sun = 4 storms after X2.2, X3.9, X5.8 and M6.6 flares (9–13 May 2024); each storm's
+  strength comes from the real CRaTER ratio (×2, ×44, ×205, ×69 the quiet level).
+
+### Code
+- `systems/spaceWeather.js` (DONKI → storms, pure), `systems/radiation.js` (storm phases, dose,
+  water walls, pure), `data/spaceWeather.js` (archive / live loader), `instances/waterWalls`,
+  `instances/stormReport`. 14 new tests (68 total).
+- Volt's speech synthesis now runs in a **Web Worker**, so the game no longer freezes for a
+  moment each time he speaks (most noticeable on slow laptops).
+
 ## 0.4.0 — Volt, the helper robot
 
 ### Gameplay

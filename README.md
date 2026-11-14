@@ -61,6 +61,20 @@ calls. Measurements and the cost of each effect are in `docs/PERFORMANCE.md`.
   in a cute robot voice (eSpeak engine + robot effects; GPL-3.0, see public/CREDITS.md). Pause menu: how often
   Volt talks (Chatty / Helpful / Quiet), his voice On / Off, and Replay / Skip the tour.
 
+- **Solar storms + storm shelter (v0.5.0):** pick a Sun on the start screen (Calm Dec 2019 /
+  Stormy May 2024 replays of real NASA DONKI + RadLab data, or Live). When a real flare is
+  replayed, get to the storm shelter in the sleeping nook before the particles arrive. Pump water
+  into the shelter walls for more protection — but that water can't make oxygen.
+
+### Updating the space-weather data
+
+```bash
+NASA_API_KEY=your_key node scripts/fetch-space-weather.mjs   # writes public/data/space-weather-*.json
+```
+
+Get a free key at https://api.nasa.gov (the shared `DEMO_KEY` is rate-limited). For Live mode in
+the browser, put `VITE_NASA_API_KEY=your_key` in `.env` (never committed).
+
 ## Where things live
 
 - `src/config/gameplay.js` — every rate and cost (sourced, or marked GAME BALANCE)

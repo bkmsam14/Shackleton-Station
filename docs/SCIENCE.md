@@ -67,7 +67,23 @@ How the game uses them (ratios stay real, amounts are scaled):
 - The Moon has no thick atmosphere and no global magnetic field, so particles from the Sun and from deep space reach the surface.
 - Solar flares can be followed by **solar particle events**, bursts of fast particles that are dangerous for astronauts.
 - Shielding works with **mass**: water, regolith or plastic between the crew and space. Astronauts shelter in the most shielded spot during solar storms.
-- The ISS is in low Earth orbit, inside Earth's magnetic field, which partly protects it. **RadLab ISS readings are not Moon values.** Moon surface doses are higher (find a NASA source for the Moon/ISS comparison before showing a number).
+- The ISS is in low Earth orbit, inside Earth's magnetic field, which partly protects it. **RadLab ISS readings are not Moon values.**
+- **Solar energetic particles (SEPs)** are almost all protons; "some reach Earth… in less than an hour". Only a small fraction of flares/CMEs produce hazardous particles. Shelter: Orion crews build a dense shelter from stowage bags; on the Moon regolith could be piled on shelters; "make use of whatever mass is available". *Source: NASA Science — https://science.nasa.gov/science-research/heliophysics/how-nasa-will-protect-astronauts-from-space-radiation-at-the-moon*
+- **Light from a flare** takes about 8.3 minutes to reach Earth/Moon (1 AU ÷ speed of light ≈ 499 s; NASA Sun Fact Sheet distance).
+- **Moon vs ISS dose** (not NASA): Chang'e 4 LND measured 1,369 µSv/day on the lunar surface (Jan–Feb 2019, no solar particle event) vs ISS 731 µSv/day in the same period → "about twice". *Source: Zhang et al., Science Advances 2020 — https://www.science.org/doi/10.1126/sciadv.aaz1334* (labelled as non-NASA in the game).
+- **Artemis I shelter** (measured in Earth's radiation belts, no solar storm during the flight): the storm-shelter spot got much less dose than less-shielded spots. *Source: DLR — https://www.dlr.de/en/latest/news/2024/orion-spacecraft-radiation-protection-tested-initial-findings-from-artemis-i-moon-mission* (press reports say "four times" — not shown until checked in the Nature paper).
+
+### Real space-weather data used (radiation storms)
+- **DONKI** (via api.nasa.gov, archived by `scripts/fetch-space-weather.mjs` into `public/data/space-weather-*.json`): flare alerts (`notifications?type=FLR`; the plain `FLR` endpoint returned 404 in Nov 2026) and SEP events. DONKI calls these "Experimental Research Information… preliminary NASA research products", so the game says **"based on"** and **"Replay of real data from <month>"**; only Live mode says "Live".
+- **May 2024 (Stormy Sun):** 4 particle storms after X2.2 (9 May), X3.9 (10 May), X5.8 (11 May) and M6.6 (13 May) flares; DONKI SEP records from GOES, SOHO, STEREO A and ACE.
+- **December 2019 (Calm Sun):** no SEP events in DONKI.
+- **RadLab CRaTER** (LRO, Moon orbit), absorbed dose rate in its detector, µGy/h (daily means): 6–8 May 2024 ≈ 5; 10 May ≈ 230; 11 May ≈ 1,080; 13 May ≈ 360; 14 May ≈ 1,530. Storm strength in the game = log of (storm-day mean ÷ quiet mean), so the *order and ratios* are real; the dose % per storm is game balance.
+- **RadLab ISS** (low Earth orbit) Timepix sensors in JPM/Cupola: about 13–17 µGy/h in December 2019.
+
+### Radiation game simplifications (details left out, nothing false)
+- Dose is shown as **% of a per-storm safety limit** (NASA plans shielding against limits for big particle events); the **mission total only grows** (dose adds up, it never "heals").
+- Location/shelter/water-wall factors and the storm length are game balance. Real shelters would need **thousands of kg** of water; the game's water amounts are game-sized and the game says so.
+- Short real warnings are stretched to at least 40 s of play so kids can react; the report card tells the real warning time.
 
 ### Dust
 - Lunar regolith is sharp, abrasive and sticky. It clings to suits and covers equipment.
@@ -128,6 +144,8 @@ How the game uses them (ratios stay real, amounts are scaled):
 - Real growth times for lettuce and potato in controlled-environment agriculture.
 - Exact source URLs for every "(add URL)" above.
 - Real efficiency of the ISS OGA (kWh per kg O₂ actually used), if we ever show more than the physics minimum.
+- The "4× more protection" Artemis I shelter figure (check the Nature 2024 paper, Stuart George et al.) before showing a number.
+- RadLab `absorbed_dose_rate` unit (µGy/h per the RadLab API notes) — confirm on the RadLab data-API page when it is back online.
 
 ## Corrections log (mistakes we caught; don't repeat them)
 - ❌ "Dust storms on the Moon" → ✅ dust blasted by landers and rovers.

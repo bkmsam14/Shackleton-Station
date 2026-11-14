@@ -120,6 +120,48 @@
       "text": "Plants mainly use red and blue light to grow, so grow lights look pink.",
       "value": "NASA Veggie VEG-04 red:blue light study",
       "source": "https://ntrs.nasa.gov/citations/20190033231"
+    },
+    {
+      "id": "sep-arrival",
+      "text": "Fast particles from a solar storm can reach Earth in less than an hour; the flare’s light takes about 8 minutes.",
+      "value": "SEPs: “some reach Earth… in less than an hour”; light 1 AU / c ≈ 8.3 min",
+      "source": "https://science.nasa.gov/science-research/heliophysics/how-nasa-will-protect-astronauts-from-space-radiation-at-the-moon"
+    },
+    {
+      "id": "sep-few-flares",
+      "text": "Only a small fraction of solar flares and eruptions produce dangerous particles.",
+      "value": "NASA Science (paraphrase)",
+      "source": "https://science.nasa.gov/science-research/heliophysics/how-nasa-will-protect-astronauts-from-space-radiation-at-the-moon"
+    },
+    {
+      "id": "shelter-mass",
+      "text": "Astronauts shelter from particle storms using mass: stowage bags, food and water; on the Moon, regolith.",
+      "value": "Orion: crew builds a dense shelter from stowage bags",
+      "source": "https://science.nasa.gov/science-research/heliophysics/how-nasa-will-protect-astronauts-from-space-radiation-at-the-moon"
+    },
+    {
+      "id": "artemis1-shelter",
+      "text": "On Artemis I, sensors in Orion’s storm shelter got much less radiation than in less-shielded spots.",
+      "value": "Measured in Earth’s radiation belts (no solar storm happened); Nature 2024",
+      "source": "https://www.dlr.de/en/latest/news/2024/orion-spacecraft-radiation-protection-tested-initial-findings-from-artemis-i-moon-mission"
+    },
+    {
+      "id": "moon-vs-iss-dose",
+      "text": "Radiation on the Moon’s surface is about twice that on the Space Station.",
+      "value": "Chang’e 4 LND: 1,369 µSv/day on the Moon vs ISS 731 µSv/day (not NASA; Zhang et al. 2020)",
+      "source": "https://www.science.org/doi/10.1126/sciadv.aaz1334"
+    },
+    {
+      "id": "crater-may-2024",
+      "text": "In May 2024, NASA’s LRO CRaTER measured radiation at the Moon hundreds of times above its quiet level.",
+      "value": "RadLab CRaTER daily mean ≈5 µGy/h (6–8 May) → ≈1,080 (11 May), ≈1,530 (14 May)",
+      "source": "https://visualization.osdr.nasa.gov/radlab/gui/overview/"
+    },
+    {
+      "id": "donki-may-2024",
+      "text": "May 2024 had many strong solar flares, including X5.8 (11 May) and X8.7 (14 May), and several particle storms.",
+      "value": "NASA DONKI flare alerts and SEP events, May 2024",
+      "source": "https://ccmc.gsfc.nasa.gov/donki/"
     }
   ]
 }
