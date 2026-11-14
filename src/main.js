@@ -190,6 +190,7 @@ function enterPlay() {
       assistant.notify(sun?.fellBack ? 'sun-stormy' : `sun-${sun?.mode ?? 'stormy'}`);
       const c = getClock(day);
       feedback.log.unshift({ time: 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute), text: 'Space weather: ' + (sun?.label ?? '') + (sun?.fellBack ? ' (the data you picked could not be loaded)' : '') });
+      if (import.meta.env.DEV) devStormShortcut();
     });
   }
   mode = pausedFromBusy ? 'busy' : 'playing';
@@ -733,6 +734,37 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   postfx.setSize(window.innerWidth, window.innerHeight);
 });
+
+/**
+ * DEV ONLY (npm run dev, never in the published game): jump the clock to just before a storm
+ * so you can test it without waiting.
+ *   ?storm      → the next storm      ?storm=3 → storm #3 (the big X5.8 one in Stormy Sun)
+ *   Key J       → jump to 15 s before the next storm's warning
+ */
+function devStormShortcut() {
+  const jumpTo = (storm) => {
+    if (!storm) {
+      feedback.notify('No more storms in this data');
+      return;
+    }
+    const leadHours = (15 * TIME.SCALE) / 3600; // 15 real seconds before the warning
+    day.gameSeconds = TIME.START_HOUR * 3600 + (storm.warnGameHour - leadHours) * 3600;
+    feedback.notify(`DEV: storm ${storm.id.replace('storm-', '#')} (${storm.flare?.classType ?? '?'}) warns in 15 s`);
+  };
+  const param = new URLSearchParams(location.search).get('storm');
+  if (param !== null) {
+    const n = Number(param);
+    const pick = n >= 1 ? radiation.schedule.find((s) => s.id === `storm-${n}`) : radiation.schedule[radiation.index];
+    if (pick) {
+      // keep the chosen storm (and later ones) as "next"
+      radiation.index = radiation.schedule.indexOf(pick);
+      jumpTo(pick);
+    } else jumpTo(null);
+  }
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyJ' && mode === 'playing' && radiation.phase === 'calm') jumpTo(radiation.schedule[radiation.index]);
+  });
+}
 
 if (import.meta.env.DEV) {
   // Dev-only helpers for screenshots and render-cost benchmarks (work even when the
