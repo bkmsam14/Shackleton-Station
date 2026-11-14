@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createGauges, stepGauges, RATES, powerPercent, computePowerFlow } from '../src/systems/gauges.js';
+import { createGauges, stepGauges, RATES, powerPercent, computePowerFlow, addOxygen } from '../src/systems/gauges.js';
 import { BVAD } from '../src/config/gameplay.js';
 import { sunVisibility } from '../src/systems/daycycle.js';
 
@@ -16,22 +16,20 @@ test('outside: oxygen drains, food drains', () => {
   const r = stepGauges(g, 10, { pressurized: false, ...sunny });
   assert.ok(g.oxygen < 100 && g.food < 100);
   assert.ok(r.rates.oxygen < 0);
-  assert.equal(r.refillingO2, false);
 });
 
-test('inside with power: oxygen refills and costs extra base power', () => {
+test('inside: the shared oxygen supply still drains, at the slower nominal rate (no free refill)', () => {
   const g = createGauges({ oxygen: 50 });
-  const r = stepGauges(g, 1, { pressurized: true, ...dark });
-  assert.ok(g.oxygen > 50);
-  assert.equal(r.refillingO2, true);
-  assert.ok(r.flow.loads.airRefill > 0); // no free refills
-});
-
-test('inside with NO power: no refill, oxygen drains slowly (nominal rate)', () => {
-  const g = createGauges({ oxygen: 50, batteryKwh: 0 });
-  const r = stepGauges(g, 1, { pressurized: true, ...dark });
+  const r = stepGauges(g, 1, { pressurized: true, ...sunny });
   assert.ok(g.oxygen < 50);
   assert.ok(Math.abs(r.rates.oxygen + RATES.oxygenInside) < 1e-12);
+});
+
+test('addOxygen hook (future electrolysis) stores kg and never overfills', () => {
+  const g = createGauges({ oxygen: 90 });
+  const stored = addOxygen(g, 10);
+  assert.equal(g.oxygen, 100);
+  assert.ok(stored > 0 && stored < 10);
 });
 
 test('power charges in sunlight and drains in the dark', () => {
@@ -45,7 +43,7 @@ test('power charges in sunlight and drains in the dark', () => {
 });
 
 test('a panel turned away from the Sun makes no power', () => {
-  assert.equal(computePowerFlow({ sunVisibility: 1, alignment: 0, refillingO2: false }).solarKw, 0);
+  assert.equal(computePowerFlow({ sunVisibility: 1, alignment: 0 }).solarKw, 0);
 });
 
 test('reports crossing below 25% once', () => {

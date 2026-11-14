@@ -1,10 +1,11 @@
 // gauges.js — survival gauges and base power. PURE LOGIC: no Three.js, no DOM.
 // All rates come from src/config/gameplay.js (BVAD values + marked game-balance numbers).
 //
-//  Oxygen (astronaut): drains at the BVAD nominal rate inside, at the BVAD spacewalk rate
-//    outside (~2.3× faster). Inside a pressurized module WITH power it refills — and the
-//    refill adds an extra load on base power (no free refills).
-//  Food (astronaut): drains at the BVAD daily rate, all the time.
+//  Oxygen: the base's ONE shared supply (habitat + greenhouse + suit; the suit is kept
+//    topped up from it). The astronaut breathes from it at the BVAD nominal rate inside
+//    and at the BVAD spacewalk rate outside (~2.3× faster). Nothing refills it in Demo 0 —
+//    making oxygen comes with the electrolysis mini-game, which will call addOxygen().
+//  Food: drains at the BVAD daily rate, all the time.
 //  Power (whole base): battery charged by the solar array (Sun visible × panel facing),
 //    drained by the base loads.
 
@@ -41,16 +42,14 @@ export function powerPercent(g) {
  * @param {object} p
  * @param {number} p.sunVisibility  0..1 (0 = Sun behind the ridge)
  * @param {number} p.alignment      0..1 (how well the panel faces the Sun)
- * @param {boolean} p.refillingO2   habitat/greenhouse is topping up your oxygen
  */
-export function computePowerFlow({ sunVisibility, alignment, refillingO2 }) {
+export function computePowerFlow({ sunVisibility, alignment }) {
   const solarKw = POWER.SOLAR_ARRAY_PEAK_KW * clamp(sunVisibility, 0, 1) * clamp(alignment, 0, 1);
   const loads = {
     habitat: POWER.HABITAT_LOAD_KW,
     greenhouse: POWER.GREENHOUSE_LED_LOAD_KW,
-    airRefill: refillingO2 ? POWER.O2_REFILL_LOAD_KW : 0,
   };
-  const loadKw = loads.habitat + loads.greenhouse + loads.airRefill;
+  const loadKw = loads.habitat + loads.greenhouse;
   return { solarKw, loadKw, netKw: solarKw - loadKw, loads };
 }
 
@@ -62,16 +61,8 @@ export function computePowerFlow({ sunVisibility, alignment, refillingO2 }) {
 export function stepGauges(g, dt, ctx) {
   const before = { oxygen: g.oxygen, food: g.food, power: powerPercent(g) };
 
-  // Is the base powered? (battery has charge, or the Sun alone covers the load)
-  const baseFlow = computePowerFlow({ ...ctx, refillingO2: false });
-  const hasPower = g.batteryKwh > 0.01 || baseFlow.solarKw >= baseFlow.loadKw;
-
-  // --- oxygen
-  const canRefill = ctx.pressurized && hasPower;
-  const refillingO2 = canRefill && g.oxygen < 100;
-  let oxygenRate; // % per real second (+ refill, − drain)
-  if (canRefill) oxygenRate = refillingO2 ? OXYGEN.REFILL_PERCENT_PER_REAL_SECOND : 0;
-  else oxygenRate = -(ctx.pressurized ? RATES.oxygenInside : RATES.oxygenOutside);
+  // --- oxygen: the astronaut breathes from the shared supply
+  const oxygenRate = -(ctx.pressurized ? RATES.oxygenInside : RATES.oxygenOutside); // % per real s
   g.oxygen = clamp(g.oxygen + oxygenRate * dt, 0, 100);
 
   // --- food
@@ -79,7 +70,7 @@ export function stepGauges(g, dt, ctx) {
   g.food = clamp(g.food + foodRate * dt, 0, 100);
 
   // --- power
-  const flow = computePowerFlow({ ...ctx, refillingO2 });
+  const flow = computePowerFlow(ctx);
   g.batteryKwh = clamp(
     g.batteryKwh + flow.netKw * dt * TIME.GAME_HOURS_PER_REAL_SECOND,
     0,
@@ -94,7 +85,6 @@ export function stepGauges(g, dt, ctx) {
 
   return {
     hasPower: g.batteryKwh > 0.01 || flow.solarKw >= flow.loadKw,
-    refillingO2,
     flow,
     rates: { oxygen: oxygenRate, food: foodRate, power: powerRate }, // % per real second
     crossedLow,
@@ -103,12 +93,24 @@ export function stepGauges(g, dt, ctx) {
   };
 }
 
+/**
+ * HOOK for the future electrolysis mini-game: add oxygen (kg) to the shared supply.
+ * The mini-game must charge its own cost (water + base power) — no free refills.
+ * Returns the kg actually stored (the supply cannot go above full).
+ */
+export function addOxygen(g, kg) {
+  const space = ((100 - g.oxygen) / 100) * OXYGEN.CAPACITY_KG;
+  const stored = clamp(kg, 0, space);
+  g.oxygen += (stored / OXYGEN.CAPACITY_KG) * 100;
+  return stored;
+}
+
 /** Real seconds until a gauge hits 0 at the current rate (Infinity if not draining). */
 export function secondsUntilEmpty(percent, ratePerSecond) {
   return ratePerSecond < 0 ? percent / -ratePerSecond : Infinity;
 }
 
-/** Gentle failure: restore the astronaut gauges partly (never fully). */
+/** Gentle failure: restore the gauges partly (never fully). */
 export function applyRecovery(g, { oxygen, food }) {
   g.oxygen = Math.max(g.oxygen, oxygen);
   g.food = Math.max(g.food, food);

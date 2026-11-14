@@ -41,12 +41,14 @@ BVAD.EVA_TO_NOMINAL_O2_RATIO = BVAD.O2_KG_PER_HOUR_EVA / (BVAD.O2_KG_PER_DAY_NOM
 // ---------------------------------------------------------------------------
 // ASTRONAUT GAUGES (0–100 %)
 // ---------------------------------------------------------------------------
+// OXYGEN = the base's whole shared oxygen supply (habitat + greenhouse + suit together).
+// The suit is assumed to be kept topped up from this supply, so there is one gauge.
+// It only goes DOWN in Demo 0: making oxygen (electrolysis) arrives with a later
+// mini-game, which will call addOxygen() in systems/gauges.js and pay its own cost.
 export const OXYGEN = {
-  // How much oxygen a full gauge represents (suit tank / personal supply).
-  // Outside it lasts CAPACITY / 0.086 kg/h = ~17 game hours = ~2.9 real minutes.
-  CAPACITY_KG: 1.5, // GAME BALANCE (not real data)
-  // Refill speed while inside a pressurized module that has power.
-  REFILL_PERCENT_PER_REAL_SECOND: 8, // GAME BALANCE (not real data)
+  // Size of the full supply. Inside it lasts 3 / 0.0373 kg/h ≈ 80 game h ≈ 13 real min;
+  // working outside it lasts 3 / 0.086 kg/h ≈ 35 game h ≈ 6 real min.
+  CAPACITY_KG: 3, // GAME BALANCE (not real data)
   START_PERCENT: 100, // GAME BALANCE (not real data)
 };
 
@@ -69,8 +71,6 @@ export const POWER = {
   // Loads (always on unless the battery is empty).
   HABITAT_LOAD_KW: 3, // GAME BALANCE (not real data)
   GREENHOUSE_LED_LOAD_KW: 2, // GAME BALANCE (not real data)
-  // Extra load while the habitat/greenhouse refills your oxygen (no free refills).
-  O2_REFILL_LOAD_KW: 2, // GAME BALANCE (not real data)
   // Solar array output when facing the Sun and fully lit.
   SOLAR_ARRAY_PEAK_KW: 9, // GAME BALANCE (not real data)
 };

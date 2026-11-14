@@ -261,7 +261,7 @@ export function createHabitat() {
         action: {
           type: 'station',
           station: 'electrolysis',
-          toast: 'Coming soon: Electrolysis lesson! Learn how electricity splits water into oxygen and hydrogen.',
+          toast: 'Coming soon: Electrolysis lesson! This machine will use electricity to split water into oxygen and hydrogen — that is how you will refill the oxygen supply.',
         },
       },
     ],

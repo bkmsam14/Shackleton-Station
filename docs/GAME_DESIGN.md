@@ -17,8 +17,9 @@ panel, top-right). Gentle failure (wake up in the habitat).
 ## Core loop (Demo 0)
 
 1. Gauges drain at different rates (real relative rates from NASA BVAD, see SCIENCE.md).
-2. Oxygen drains ~2.3× faster outside in the suit, and refills inside pressurized modules —
-   but refilling draws extra **base power** (no free refills).
+2. Oxygen is **one shared supply** (habitat + greenhouse + suit; the suit stays topped up
+   from it). It drains ~2.3× faster while you work outside. Nothing refills it in Demo 0 —
+   making oxygen comes with the electrolysis mini-game (water + power → oxygen).
 3. Power charges from the sun-tracking solar array while the Sun is up and not hidden by
    the ridge; the base load always drains it. The greenhouse LEDs are part of that load.
 4. Food drains slowly all the time. (Eating comes later with the greenhouse lesson.)

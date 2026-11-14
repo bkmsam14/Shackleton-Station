@@ -1,5 +1,5 @@
 // hud.js — on-screen gauges. Reads game state; contains no game rules.
-//  • Astronaut panel (bottom-left): OXYGEN + FOOD
+//  • Astronaut panel (bottom-left): OXYGEN (shared base + suit supply) + FOOD
 //  • BASE POWER panel (top-right, different style): battery + charging/draining
 //  • Clock + location (top-left)
 import { POWER, TIME, WARNING_THRESHOLD_PERCENT } from '../config/gameplay.js';
@@ -117,14 +117,12 @@ export function createHud(root) {
       // ---- oxygen
       setGauge('oxygen', g.oxygen);
       let o2;
-      if (r.refillingO2) o2 = 'Refilling from the module air ▲';
-      else if (!outside && r.hasPower) o2 = 'Full · module air is good';
-      else if (!outside) o2 = 'No power! Air system is off ▼';
-      else {
-        const left = fmtMinutes(secondsUntilEmpty(g.oxygen, r.rates.oxygen));
-        o2 = `Suit tank · ${left} left ▼`;
+      const o2Left = fmtMinutes(secondsUntilEmpty(g.oxygen, r.rates.oxygen));
+      if (outside) o2 = `Suit full · supply drains faster outside · ${o2Left} left`;
+      else o2 = `Base + suit supply · ${o2Left} left`;
+      if (g.oxygen < WARNING_THRESHOLD_PERCENT) {
+        o2 = outside ? '⚠ Low! Go inside — you breathe less there' : '⚠ Low! Making oxygen comes in a later update';
       }
-      if (g.oxygen < WARNING_THRESHOLD_PERCENT && outside) o2 = '⚠ Low! Go inside a module to refill';
       setText(gauges.oxygen.querySelector('[data-status]'), 'o2s', o2);
 
       // ---- food
@@ -160,7 +158,7 @@ export function createHud(root) {
       setText(
         els.loads,
         'loads',
-        `Using: habitat ${L.habitat} kW · grow lights ${L.greenhouse} kW${L.airRefill ? ` · air refill ${L.airRefill} kW` : ''}`,
+        `Using: habitat ${L.habitat} kW · grow lights ${L.greenhouse} kW`,
       );
     },
   };

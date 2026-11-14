@@ -163,14 +163,14 @@ async function useDoor(action) {
 
 function onZoneEntered(zoneId) {
   if (zoneId === 'outside') {
-    feedback.toast('<strong>You are outside.</strong> Your suit tank is your only oxygen now — keep an eye on it!', {
+    feedback.toast('<strong>You are outside.</strong> Your suit is full, but working out here uses the oxygen supply about 2× faster.', {
       kind: 'warn',
       icon: '🧑‍🚀',
       key: 'zone',
     });
   } else {
     const name = world.zones[zoneId].name;
-    feedback.toast(`<strong>${name}</strong> — pressurized. You can breathe the air in here.`, {
+    feedback.toast(`<strong>${name}</strong> — pressurized. You breathe slower in here, so the oxygen supply lasts longer.`, {
       kind: 'good',
       icon: '🏠',
       key: 'zone',
@@ -205,7 +205,7 @@ async function gentleFailure(reason) {
 
   const why =
     reason === 'oxygen'
-      ? 'Your oxygen ran too low, so you hurried back to the habitat to breathe and rest.'
+      ? 'The oxygen supply ran too low, so you rested in the habitat while the base opened its emergency oxygen reserve.'
       : 'You got too hungry and tired, so you rested in the habitat and ate from the emergency food box.';
   const tip =
     reason === 'oxygen'
@@ -214,7 +214,7 @@ async function gentleFailure(reason) {
   feedback.showFadeCard(`
     <h2>Phew — you are safe!</h2>
     <p>${why}</p>
-    <p class="small">You rested for ${RECOVERY.REST_GAME_HOURS} hours. Time passed, and the base kept using power.</p>
+    <p class="small">You rested for ${RECOVERY.REST_GAME_HOURS} hours. Time passed: you used food and oxygen, and the base kept using power.</p>
     <p class="small">${tip}</p>`);
   await wait(5200);
   feedback.showFadeCard('');
@@ -252,8 +252,8 @@ function reactToGauges(report, sun) {
   if (c.oxygen) {
     feedback.toast(
       player.zoneId === 'outside'
-        ? '<strong>Oxygen low!</strong> Head back inside the habitat or greenhouse to refill.'
-        : '<strong>Oxygen low!</strong> The air system needs base power to refill your tank.',
+        ? '<strong>Oxygen supply low!</strong> Working outside uses it up about 2× faster — head back inside.'
+        : '<strong>Oxygen supply low!</strong> Soon you will make more with electrolysis (coming in a later update).',
       { kind: 'warn', icon: '⚠️', key: 'o2low', seconds: 6 },
     );
   }

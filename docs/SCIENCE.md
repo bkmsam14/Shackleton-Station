@@ -50,12 +50,16 @@ packaging**.
   So the Oxygen gauge drains about **2.3× faster outside** than inside. *Why (kid version):*
   walking and working on the Moon in a heavy suit is hard work, and hard work makes you
   breathe more.
+- **One shared oxygen supply** (team decision): the gauge is the base's total oxygen for the
+  habitat, greenhouse and suit together; the suit is assumed to be kept topped up from it
+  (detail left out: real suits carry their own tank that is refilled before each walk).
+  Nothing refills the supply in Demo 0; the electrolysis mini-game will add oxygen later.
 - Food: 0.800 kg dry food per day, all the time. (BVAD shows spacewalks burn about 2× the food
   energy per hour (1.062 vs 12.778 ÷ 24 = 0.532 MJ/h). Demo 0 **leaves this detail out** and
   drains food at one steady rate.)
 - **Scaled time:** 1 in-game day ≈ 4 real minutes (240 s), i.e. **360× real time**.
-- The *size* of a full gauge (how much oxygen a suit tank holds, how many days of food are in
-  the pantry) is a **game balance** choice, marked as such in `gameplay.js`.
+- The *size* of a full gauge (how much oxygen the base stores — 3 kg in Demo 0 — and how many
+  days of food are in the pantry) is a **game balance** choice, marked as such in `gameplay.js`.
 
 ---
 

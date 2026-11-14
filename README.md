@@ -35,8 +35,9 @@ GitHub Pages: `.github/workflows/deploy.yml` builds and deploys on every push to
   1.5° above the horizon, long shadows, Earth low on the horizon with real phase).
 - Tall vertical solar array that turns to follow the Sun.
 - Greenhouse with grow racks under red + blue LEDs.
-- Gauges: **Oxygen** and **Food** (astronaut, bottom-left) and **Base Power** (whole base,
-  top-right). Drain rates use NASA BVAD (2022) values — see `docs/SCIENCE.md`.
+- Gauges: **Oxygen** (one shared supply for habitat + greenhouse + suit) and **Food**
+  (bottom-left), and **Base Power** (whole base, top-right). Drain rates use NASA BVAD (2022)
+  values — see `docs/SCIENCE.md`. Oxygen is not refilled until the electrolysis mini-game.
 - Gentle failure: wake up in the habitat, time passes, no death screen.
 - Hooks: electrolysis unit and grow racks show "Coming soon" lesson toasts.
 

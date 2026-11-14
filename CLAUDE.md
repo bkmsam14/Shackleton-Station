@@ -88,7 +88,7 @@ The user wants to see this before anything else gets built:
 3. **See the solar panel array** outside: a tall vertical array that slowly turns to follow the Sun.
 4. **Walk to the greenhouse and enter it**: an interior with grow racks under pink-purple (red and blue) LED light.
 5. **Three gauges:**
-   - **Oxygen** (astronaut): drains slowly inside, faster outside in the suit; refills inside pressurized modules (habitat, greenhouse).
+   - **Oxygen** (shown in the astronaut panel): **one shared oxygen supply for the habitat, greenhouse and suit together** (team decision, Nov 2026). The suit is assumed to stay topped up from it. It drains slowly while the astronaut is inside and faster outside (BVAD spacewalk rate). **Nothing refills it in Demo 0**: making oxygen comes with the electrolysis mini-game, which will call `addOxygen()` in `systems/gauges.js` and pay its own water + power cost.
    - **Food / hunger** (astronaut): drains slowly all the time.
    - **Power** (the whole base, not the astronaut): **shown in its own separate UI panel** (for example, a "Base Power" panel at top-centre or top-right), visually distinct from the astronaut's personal gauges (bottom-left). It drains with base load and recharges from the solar array while it's in sunlight.
 6. Interaction prompt ("Press E to open door") and smooth inside/outside transitions.
