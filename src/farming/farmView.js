@@ -22,6 +22,10 @@ const KIND = { DEAD: 0, WATER: 1, SPLASH: 2, CRUMB: 3 };
 const COL = { water: new THREE.Color(0xa8dcff), soil: new THREE.Color(0x5b4330), leaf: new THREE.Color(0x5aa845) };
 
 const ease = (t) => t * t * (3 - 2 * t);
+// cutter grip relative to the camera: handles come back toward you at the lower right,
+// blades point forward and slightly up-left into the plant; rolled so the blades' flat
+// sides (and their V when open) face you
+const CUTTER_HOLD = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.45, 0.85, 1.0, 'YXZ'));
 const potatoes = (n) => `${n} ${n === 1 ? 'potato' : 'potatoes'}`;
 
 export function createFarmView({ camera, renderer, root, world, state, pots, feedback, sync, save, hooks }) {
@@ -455,6 +459,7 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     sfx.unlock();
     sfx.pickUp();
     cutters = createCutters();
+    cutters.root.scale.setScalar(1.3); // a little bigger so it reads well at this distance
     cutters.setOpen(1);
     layer.add(cutters.root);
     toolObj = cutters.root;
@@ -479,9 +484,11 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
       plane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(tmp).negate(), tmp2.copy(v.soilWorld).add({ x: 0, y: 0.15, z: 0 }));
       at = raycaster.ray.intersectPlane(plane, hit) ?? v.soilWorld;
     }
-    cutters.root.position.lerp(at, 0.6);
-    cutters.root.quaternion.copy(camera.quaternion);
-    cutters.root.rotateZ(-0.5);
+    // held in the right hand: blades point forward (away from you) and a little down and
+    // to the left, into the plant; the blade tips sit on the point you aim at
+    cutters.root.quaternion.copy(camera.quaternion).multiply(CUTTER_HOLD);
+    const tipOffset = tmp.copy(cutters.tip).multiplyScalar(cutters.root.scale.x).applyQuaternion(cutters.root.quaternion);
+    cutters.root.position.lerp(tmp2.copy(at).sub(tipOffset), 0.6);
   }
   function snip() {
     if (busy || !hovered) return;

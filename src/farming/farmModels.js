@@ -26,7 +26,7 @@ const potatoMat = () => mat('potato', () => new THREE.MeshStandardMaterial({ col
 const looseSoilMat = () => mat('looseSoil', () => new THREE.MeshStandardMaterial({ color: 0x6e5238, roughness: 1 }));
 const holeMat = () => mat('hole', () => new THREE.MeshStandardMaterial({ color: 0x21170f, roughness: 1 }));
 const stemMat = () => mat('stem', () => new THREE.MeshStandardMaterial({ color: 0x4f8f3a, roughness: 0.7 }));
-const petalMat = () => mat('petal', () => new THREE.MeshStandardMaterial({ color: 0xf4f0ff, roughness: 0.6, side: THREE.DoubleSide }));
+const petalMat = () => mat('petal', () => new THREE.MeshStandardMaterial({ color: 0xe4d4f8, roughness: 0.6, side: THREE.DoubleSide }));
 const pollenMat = () => mat('pollen', () => new THREE.MeshStandardMaterial({ color: 0xffc93c, roughness: 0.6 }));
 export const LEAF_COLOR = 0x5aa845;
 export const LEAF_HOVER = 0x5c8f1c;
@@ -184,18 +184,44 @@ function leafyStem(angle, rand) {
   return mesh;
 }
 
+/** Potato blossom: a 5-pointed lilac star with a pointed yellow centre (not a round disc). */
+let blossomGeo = null;
+function blossomGeometry() {
+  if (blossomGeo) return blossomGeo;
+  const s = new THREE.Shape();
+  const R = 0.011; // tip
+  const r = 0.0055; // notch between tips
+  for (let i = 0; i <= 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + Math.PI / 2;
+    const rad = i % 2 === 0 ? R : r;
+    if (i === 0) s.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
+    else s.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+  }
+  blossomGeo = new THREE.ShapeGeometry(s, 2);
+  blossomGeo.rotateX(-Math.PI / 2);
+  // cup the petals a little: tips higher than the centre
+  const p = blossomGeo.attributes.position;
+  for (let i = 0; i < p.count; i++) p.setY(i, (Math.hypot(p.getX(i), p.getZ(i)) / R) ** 2 * 0.004);
+  blossomGeo.computeVertexNormals();
+  return blossomGeo;
+}
 function flower() {
   const g = new THREE.Group();
-  const petalGeo = new THREE.CircleGeometry(0.012, 10);
-  petalGeo.translate(0, 0.012, 0);
-  for (let i = 0; i < 5; i++) {
-    const pt = new THREE.Mesh(petalGeo, petalMat());
-    pt.rotation.set(-Math.PI / 2, 0, (i / 5) * Math.PI * 2);
-    g.add(pt);
+  // a small cluster of 3 blossoms on short stalks, nodding outward
+  for (const [dx, dz, tilt] of [
+    [0, 0, 0.25],
+    [0.014, 0.008, 0.6],
+    [-0.012, 0.01, 0.6],
+  ]) {
+    const b = new THREE.Group();
+    b.position.set(dx, 0, dz);
+    b.rotation.set(tilt * Math.sign(dz || 1), Math.atan2(dx, dz), 0);
+    b.add(new THREE.Mesh(blossomGeometry(), petalMat()));
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.0028, 0.008, 8), pollenMat());
+    cone.position.y = 0.004;
+    b.add(cone);
+    g.add(b);
   }
-  const c = new THREE.Mesh(new THREE.SphereGeometry(0.006, 10, 8), pollenMat());
-  c.position.y = 0.003;
-  g.add(c);
   return g;
 }
 
@@ -251,6 +277,19 @@ export function createPotatoPlant(seed = 1) {
   }
   group.add(flowers);
 
+  // ripe potatoes (tubers) grow underground; when ready, a couple peek out of the soil
+  const tubers = new THREE.Group();
+  for (const [x, z, ry, sz] of [
+    [0.06, 0.035, 0.4, 0.75],
+    [-0.05, -0.045, 2.1, 0.65],
+  ]) {
+    const t = new THREE.Mesh(potatoGeometry(Math.round(ry * 10), sz), potatoMat());
+    t.position.set(x, -0.012, z);
+    t.rotation.set(0.3, ry, 0.15);
+    tubers.add(t);
+  }
+  group.add(tubers);
+
   return {
     group,
     stems,
@@ -262,6 +301,7 @@ export function createPotatoPlant(seed = 1) {
       stemsGroup.scale.setScalar(Math.min(1, s));
       flowers.visible = stage >= 3;
       for (const f of flowers.children) f.visible = f.userData.stem.visible && stage >= 3;
+      tubers.visible = stage >= 3;
     },
     /** Hide stems that were already cut (e.g. the player left halfway through). */
     setCut(n) {
@@ -271,7 +311,7 @@ export function createPotatoPlant(seed = 1) {
     dispose() {
       group.traverse((o) => {
         if (o.isMesh) {
-          o.geometry.dispose();
+          if (o.geometry !== blossomGeo) o.geometry.dispose(); // blossom shape is shared
           if (o.material !== stemMat() && o.material !== petalMat() && o.material !== pollenMat()) o.material.dispose();
         }
       });
@@ -314,32 +354,52 @@ export function createWateringCan() {
   return { root, tilt, tip, spoutDir: dir };
 }
 
-/** Garden cutters: two blades that open/close (setOpen 0..1). Blades point along local -Y. */
+/**
+ * Garden shears (secateurs). Blades point FORWARD along local −Z (away from the player),
+ * handles come back along +Z toward the hand. setOpen(0..1) opens the blades sideways.
+ * `tip` = local point between the blade tips (where the cut happens).
+ */
 export function createCutters() {
   const root = new THREE.Group();
   const bladeMat = MAT.metal();
+  const BLADE = 0.075;
+  // flat, curved blade outline in the XY plane (base at 0, tip at +Y)
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.007, 0);
+  shape.quadraticCurveTo(-0.0085, BLADE * 0.55, -0.001, BLADE);
+  shape.quadraticCurveTo(0.004, BLADE * 0.6, 0.006, 0);
+  shape.lineTo(-0.007, 0);
+  const bladeGeo = new THREE.ExtrudeGeometry(shape, { depth: 0.0025, bevelEnabled: true, bevelThickness: 0.0006, bevelSize: 0.0006, bevelSegments: 1, curveSegments: 10 });
+  bladeGeo.rotateX(-Math.PI / 2); // +Y (tip) → −Z, thickness → +Y: the flat side faces up
   const make = (side) => {
     const arm = new THREE.Group();
-    const blade = new THREE.Mesh(rbox(0.012, 0.06, 0.004, 0.002), bladeMat);
-    blade.position.y = -0.03;
-    const grip = new THREE.Mesh(rbox(0.016, 0.07, 0.012, 0.005), MAT.accent());
-    grip.position.y = 0.04;
-    grip.rotation.z = side * 0.18;
-    arm.add(blade, grip);
-    arm.position.z = side * 0.003;
+    const blade = new THREE.Mesh(bladeGeo, bladeMat);
+    blade.scale.x = side; // mirror the curve for the other blade
+    blade.position.y = side * 0.0016;
+    // handle: curves back and out from the pivot, with a rubber grip
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, side * 0.0016, 0.004),
+      new THREE.Vector3(-side * 0.008, side * 0.0016, 0.04),
+      new THREE.Vector3(-side * 0.02, side * 0.0016, 0.085),
+      new THREE.Vector3(-side * 0.026, side * 0.0016, 0.115),
+    ]);
+    const handle = new THREE.Mesh(new THREE.TubeGeometry(curve, 16, 0.0055, 8, false), bladeMat);
+    const grip = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(curve.getPoints(16).slice(6)), 12, 0.0085, 10, false), MAT.accent());
+    arm.add(blade, handle, grip);
     root.add(arm);
     return arm;
   };
   const a = make(1);
   const b = make(-1);
-  const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.012, 12), bladeMat);
-  pivot.rotation.x = Math.PI / 2;
+  const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.0055, 0.0055, 0.008, 16), MAT.accent());
   root.add(pivot);
+  const tip = new THREE.Vector3(0, 0, -BLADE);
   return {
     root,
+    tip,
     setOpen(t) {
-      a.rotation.z = 0.32 * t;
-      b.rotation.z = -0.32 * t;
+      a.rotation.y = 0.32 * t; // blades swing apart sideways (handles open the other way)
+      b.rotation.y = -0.32 * t;
     },
   };
 }
