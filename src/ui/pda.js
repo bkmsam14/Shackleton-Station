@@ -1,6 +1,7 @@
 // pda.js — the PDA screen (Tab). Detailed stats with the "why", the Databank, and a log
 // of recent events. The world is paused while it is open.
-import { BVAD, TIME, POWER } from '../config/gameplay.js';
+import { BVAD, TIME, POWER, ELECTROLYSIS } from '../config/gameplay.js';
+import { batchCost } from '../systems/electrolysis.js';
 import { secondsUntilEmpty } from '../systems/gauges.js';
 import { DATABANK } from '../data/databank.js';
 
@@ -47,7 +48,12 @@ export function createPda(root) {
             <div class="pda-stat">
               <div class="pda-stat-top"><b>Oxygen supply</b><span>${Math.ceil(g.oxygen)}%</span></div>
               <div class="pda-stat-line">${minutes(secondsUntilEmpty(g.oxygen, r.rates.oxygen))} left · ${perMin(r.rates.oxygen)}</div>
-              <p>${o2Why} Nothing refills it yet — making oxygen comes with the electrolysis lesson.</p>
+              <p>${o2Why} Make more at the Electrolysis unit (habitat work bay): it splits water into oxygen and hydrogen, using water and power.</p>
+            </div>
+            <div class="pda-stat">
+              <div class="pda-stat-top"><b>Electrolysis water tank</b><span>${s.station.tankKg.toFixed(1)} kg</span></div>
+              <div class="pda-stat-line">Enough for about ${(s.station.tankKg / ELECTROLYSIS.WATER_PER_KG_O2).toFixed(1)} kg of oxygen · ${batchCost('small').waterKg.toFixed(2)} kg per Small batch</div>
+              <p>Every 1 kg of oxygen uses ${ELECTROLYSIS.WATER_PER_KG_O2} kg of water (2 H₂O → 2 H₂ + O₂). Nothing refills the tank yet — ice mining comes later.</p>
             </div>
             <div class="pda-stat">
               <div class="pda-stat-top"><b>Food</b><span>${Math.ceil(g.food)}%</span></div>

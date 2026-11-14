@@ -520,12 +520,8 @@ export function createHabitat() {
         x: H.x + 8.2,
         z: H.z,
         y: FY + 1.1,
-        prompt: 'Press E to use the Electrolysis unit',
-        action: {
-          type: 'station',
-          station: 'electrolysis',
-          toast: 'Coming soon: Electrolysis lesson! This machine will use electricity to split water into oxygen and hydrogen — that is how you will refill the oxygen supply.',
-        },
+        prompt: 'Press E to make oxygen (Electrolysis)',
+        action: { type: 'station', station: 'electrolysis' }, // opens the Molecule Zapper instance
       },
     ],
   };

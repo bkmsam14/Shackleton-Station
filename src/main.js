@@ -25,6 +25,10 @@ import { createHud } from './ui/hud.js';
 import { createFpsMeter } from './ui/fpsMeter.js';
 import { createPda } from './ui/pda.js';
 import { createCallouts } from './ui/callouts.js';
+import { createElectrolysisState } from './systems/electrolysis.js';
+import { createMastery } from './systems/mastery.js';
+import { createInstanceManager } from './instances/InstanceManager.js';
+import { createElectrolysisInstance } from './instances/electrolysis/index.js';
 
 // ---------------------------------------------------------------- setup
 let quality = loadSettings().quality === 'low' ? 'low' : 'high';
@@ -66,6 +70,8 @@ const feedback = createFeedback(uiRoot);
 const pda = createPda(uiRoot);
 const callouts = createCallouts(uiRoot);
 const gauges = createGauges();
+const station = createElectrolysisState(); // the electrolysis unit's own water tank
+const mastery = createMastery({ load: loadSettings, save: saveSettings });
 const two = (n) => String(n).padStart(2, '0');
 feedback.setClock(() => {
   const c = getClock(day);
@@ -75,7 +81,7 @@ let lastHudState = null; // latest gauge snapshot (used by the PDA)
 
 // ---------------------------------------------------------------- game state
 // 'start' → 'playing' ⇄ 'paused';  'busy' while a door/wake-up fade runs; 'pda' while the
-// PDA is open (world paused).
+// PDA is open (world paused); 'instance' while a mini-game overlay is open (world paused).
 let mode = 'start';
 let pausedFromBusy = false;
 
@@ -153,6 +159,8 @@ function togglePda() {
   }
 }
 function enterPause() {
+  // Opening an instance releases the mouse, which fires 'unlock' — that is not a pause.
+  if (mode === 'instance') return;
   if (mode === 'pda') {
     pda.close();
     mode = 'playing';
@@ -188,6 +196,35 @@ window.addEventListener('keydown', (e) => {
 });
 feedback.setCrosshairVisible(false);
 
+// ---------------------------------------------------------------- instances (mini-games)
+const instances = createInstanceManager(uiRoot, {
+  onOpen() {
+    mode = 'instance';
+    input.clear();
+    feedback.setPrompt(null);
+    feedback.setCrosshairVisible(false);
+    if (document.pointerLockElement) document.exitPointerLock(); // free the mouse for clicking
+  },
+  onClose(id, result) {
+    if (result.completed) {
+      advanceGameHours(result.gameHours);
+      const c = getClock(day);
+      const text =
+        `Made ${result.o2Kg.toFixed(2)} kg of oxygen by electrolysis. Used ${result.waterKg.toFixed(2)} kg of water ` +
+        `and ${result.kwh.toFixed(1)} kWh of power. ${result.gameHours.toFixed(1)} hours passed while it ran.`;
+      feedback.log.unshift({ time: 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute), text });
+      feedback.notify('Oxygen made!', { long: text, seconds: 3.5 });
+    }
+    // Back to the 3D world. Re-locking the mouse needs a click; the "Back to base" button is
+    // one. If the browser refuses (e.g. closed with Esc), show the pause menu to click on.
+    mode = 'paused';
+    requestLock();
+    setTimeout(() => {
+      if (mode === 'paused' && !document.pointerLockElement && !player.dragLook) menus.showPause(true);
+    }, 600);
+  },
+});
+
 // ---------------------------------------------------------------- interactions
 let edgeToastAt = -99;
 let elapsed = 0;
@@ -221,9 +258,28 @@ function onZoneEntered(zoneId) {
 }
 
 function useStation(action) {
+  if (action.station === 'electrolysis') {
+    instances.open('electrolysis', createElectrolysisInstance, { gauges, station, mastery });
+    return;
+  }
   // a few words on screen; the full text goes to the PDA log
   const short = action.caption ?? action.toast.split('!')[0];
   feedback.notify(short, { long: action.toast, seconds: 3.5 });
+}
+
+/**
+ * Let time pass on the base while the player is busy (resting, running a machine).
+ * Simulated in 1-second steps of the sped-up clock: the Sun moves, gauges drain,
+ * the battery charges or drains. (The panel is assumed to face the Sun.)
+ */
+function advanceGameHours(hours) {
+  const seconds = (hours * 3600) / TIME.SCALE;
+  for (let t = 0; t < seconds; t += 1) {
+    const step = Math.min(1, seconds - t);
+    stepDayCycle(day, step);
+    const s = getSun(day);
+    stepGauges(gauges, step, { pressurized: true, sunVisibility: s.visibility, alignment: 1 });
+  }
 }
 
 // ---------------------------------------------------------------- gentle failure
@@ -236,12 +292,7 @@ async function gentleFailure(reason) {
   feedback.setPrompt(null);
   await feedback.fadeTo(true, RECOVERY.FADE_SECONDS);
 
-  const restSeconds = (RECOVERY.REST_GAME_HOURS * 3600) / TIME.SCALE;
-  for (let t = 0; t < restSeconds; t += 1) {
-    stepDayCycle(day, 1);
-    const s = getSun(day);
-    stepGauges(gauges, 1, { pressurized: true, sunVisibility: s.visibility, alignment: 1 });
-  }
+  advanceGameHours(RECOVERY.REST_GAME_HOURS);
   applyRecovery(gauges, { oxygen: RECOVERY.OXYGEN_RESTORE_PERCENT, food: RECOVERY.FOOD_RESTORE_PERCENT });
   const s = LAYOUT.HABITAT.spawn;
   player.placeAt('habitat', LAYOUT.HABITAT.x + s.x, LAYOUT.HABITAT.z + s.z, s.yawDeg);
@@ -270,6 +321,12 @@ async function gentleFailure(reason) {
   });
 }
 
+const MEDAL_ICON = { bronze: ' 🥉', silver: ' 🥈', gold: ' 🥇' };
+function promptFor(target) {
+  if (target.action.station !== 'electrolysis') return target.prompt;
+  return target.prompt + (MEDAL_ICON[mastery.get('electrolysis').level] ?? '');
+}
+
 function handleInteraction() {
   const target = findInteractable(
     world.interactables,
@@ -278,7 +335,7 @@ function handleInteraction() {
     player.position.z,
     player.forward2d(),
   );
-  feedback.setPrompt(target ? target.prompt : null);
+  feedback.setPrompt(target ? promptFor(target) : null);
   if (input.consumeInteract() && target) {
     if (target.action.type === 'door') useDoor(target.action);
     else if (target.action.type === 'station') useStation(target.action);
@@ -297,7 +354,7 @@ function reactToGauges(report, sun) {
       long:
         player.zoneId === 'outside'
           ? 'Oxygen supply low! Working outside uses it up about 2× faster — head back inside.'
-          : 'Oxygen supply low! Soon you will make more with electrolysis (coming in a later update).',
+          : 'Oxygen supply low! Make more at the Electrolysis unit in the habitat work bay.',
     });
   }
   if (c.food) {
@@ -392,6 +449,7 @@ renderer.setAnimationLoop(() => {
     sun,
     zone: zoneId === 'outside' ? { id: 'outside' } : { id: zoneId, name: world.zones[zoneId].name },
     clock: getClock(day),
+    station,
   };
   hud.update(lastHudState);
 
@@ -441,5 +499,5 @@ if (import.meta.env.DEV) {
       greenhouse: ['greenhouse', 1.4, 30, 90, -0.08],
     },
   };
-  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor };
+  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances };
 }

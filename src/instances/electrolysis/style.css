@@ -1,0 +1,1038 @@
+/* Electrolysis instance — "toy lab console" look for ages 7–12.
+   Chunky outlines, buttons that press down like real toy buttons, sticker icons and a
+   comic speech bubble for Volt the helper robot.
+   Kids first: body ≥ 16px, targets ≥ 44px, contrast ≥ 4.5:1 (checked per pair below),
+   all motion off under prefers-reduced-motion. Palette tokens come from ui/ui.css. */
+
+.ez {
+  --ink: #10182c; /* outlines + text on light surfaces */
+  --console: #16214a;
+  --console-deep: #0d1531;
+  --console-edge: #2d3c72;
+  --bubble: #f6f8ff; /* ink on bubble: 17:1 */
+  --chip-water: #d9edff;
+  --chip-power: #fff1bf;
+  --gold: #ffc94a;
+
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow-y: auto;
+  font-family: var(--font-body);
+  color: var(--text);
+  /* starry backdrop with two soft glows */
+  background:
+    radial-gradient(circle at 15% 20%, rgba(79, 209, 232, 0.22), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(255, 181, 71, 0.18), transparent 45%),
+    radial-gradient(1.5px 1.5px at 20px 30px, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 90px 80px, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 150px 140px, rgba(255, 255, 255, 0.45), transparent),
+    rgba(3, 7, 20, 0.86);
+  background-size: auto, auto, 180px 180px, 180px 180px, 180px 180px, auto;
+  animation: ez-fade 0.25s ease;
+}
+@keyframes ez-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------------------------------------------------------------- console card */
+.ez-card {
+  position: relative;
+  width: min(980px, 100%);
+  padding: 0 22px 14px;
+  border-radius: 28px;
+  border: 4px solid var(--console-edge);
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.05) 1.2px, transparent 1.3px) 0 0 / 22px 22px,
+    linear-gradient(180deg, var(--console) 0%, var(--console-deep) 100%);
+  box-shadow:
+    0 0 0 3px rgba(79, 209, 232, 0.35),
+    0 12px 0 #070c1e,
+    0 24px 50px rgba(0, 0, 0, 0.6);
+  animation: ez-pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+@keyframes ez-pop {
+  from {
+    transform: scale(0.92) translateY(16px);
+    opacity: 0;
+  }
+}
+
+.ez-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 -22px 6px;
+  padding: 12px 18px;
+  border-radius: 24px 24px 0 0;
+  background: linear-gradient(180deg, #24346a, #1b2858);
+  border-bottom: 4px solid var(--console-edge);
+}
+.ez-rivets {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ez-rivets i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #c9d4e8, #59668c);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+.ez-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 32px;
+  color: var(--cyan); /* 8.9:1 on header */
+  text-shadow: 0 3px 0 var(--ink);
+  letter-spacing: 0.3px;
+}
+.ez-title .ez-ic {
+  width: 36px;
+  height: 36px;
+  filter: drop-shadow(0 3px 0 var(--ink));
+}
+.ez-medal-slot {
+  margin-left: auto;
+}
+.ez-medal {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px 4px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 18px;
+}
+.ez-medal .ez-ic {
+  width: 30px;
+  height: 30px;
+}
+
+/* step tracker: 1 Pick · 2 Zap · 3 Quiz · 4 Stars */
+.ez-steps {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.ez-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 999px;
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.22);
+}
+.ez-steps li span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #2d3c72;
+  color: #fff;
+  font-size: 15px;
+}
+.ez-steps li.is-done span {
+  background: var(--green);
+  color: var(--ink);
+}
+.ez-steps li.is-now {
+  color: var(--ink); /* 11:1 on orange */
+  background: var(--orange);
+}
+.ez-steps li.is-now span {
+  background: var(--ink);
+  color: var(--orange);
+}
+.ez[data-screen='intro'] .ez-steps {
+  visibility: hidden;
+}
+
+/* ---------------------------------------------------------------- text */
+.ez-h3 {
+  margin: 0 0 4px;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.ez-p {
+  margin: 10px 0;
+  font-size: 19px;
+  line-height: 1.45;
+}
+.ez-center {
+  text-align: center;
+}
+.ez-p .t-o,
+.ez-bubble .t-o {
+  color: #d63a3a; /* on bubble: 4.9:1 */
+}
+.ez-p .t-o {
+  color: #ff9a9a; /* on console: 7.6:1 */
+}
+.ez-note {
+  margin: 12px 0 0;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+/* screen-reader announcements only (Volt's bubble already shows the same words) */
+.ez-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.ez-card {
+  padding-bottom: 20px;
+}
+
+/* ---------------------------------------------------------------- Volt + speech bubble */
+.ez-say {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin: 10px 0 6px;
+}
+.ez-volt {
+  flex: 0 0 auto;
+  width: 84px;
+  height: 88px;
+  filter: drop-shadow(0 5px 0 rgba(0, 0, 0, 0.35));
+}
+.ez-say-small .ez-volt {
+  width: 64px;
+  height: 68px;
+}
+.ez-bubble {
+  position: relative;
+  flex: 1;
+  padding: 14px 18px;
+  border-radius: 22px;
+  border: 3px solid var(--ink);
+  background: var(--bubble);
+  color: var(--ink);
+  font-size: 19px;
+  line-height: 1.4;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.35);
+}
+.ez-bubble::before {
+  /* comic tail pointing at Volt */
+  content: '';
+  position: absolute;
+  left: -15px;
+  bottom: 18px;
+  width: 22px;
+  height: 22px;
+  background: var(--bubble);
+  border-left: 3px solid var(--ink);
+  border-bottom: 3px solid var(--ink);
+  transform: skewY(35deg) rotate(10deg);
+  border-radius: 0 0 0 6px;
+}
+.ez-bubble p {
+  margin: 4px 0 0;
+}
+.ez-bubble b {
+  color: var(--ink);
+}
+.ez-q {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 23px;
+}
+.ez-yes {
+  color: #13804a !important; /* 5.1:1 on bubble */
+}
+.ez-try {
+  color: #b5461f !important; /* 5.2:1 on bubble */
+}
+.ez-source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px !important;
+  font-size: 16px;
+  color: #3a4566; /* 9:1 on bubble */
+}
+.ez-source .ez-ic {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+.ez-source a {
+  color: #0b6b86; /* 5.9:1 on bubble */
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------- icons */
+.ez-ic {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+/* ---------------------------------------------------------------- buttons */
+.ez-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 24px;
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 var(--ink);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    filter 0.15s ease;
+}
+.ez-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 var(--ink);
+}
+.ez-btn:active {
+  transform: translateY(5px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.ez-btn-go {
+  color: var(--ink); /* 11:1 on gold */
+  background: linear-gradient(180deg, #ffd96b 0%, var(--orange) 100%);
+}
+.ez-btn-go .ez-star {
+  width: 30px;
+  height: 30px;
+}
+.ez-btn-go .ez-star path:first-of-type {
+  fill: #ffffff; /* a gold star would vanish on the gold button */
+}
+.ez-btn-ghost {
+  color: var(--text);
+  background: #24346a; /* white: 11:1 */
+  font-size: 19px;
+}
+.ez-btn-ghost .ez-ic {
+  color: var(--cyan);
+}
+.ez-btn-xl {
+  min-height: 72px;
+  min-width: min(420px, 100%);
+  font-size: 28px;
+  border-radius: 22px;
+}
+.ez-btn-xl .ez-ic {
+  width: 34px;
+  height: 34px;
+}
+.ez-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+.ez-row-center {
+  justify-content: center;
+}
+.ez-row-end {
+  justify-content: flex-end;
+}
+.ez-btn:focus-visible,
+.ez-batch:focus-visible,
+.ez-answer:focus-visible,
+.ez-source a:focus-visible {
+  outline: 4px solid #fff;
+  outline-offset: 4px;
+}
+
+/* ---------------------------------------------------------------- intro molecule */
+.ez-mol-wrap {
+  position: relative;
+  width: min(320px, 100%);
+  margin: 4px auto 0;
+}
+.ez-molecule {
+  display: block;
+  width: 100%;
+}
+.ez-atom {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 30px;
+  fill: var(--ink);
+}
+.ez-atom-big {
+  font-size: 40px;
+}
+.ez-tag,
+.ez-formula {
+  position: absolute;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 3px solid var(--ink);
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+  white-space: nowrap;
+}
+.ez-tag-o {
+  top: 4px;
+  right: -18px;
+  background: #ffb3b3;
+}
+.ez-tag-h {
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bubble);
+}
+.ez-formula {
+  top: 6px;
+  left: -10px;
+  background: var(--cyan);
+  font-size: 22px;
+  transform: rotate(-6deg);
+}
+
+/* ---------------------------------------------------------------- batch picker */
+.ez-meters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 10px 0 4px;
+}
+.ez-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid var(--console-edge);
+}
+.ez-meter .ez-ic {
+  width: 30px;
+  height: 30px;
+}
+.ez-meter-txt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ez-meter-label {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.ez-meter-bar {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.ez-meter-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--meter, var(--cyan));
+}
+.ez-meter-val {
+  font-family: var(--font-head);
+  font-size: 20px;
+}
+.ez-tone-water {
+  --meter: #4fa8ff;
+}
+.ez-tone-power {
+  --meter: #ffd43b;
+}
+.ez-tone-oxygen {
+  --meter: var(--cyan);
+}
+.ez-tone-time {
+  --meter: var(--orange);
+}
+
+.ez-batches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 14px;
+}
+.ez-batch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 12px 14px 14px;
+  border-radius: 24px;
+  border: 3px solid var(--ink);
+  background: linear-gradient(180deg, #2a3d7a 0%, #1c2a5a 100%);
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 8px 0 var(--ink);
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.1s ease;
+}
+.ez-batch:hover:not([disabled]) {
+  transform: translateY(-4px) rotate(-0.6deg);
+  box-shadow: 0 12px 0 var(--ink);
+}
+.ez-batch:active:not([disabled]) {
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.ez-batch-art {
+  display: grid;
+  place-items: end center;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, rgba(79, 209, 232, 0.28), rgba(0, 0, 0, 0.25));
+  border: 3px solid var(--console-edge);
+}
+.ez-flask {
+  width: 80px;
+  height: 80px;
+}
+.ez-batch:hover:not([disabled]) .ez-flask {
+  animation: ez-wiggle 0.5s ease;
+}
+@keyframes ez-wiggle {
+  25% {
+    transform: rotate(-8deg);
+  }
+  75% {
+    transform: rotate(8deg);
+  }
+}
+.ez-batch-name {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 26px;
+  text-shadow: 0 2px 0 var(--ink);
+}
+.ez-batch-gain {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 21px;
+  color: var(--cyan); /* 7.6:1 */
+}
+.ez-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.ez-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 5px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink); /* > 13:1 on both chip colours */
+}
+.ez-chip .ez-ic {
+  width: 22px;
+  height: 22px;
+}
+.ez-chip small {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ez-chip-water {
+  background: var(--chip-water);
+}
+.ez-chip-power {
+  background: var(--chip-power);
+}
+.ez-batch-why {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.ez-batch-why .ez-ic {
+  width: 22px;
+  height: 22px;
+}
+.ez-batch[disabled] {
+  cursor: not-allowed;
+  background: #1a2140;
+  box-shadow: 0 4px 0 var(--ink);
+  transform: translateY(4px);
+}
+.ez-batch[disabled] .ez-batch-name,
+.ez-batch[disabled] .ez-batch-gain {
+  color: #aab3c8; /* 7.5:1 on #1a2140 */
+}
+.ez-batch-why.is-locked {
+  padding: 4px 10px 4px 6px;
+  border-radius: 12px;
+  background: rgba(255, 122, 89, 0.16);
+  color: #ffb39f; /* 8.3:1 */
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------- play */
+.ez-hints {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 8px 0 10px;
+}
+.ez-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px 4px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid var(--console-edge);
+  font-size: 17px;
+}
+.ez-hint .ez-ic {
+  width: 30px;
+  height: 30px;
+}
+.ez-hint-or {
+  font-family: var(--font-head);
+  color: var(--text-muted);
+}
+.ez-screen {
+  padding: 8px;
+  border-radius: 22px;
+  border: 3px solid var(--ink);
+  background: linear-gradient(180deg, #2d3c72, #1b2858);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.12), 0 6px 0 var(--ink);
+}
+.ez-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 880 / 480;
+  border-radius: 16px;
+  background: #050a18;
+  touch-action: none;
+  cursor: crosshair;
+}
+.ez-goal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  color: var(--text-muted);
+}
+.ez-goal b {
+  color: var(--cyan);
+}
+
+/* ---------------------------------------------------------------- quiz */
+.ez-answers {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+.ez-answer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 18px;
+  border: 3px solid var(--ink);
+  background: linear-gradient(180deg, #2a3d7a, #1f2e60);
+  color: var(--text);
+  font: inherit;
+  font-size: 19px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 6px 0 var(--ink);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
+}
+.ez-answer:hover:not([disabled]) {
+  transform: translateX(4px);
+}
+.ez-answer:active:not([disabled]) {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.ez-letter {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 3px solid var(--ink);
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--ink);
+}
+.ez-answer:nth-child(1) .ez-letter {
+  background: var(--cyan);
+}
+.ez-answer:nth-child(2) .ez-letter {
+  background: var(--orange);
+}
+.ez-answer:nth-child(3) .ez-letter {
+  background: var(--green);
+}
+.ez-answer:nth-child(4) .ez-letter {
+  background: #ff9a9a;
+}
+.ez-answer-txt {
+  flex: 1;
+}
+.ez-answer-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+.ez-answer-mark:empty {
+  display: none;
+}
+.ez-answer-mark .ez-ic {
+  width: 26px;
+  height: 26px;
+}
+.ez-answer.is-right {
+  background: linear-gradient(180deg, #1f6a4a, #17573c); /* white: 7:1 */
+}
+.ez-answer.is-right .ez-answer-mark {
+  background: var(--green);
+  color: var(--ink);
+}
+.ez-answer.is-wrong {
+  background: linear-gradient(180deg, #7a3324, #63281c); /* white: 9:1 */
+}
+.ez-answer.is-wrong .ez-answer-mark {
+  background: var(--warn);
+  color: var(--ink);
+}
+.ez-answer[disabled] {
+  cursor: default;
+}
+.ez-answer[disabled]:not(.is-right):not(.is-wrong) {
+  background: #1a2140;
+  color: #aab3c8; /* 7.5:1 — dimmed but still readable */
+}
+.ez-answer[disabled]:not(.is-right):not(.is-wrong) .ez-letter {
+  filter: saturate(0.35) brightness(0.8);
+}
+
+/* picture tiles: answers side by side, big picture + short word (easy for young readers) */
+.ez-answers {
+  grid-template-columns: repeat(var(--n, 3), 1fr);
+}
+.ez-answers .ez-answer {
+  position: relative;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 150px;
+  padding: 18px 12px 14px;
+  text-align: center;
+}
+.ez-answers .ez-answer:hover:not([disabled]) {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 0 var(--ink);
+}
+.ez-answers .ez-letter {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 38px;
+  height: 38px;
+  font-size: 19px;
+}
+.ez-answer-pic .ez-ic {
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35));
+}
+.ez-answers .ez-answer-txt {
+  flex: 0 0 auto;
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.2;
+}
+.ez-num {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 72px;
+  line-height: 1;
+  text-shadow: 0 4px 0 var(--ink);
+}
+.ez-answers .ez-answer-mark {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+.ez-answer.is-wrong .ez-answer-pic {
+  opacity: 0.55;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ez-answer.is-wrong {
+    animation: ez-shake 0.35s ease;
+  }
+  .ez-answer.is-right {
+    animation: ez-bounce 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
+  }
+}
+@keyframes ez-shake {
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+@keyframes ez-bounce {
+  40% {
+    transform: scale(1.06);
+  }
+}
+@media (max-width: 760px) {
+  .ez-answers {
+    grid-template-columns: 1fr;
+  }
+  .ez-answers .ez-answer {
+    flex-direction: row;
+    min-height: 72px;
+    padding-left: 60px;
+  }
+  .ez-answer-pic .ez-ic {
+    width: 44px;
+    height: 44px;
+  }
+  .ez-num {
+    font-size: 44px;
+  }
+}
+.ez-explain {
+  margin-top: 6px;
+}
+
+/* ---------------------------------------------------------------- result */
+.ez-stars {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 4px 0 8px;
+}
+.ez-stars .ez-star {
+  width: 84px;
+  height: 80px;
+}
+.ez-stars .ez-star:nth-child(2) {
+  width: 104px;
+  height: 98px;
+}
+.ez-stars .ez-star.is-on {
+  filter: drop-shadow(0 0 14px rgba(255, 201, 74, 0.55)) drop-shadow(0 5px 0 var(--ink));
+}
+.ez-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+.ez-res {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 10px 10px;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid var(--console-edge);
+  border-left: 8px solid var(--meter);
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+.ez-res .ez-ic {
+  width: 38px;
+  height: 38px;
+}
+.ez-res b {
+  display: block;
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--text);
+}
+.ez-res small {
+  font-size: 15px;
+}
+.ez-mastery {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  font-size: 19px;
+}
+.ez-mastery .ez-ic {
+  width: 40px;
+  height: 40px;
+}
+
+/* ---------------------------------------------------------------- motion */
+@media (prefers-reduced-motion: no-preference) {
+  .ez-enter > * {
+    animation: ez-rise 0.4s cubic-bezier(0.2, 1.2, 0.4, 1) backwards;
+  }
+  .ez-enter > *:nth-child(2) {
+    animation-delay: 0.06s;
+  }
+  .ez-enter > *:nth-child(3) {
+    animation-delay: 0.12s;
+  }
+  .ez-enter > *:nth-child(4) {
+    animation-delay: 0.18s;
+  }
+  .ez-enter > *:nth-child(5) {
+    animation-delay: 0.24s;
+  }
+  .ez-batch,
+  .ez-answer {
+    animation: ez-rise 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) backwards;
+    animation-delay: calc(0.12s + var(--i, 0) * 0.08s);
+  }
+  .ez-volt {
+    animation: ez-bob 2.4s ease-in-out infinite;
+  }
+  .ez-volt-light {
+    animation: ez-blink 1.6s steps(2) infinite;
+  }
+  .ez-mol-o {
+    animation: ez-bob 3s ease-in-out infinite;
+  }
+  .ez-mol-h {
+    animation: ez-bob 3s ease-in-out infinite 0.4s;
+  }
+  .ez-mol-h2 {
+    animation-delay: 0.8s;
+  }
+  .ez-stars .ez-star.is-on {
+    animation: ez-star 0.55s cubic-bezier(0.2, 1.6, 0.4, 1) backwards;
+  }
+  .ez-stars .ez-star:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .ez-stars .ez-star:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+}
+@keyframes ez-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes ez-bob {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes ez-blink {
+  50% {
+    fill: #ff7a59;
+  }
+}
+@keyframes ez-star {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-30deg);
+  }
+}
+
+/* ---------------------------------------------------------------- small screens */
+@media (max-width: 760px) {
+  .ez-steps {
+    display: none;
+  }
+  .ez-meters,
+  .ez-batches,
+  .ez-results {
+    grid-template-columns: 1fr;
+  }
+  .ez-batch {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .ez-batch-art {
+    width: 72px;
+    height: 72px;
+  }
+  .ez-flask {
+    width: 60px;
+    height: 60px;
+  }
+  .ez-volt {
+    width: 60px;
+    height: 64px;
+  }
+  .ez-title {
+    font-size: 26px;
+  }
+}

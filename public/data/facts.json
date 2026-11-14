@@ -60,6 +60,42 @@
       "text": "At the south pole the Sun is always low, so NASA is testing tall vertical solar arrays that turn to follow it.",
       "value": "NASA Vertical Solar Array Technology (VSAT) project",
       "source": "https://ntrs.nasa.gov/api/citations/20230012849/downloads/GCD%20Annual%20Review%20VSAT%20September%202023%20Final.pdf"
+    },
+    {
+      "id": "water-molecule",
+      "text": "Every water molecule (H₂O) has 1 oxygen atom and 2 hydrogen atoms, so splitting water gives twice as much hydrogen gas as oxygen gas.",
+      "value": "2 H₂O → 2 H₂ + O₂; H₂ at the negative electrode, O₂ at the positive; 1.125 kg water per kg O₂",
+      "source": "https://edu.rsc.org/experiments/exploding-bubbles-of-hydrogen-and-oxygen/752.article"
+    },
+    {
+      "id": "electrolysis-energy",
+      "text": "Splitting water takes at least about 5 kWh of energy for every kg of oxygen; real machines need more.",
+      "value": "ΔfH°(H₂O, l) = −285.83 kJ/mol × 62.5 mol/kg O₂ = 17.9 MJ ≈ 4.96 kWh per kg O₂ (minimum)",
+      "source": "https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=2"
+    },
+    {
+      "id": "iss-oga-rate",
+      "text": "The Space Station's oxygen machine makes oxygen by electrolysis.",
+      "value": "2.3–9.2 kg O₂ per day selectable (NTRS 20080036243); 5.4 kg/day nominal (NTRS 20180006335)",
+      "source": "https://ntrs.nasa.gov/citations/20180006335"
+    },
+    {
+      "id": "sabatier",
+      "text": "On the Space Station, a Sabatier reactor joins hydrogen with the CO₂ astronauts breathe out to make water; the methane it also makes is let out into space.",
+      "value": "CO₂ + 4 H₂ → CH₄ + 2 H₂O",
+      "source": "https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/"
+    },
+    {
+      "id": "brine-chlorine",
+      "text": "Splitting salt water makes chlorine gas at the + side instead of oxygen, and chlorine is poisonous.",
+      "value": "2 Cl⁻ → Cl₂ + 2 e⁻ at the positive electrode",
+      "source": "https://edu.rsc.org/experiments/electrolysis-of-brine/735.article"
+    },
+    {
+      "id": "moon-ice",
+      "text": "Craters near the Moon's south pole that never get sunlight hold water ice.",
+      "value": "LRO LEND data: ice in permanently shadowed regions near the south pole",
+      "source": "https://science.nasa.gov/solar-system/moon/nasas-lro-lunar-ice-deposits-are-widespread/"
     }
   ]
 }

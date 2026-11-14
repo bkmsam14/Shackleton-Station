@@ -35,12 +35,20 @@ How the game uses them (ratios stay real, amounts are scaled):
 ### Oxygen and air
 - **Electrolysis:** electricity splits water into hydrogen and oxygen. → 2H₂O → 2H₂ + O₂. The hydrogen side makes twice as much gas as the oxygen side. *Source: NASA ISS Oxygen Generation Assembly — https://ntrs.nasa.gov/citations/20200002346*
 - **CO₂ removal:** astronauts breathe out carbon dioxide, which must be removed or it builds up. → The ISS uses CO₂ removal systems in its life support (ECLSS). *Source: NASA ECLSS (add URL)*
-- **Sabatier:** leftover hydrogen + CO₂ → water + methane. Your breath becomes water again. → On the ISS the methane is vented. *Source: NASA (add URL)*
+- **Sabatier:** leftover hydrogen + CO₂ → water + methane. Your breath becomes water again. → On the ISS the methane is vented, and hydrogen the reactor can't use is vented too. *Source: NASA ECLSS — https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/ ; NTRS 20100036570*
 - **Oxygen in Moon rocks:** Moon soil (regolith) is about 40% oxygen by weight, locked in minerals. NASA is *testing* ways to extract it. *Source: NASA (add URL)*
+
+### Electrolysis (used by the Molecule Zapper mini-game)
+- **Water is H₂O:** 1 oxygen atom + 2 hydrogen atoms; the molecule is bent (H–O–H angle ≈ 104.5°). Splitting it gives **twice as much hydrogen gas as oxygen gas** by volume. Hydrogen forms at the **negative** electrode, oxygen at the **positive** electrode. Hydrogen is extremely flammable. *Source: RSC — https://edu.rsc.org/experiments/exploding-bubbles-of-hydrogen-and-oxygen/752.article*
+- **Water used:** 2 H₂O → 2 H₂ + O₂, so 36 g of water gives 32 g of O₂ → **1.125 kg of water per kg of O₂** (stoichiometry; molar masses H₂O 18 g/mol, O₂ 32 g/mol).
+- **Energy (minimum):** ΔfH°(H₂O, liquid) = **−285.83 kJ/mol**. 1 kg O₂ needs 62.5 mol of water → 17.86 MJ = **4.96 kWh per kg O₂**. Real electrolysers need more (losses as heat). The game uses the minimum and says so. *Source: NIST Chemistry WebBook — https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=2*
+- **ISS Oxygen Generation Assembly (OGA):** electrolyses water supplied by the Water Recovery System; oxygen goes to the cabin, hydrogen is vented or sent to the Sabatier reactor. Cell stack with a solid polymer electrolyte membrane. Selectable **2.3–9.2 kg O₂/day**; **5.4 kg/day** nominal (used for the "real time" line). *Sources: NASA ECLSS — https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/ ; NTRS 20080036243 — https://ntrs.nasa.gov/citations/20080036243 ; NTRS 20180006335 — https://ntrs.nasa.gov/citations/20180006335*
+- **Salt water is not used:** electrolysing brine makes **chlorine** (toxic) at the positive electrode instead of oxygen: 2 Cl⁻ → Cl₂ + 2 e⁻. *Source: RSC — https://edu.rsc.org/experiments/electrolysis-of-brine/735.article*
+- **Game simplifications (details left out):** a "zap" splits a molecule in the middle of the cell, with bolts from both electrodes; in a real cell the reactions happen at the electrode surfaces, with ions carrying the current. Two O atoms pairing into O₂ is shown; electron/ion steps are left out. Missed zaps cost a little extra power "lost as heat" (game balance amount; real electrolysers do lose energy as heat).
 
 ### Water
 - The ISS recycles about **98%** of its water, including sweat and urine. *Source: NASA, 2023 ISS water recovery milestone (add URL)*
-- Craters near the lunar south pole that never get sunlight (permanently shadowed regions) hold water ice. That's a main reason Artemis is going there. *Source: NASA (add URL)*
+- Craters near the lunar south pole that never get sunlight (permanently shadowed regions) hold water ice. That's a main reason Artemis is going there. *Source: NASA LRO — https://science.nasa.gov/solar-system/moon/nasas-lro-lunar-ice-deposits-are-widespread/*
 
 ### Food and plants
 - NASA's **Veggie** system grew lettuce and other plants on the ISS under LED lights, using growing "pillows". *Source: NASA Veggie (add URL)*
@@ -113,6 +121,7 @@ How the game uses them (ratios stay real, amounts are scaled):
 - A Moon surface vs ISS dose comparison from a NASA source (for example Artemis I or LRO CRaTER results).
 - Real growth times for lettuce and potato in controlled-environment agriculture.
 - Exact source URLs for every "(add URL)" above.
+- Real efficiency of the ISS OGA (kWh per kg O₂ actually used), if we ever show more than the physics minimum.
 
 ## Corrections log (mistakes we caught; don't repeat them)
 - ❌ "Dust storms on the Moon" → ✅ dust blasted by landers and rovers.

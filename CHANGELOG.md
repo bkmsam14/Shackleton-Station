@@ -1,5 +1,41 @@
 # Changelog — Shackleton Station
 
+## 0.3.0 — Electrolysis mini-game (Molecule Zapper)
+
+### Gameplay
+- **The Electrolysis unit works.** Press E in the habitat work bay to open the first instance, an
+  arcade mini-game. Zap water molecules: each H₂O splits into an H₂ (to the − tube) and an O atom;
+  two O atoms team up as O₂ (to the + tube), so the hydrogen tube fills twice as fast.
+- **Choose a batch first** (Small / Medium / Big = 0.5 / 1.0 / 1.5 kg O₂), with costs shown up
+  front. Batches that won't fit in the oxygen supply, or that the water tank or battery can't pay
+  for, are greyed out with the reason.
+- **Real costs:** water from the unit's own tank (10 kg to start; nothing refills it yet) at
+  1.125 kg per kg O₂, and base power at the physics minimum of 4.96 kWh per kg O₂ (NIST). Missed
+  zaps lose a little power as heat (capped at 25% of the batch). The base clock moves on by the
+  real ISS production time (5.4 kg O₂/day), so a Big batch costs about 6½ in-game hours.
+- **Learning beats:** a "Meet H₂O" intro on the first visit, a mid-round "Why?" bubble, and a
+  rotating kid-level quiz question that can be answered from what the player just saw (how many
+  H in H₂O, what splits water, which tube filled faster, which gas you breathe, where a Moon base
+  finds water). Short picture answers in random order; a wrong answer gets Volt's hint and a
+  second try (the bonus star is for a right first try). Harder facts (Sabatier, salt → chlorine)
+  live in the PDA Databank.
+- **Look:** "toy lab console" UI with custom sticker icons and Volt, a helper robot who speaks
+  the lesson lines.
+- **Stars and mastery:** 1 star for finishing, +1 for accurate zapping, +1 for the quiz. Best stars
+  give bronze / silver / gold, saved in localStorage and shown on the station prompt.
+- Click/tap or Space to zap; Esc leaves (nothing is made or paid). Simple WebAudio sound effects.
+
+### Code
+- `systems/electrolysis.js` and `systems/mastery.js` (pure logic, unit-tested).
+- `instances/InstanceManager.js`: reusable overlay manager (pauses the world, frees the mouse,
+  re-locks it on return), ready for the greenhouse and solar instances.
+- `main.js`: new `instance` mode; `advanceGameHours()` shared by electrolysis and gentle failure.
+
+### Science
+- New sourced facts in `docs/SCIENCE.md`, the PDA Databank and `public/data/facts.json`: water
+  stoichiometry, the NIST energy minimum, ISS OGA rates, Sabatier (URL added), salt → chlorine, and
+  Moon ice (URL added).
+
 ## 0.2.1 — Homier habitat, polished objects
 
 ### Habitat
