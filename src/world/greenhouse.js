@@ -6,6 +6,7 @@ import { MAT } from './materials.js';
 import { LAYOUT } from './layout.js';
 import { createSign } from './signs.js';
 import { mulberry32 } from './heightfield.js';
+import { planarUV } from './textures.js';
 
 const G = LAYOUT.GREENHOUSE;
 const LED_PINK = 0xd36bff; // what red + blue LED light looks like mixed together
@@ -93,7 +94,7 @@ export function createGreenhouseModel() {
     cap.position.set(end, fy, 0);
     group.add(cap);
   }
-  const floor = shadowed(new THREE.Mesh(new THREE.BoxGeometry(L - 0.2, 0.06, ri * 2), MAT.floor()), false, true);
+  const floor = shadowed(new THREE.Mesh(planarUV(new THREE.BoxGeometry(L - 0.2, 0.06, ri * 2), 'xz', 1), MAT.floor()), false, true);
   floor.position.set(L / 2, fy + 0.03, 0);
   group.add(floor);
   // inner door (west end)

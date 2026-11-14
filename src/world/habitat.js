@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { MAT } from './materials.js';
 import { LAYOUT } from './layout.js';
 import { createSign } from './signs.js';
+import { planarUV } from './textures.js';
 
 const H = LAYOUT.HABITAT;
 
@@ -108,7 +109,7 @@ export function createHabitatModel() {
   // ---------- interior ----------
   const ri = H.innerRadius;
   const lining = shadowed(
-    new THREE.Mesh(new THREE.CylinderGeometry(ri, ri, L - 0.2, 14, 1, true), MAT.interiorWall()),
+    new THREE.Mesh(new THREE.CylinderGeometry(ri, ri, L - 0.2, 14, 1, true), MAT.habitatWall()),
     false,
     true,
   );
@@ -122,7 +123,7 @@ export function createHabitatModel() {
     group.add(end);
   }
   const floorHalfW = Math.sqrt(ri * ri - (H.axisY - H.floorY) ** 2);
-  const floor = shadowed(new THREE.Mesh(new THREE.BoxGeometry(L - 0.2, 0.1, floorHalfW * 2), MAT.floor()), false, true);
+  const floor = shadowed(new THREE.Mesh(planarUV(new THREE.BoxGeometry(L - 0.2, 0.1, floorHalfW * 2), 'xz', 1), MAT.floor()), false, true);
   floor.position.set(0, H.floorY - 0.05, 0);
   group.add(floor);
   // floor stripe (guides to the airlock)
