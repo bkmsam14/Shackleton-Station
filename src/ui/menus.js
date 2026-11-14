@@ -8,6 +8,7 @@ const CONTROLS = `
     <div><span class="keycap">Space</span> Jump (Moon gravity!)</div>
     <div><span class="keycap">Shift</span> Hop faster</div>
     <div><span class="keycap">E</span> Use / open doors</div>
+    <div><span class="keycap">Tab</span> PDA: stats + science</div>
     <div><span class="keycap">Esc</span> Pause</div>
   </div>`;
 

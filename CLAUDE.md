@@ -22,7 +22,7 @@ The challenge brief: kids must experience real engineering trade-offs (life supp
 5. **Use real terms, then explain them.** Electrolysis, regolith, solar particle event: each gets a one-line kid-friendly explanation, never a made-up replacement word.
 6. **Label data honestly.** Archived data is labeled "Replay of real data from <date>". Only data fetched now is labeled "Live". Credit sources on screen.
 7. **Failure is gentle.** When a gauge reaches 0, the astronaut is brought back to the habitat and loses time or supplies. There is no death screen.
-8. **Kids first.** Big text (body at least 16px, HUD labels at least 18px), touch targets at least 44px, text contrast at least 4.5:1, plain language, and no more than 4 gauges on screen.
+8. **Kids first.** Big text (body at least 16px, HUD labels at least 18px), touch targets at least 44px, text contrast at least 4.5:1, plain language, and no more than 4 gauges on screen. The main HUD is minimal (rings + numbers, no boxes or sentences; team decision in the polish pass); explanations live in the PDA (Tab).
 
 ## Tech stack
 
@@ -91,7 +91,7 @@ The user wants to see this before anything else gets built:
 5. **Three gauges:**
    - **Oxygen** (shown in the astronaut panel): **one shared oxygen supply for the habitat, greenhouse and suit together** (team decision, Nov 2026). The suit is assumed to stay topped up from it. It drains slowly while the astronaut is inside and faster outside (BVAD spacewalk rate). **Nothing refills it in Demo 0**: making oxygen comes with the electrolysis mini-game, which will call `addOxygen()` in `systems/gauges.js` and pay its own water + power cost.
    - **Food / hunger** (astronaut): drains slowly all the time.
-   - **Power** (the whole base, not the astronaut): **shown in its own separate UI panel** (for example, a "Base Power" panel at top-centre or top-right), visually distinct from the astronaut's personal gauges (bottom-left). It drains with base load and recharges from the solar array while it's in sunlight.
+   - **Power** (the whole base, not the astronaut): shown **separately from the astronaut rings**, top-centre. **Team decision (polish pass):** the full readout (battery + % + charging/draining arrow) appears only inside a pressurized module; outside only a tiny battery icon shows. Details are in the PDA (Tab). It drains with base load and recharges from the solar array while it's in sunlight.
 6. Interaction prompt ("Press E to open door") and smooth inside/outside transitions.
 7. Gentle failure: if Oxygen or Food reaches 0, fade out and wake up in the habitat (no death screen).
 

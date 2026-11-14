@@ -27,7 +27,13 @@ GitHub Pages: `.github/workflows/deploy.yml` builds and deploys on every push to
 | Shift | Hop faster |
 | Space | Jump — Moon gravity is 1/6 of Earth's |
 | E | Use / open doors |
-| Esc | Pause (credits + time notes) |
+| Tab | PDA: detailed stats, Databank (science + NASA sources), log |
+| Esc | Pause (credits + time notes, Low/High graphics) |
+
+## Performance check
+
+Add `?fps` to the URL (e.g. `http://localhost:5173/?fps`) to show fps, frame time and draw
+calls. Measurements and the cost of each effect are in `docs/PERFORMANCE.md`.
 
 ## What is in Demo 0
 
