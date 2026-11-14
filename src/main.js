@@ -35,6 +35,7 @@ import { createMastery } from './systems/mastery.js';
 import { createInstanceManager } from './instances/InstanceManager.js';
 import { createElectrolysisInstance } from './instances/electrolysis/index.js';
 import { createFarming } from './farming/index.js';
+import { createSupply } from './supply/index.js';
 
 // ---------------------------------------------------------------- setup
 let quality = loadSettings().quality === 'low' ? 'low' : 'high';
@@ -345,6 +346,41 @@ const farming = createFarming({
 });
 world.interactables.push(...farming.interactables);
 
+// ---------------------------------------------------------------- supplies (terminal + cargo pad)
+// 'supply' mode: terminal or crate screen open, mouse freed, world paused (orders keep moving).
+const supply = createSupply({
+  world,
+  root: uiRoot,
+  gauges,
+  station,
+  inventory: farming.state.inventory,
+  saveInventory: farming.save,
+  notify: voltEvent,
+  instances, // the Solar Fix repair lesson opens like the Electrolysis one
+  voice: voltVoice,
+  hooks: {
+    onEnter() {
+      voltVoice.stop();
+      mode = 'supply';
+      input.clear();
+      feedback.setPrompt(null);
+      feedback.setCrosshairVisible(false);
+      if (!player.dragLook) document.exitPointerLock?.();
+    },
+    onExit(reason) {
+      mode = 'playing';
+      input.clear();
+      if (reason === 'esc') return enterPause();
+      feedback.setCrosshairVisible(true);
+      if (player.dragLook) return;
+      requestLock();
+      setTimeout(() => {
+        if (mode === 'playing' && !player.controls.isLocked) enterPause();
+      }, 600);
+    },
+  },
+});
+
 // ---------------------------------------------------------------- interactions
 let edgeToastAt = -99;
 let elapsed = 0;
@@ -469,6 +505,7 @@ function handleInteraction() {
   let target = findInteractable(world.interactables.filter(notVolt), player.zoneId, player.position.x, player.position.z, player.forward2d());
   // a pot stand → the pot you are facing (or nothing, if you look away)
   if (target?.action.type === 'farm') target = farming.refine(target, player.position.x, player.position.z, player.forward2d());
+  target = supply.refine(target); // a damaged solar array offers "Repair" instead of info
   target ??= lookingAtVolt() ? voltTarget : null;
   feedback.setPrompt(target ? promptFor(target) : null);
   if (input.consumeInteract() && target) {
@@ -476,6 +513,7 @@ function handleInteraction() {
     else if (target.action.type === 'station') useStation(target.action);
     else if (target.action.type === 'volt') sayLine(assistant.talk(voltSnapshot()));
     else if (target.action.type === 'farm') farming.interact(target.action.potId);
+    else if (target.action.type === 'supply') supply.interact(target);
   }
 }
 
@@ -575,10 +613,11 @@ renderer.setAnimationLoop(() => {
   const report = stepGauges(gauges, dt, {
     pressurized: zoneId !== 'outside',
     sunVisibility: sun.visibility,
-    alignment,
+    alignment: alignment * supply.solarOutputFactor, // 1 when healthy; less after a micrometeorite hit
   });
   if (running) reactToGauges(report, sun);
   farming.update(frameDt, dt, { lit: report.hasPower });
+  supply.update(frameDt, dt, zoneId);
   if (mode === 'playing' && (report.oxygenEmpty || report.foodEmpty)) {
     gentleFailure(report.oxygenEmpty ? 'oxygen' : 'food');
   }

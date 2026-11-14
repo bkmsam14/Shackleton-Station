@@ -1,0 +1,264 @@
+/* Solar Fix instance — reuses the Electrolysis console look (ez-* classes in
+   ../electrolysis/style.css) and adds the solar pictures (sf-*).
+   Kids first: text ≥ 16px, targets ≥ 44px, contrast ≥ 4.5:1, motion off under
+   prefers-reduced-motion. */
+
+/* coloured words: dark shades in Volt's light bubble, bright ones on the console */
+.sf .ez-bubble .sf-sun {
+  color: #8a5a00; /* 6.1:1 on bubble */
+}
+.sf .ez-bubble .sf-elec {
+  color: #0b6680; /* 6.3:1 on bubble */
+}
+.sf .ez-p .sf-sun {
+  color: #ffc94a;
+}
+.sf .ez-p .sf-elec {
+  color: #4fd1e8;
+}
+
+.sf-stage {
+  margin: 6px auto 4px;
+  max-width: 720px;
+  border-radius: 20px;
+  border: 3px solid var(--console-edge);
+  background: radial-gradient(circle at 20% 30%, rgba(255, 201, 74, 0.12), transparent 45%), #0a1230;
+  touch-action: none;
+}
+.sf-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 44vh;
+  user-select: none;
+}
+.sf-label {
+  fill: #c9d4e8;
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 20px;
+}
+.sf-sign {
+  fill: #ffffff;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 28px;
+}
+.sf-e {
+  fill: #10182c;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 13px;
+}
+.sf-count {
+  color: var(--gold);
+}
+.sf-do {
+  min-height: 2.6em;
+}
+
+/* step 1 — the Sun is a big button */
+.sf-sunbtn {
+  cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
+  outline: none;
+}
+.sf-sunbtn:hover circle,
+.sf-sunbtn:focus-visible circle {
+  stroke: #ffffff;
+}
+.sf-sunbtn.is-pulse {
+  animation: sf-pulse 0.25s ease;
+}
+@keyframes sf-pulse {
+  50% {
+    transform: scale(1.08);
+  }
+}
+.sf-electron {
+  pointer-events: none;
+}
+
+/* step 2 — wire, connectors, plug */
+.sf-wire {
+  fill: none;
+  stroke: #f08a45;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+.sf-term {
+  stroke: #10182c;
+  stroke-width: 3;
+}
+.sf-term-neg {
+  fill: #c9d4e8;
+}
+.sf-term-pos {
+  fill: #c9d4e8;
+}
+.sf-plug {
+  cursor: grab;
+  outline: none;
+}
+.sf-plug:active {
+  cursor: grabbing;
+}
+.sf-plug.is-picked circle:first-child,
+.sf-plug:focus-visible circle:first-child {
+  stroke: #ffffff;
+}
+.sf-plug.is-done {
+  cursor: default;
+}
+.sf-target {
+  fill: rgba(123, 224, 160, 0.12);
+  stroke: #7be0a0;
+  stroke-width: 3;
+  stroke-dasharray: 6 5;
+  cursor: pointer;
+  outline: none;
+  animation: sf-dash 1.2s linear infinite;
+}
+.sf-target:focus-visible {
+  stroke: #ffffff;
+}
+.sf-target.is-done {
+  opacity: 0;
+  pointer-events: none;
+}
+@keyframes sf-dash {
+  to {
+    stroke-dashoffset: -22;
+  }
+}
+
+/* step 3 — the array */
+.sf-pv {
+  fill: #23458a;
+  stroke: #10182c;
+  stroke-width: 2.5;
+}
+.sf-pv-new {
+  fill: #2f5fc0;
+}
+.sf-busbar {
+  stroke: #c9d4e8;
+  stroke-width: 1.5;
+  opacity: 0.7;
+}
+.sf-row.is-dark .sf-pv {
+  fill: #18284a;
+}
+.sf-row.is-dark .sf-chainwire {
+  stroke: #3a4466;
+}
+.sf-chainwire {
+  stroke: #f08a45;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.sf-flowdot {
+  fill: #ffe27a;
+}
+.sf-cracked {
+  cursor: pointer;
+  outline: none;
+}
+.sf-cracked .sf-pv {
+  fill: #121c33;
+  stroke: #ff7a59;
+  stroke-width: 3;
+}
+.sf-cracked:focus-visible .sf-pv,
+.sf-cracked:hover .sf-pv {
+  stroke: #ffffff;
+}
+.sf-crack {
+  fill: none;
+  stroke: #e8eefb;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+.sf-tray {
+  fill: rgba(255, 201, 74, 0.1);
+  stroke: #ffc94a;
+  stroke-width: 2.5;
+  stroke-dasharray: 8 6;
+}
+.sf-spare {
+  cursor: grab;
+  outline: none;
+}
+.sf-spare.is-drag {
+  cursor: grabbing;
+}
+.sf-spare.is-picked .sf-pv,
+.sf-spare:focus-visible .sf-pv {
+  stroke: #ffffff;
+  stroke-width: 4;
+}
+.sf-spare.is-placed {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* quiz answers are words, not pictures */
+.sf .sf-answer-txt {
+  font-size: 20px;
+  line-height: 1.2;
+  text-align: center;
+  padding: 0 6px;
+}
+
+/* leave + go deeper */
+.sf-leave-row {
+  justify-content: flex-start;
+  margin-top: 4px;
+}
+.sf-leave {
+  font-size: 17px;
+  min-height: 44px;
+}
+.sf-deeper {
+  margin: 10px auto 6px;
+  max-width: 760px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  border: 3px solid var(--console-edge);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 17px;
+  line-height: 1.45;
+}
+.sf-deeper h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--cyan);
+}
+.sf-deeper h4 .ez-ic {
+  width: 26px;
+  height: 26px;
+}
+.sf-deeper p {
+  margin: 4px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-sunbtn.is-pulse,
+  .sf-target {
+    animation: none;
+  }
+}
+
+/* source links on the dark Go deeper card (the shared style is for the light bubble) */
+.sf-deeper .ez-source {
+  color: var(--text-muted);
+}
+.sf-deeper .ez-source a {
+  color: #9fe8ff; /* 10:1 on the card */
+}

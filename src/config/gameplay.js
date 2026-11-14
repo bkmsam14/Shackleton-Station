@@ -267,6 +267,50 @@ FARMING.FOOD_KG_PER_POTATO =
   TIME.REAL_SECONDS_PER_GAME_DAY /
   (FARMING.POT_COUNT * (FARMING.HARVEST_YIELD - 1));
 
+// ---------------------------------------------------------------------------
+// SUPPLY REQUESTS — habitat supply terminal + cargo landing pad (src/supply/)
+// ---------------------------------------------------------------------------
+export const SUPPLY = {
+  // Communication delay = distance ÷ speed of light. This is NOT sped up: the player
+  // waits the real light-travel time, in real seconds.
+  EARTH_MOON_DISTANCE_KM: 384400, // NASA Moon Fact Sheet (mean Earth–Moon distance; see SCIENCE.md)
+  SPEED_OF_LIGHT_KM_S: 299792.458, // exact, by definition of the metre (SI)
+  // What happens at the other end and on the way here (game clock, sped up like the rest).
+  REVIEW_GAME_HOURS: 0.5, // Mission Control checks the request — GAME BALANCE (not real data)
+  PREPARE_GAME_HOURS: 1, // packing the crate onto the lander — GAME BALANCE (not real data)
+  // Flight time is shortened for the game; no real value is shown until SCIENCE.md has one.
+  // Most a single delivery can carry. Less than everything at max (97 kg), so the
+  // player has to choose — e.g. a battery pack leaves little room. GAME BALANCE (not real data)
+  CARGO_CAPACITY_KG: 60,
+  LANDING_SECONDS: 7, // the crate's powered descent, real seconds — GAME BALANCE (not real data)
+  PAD_SLOTS: 6, // crates that fit on the landing pad at once — level layout
+  WATER_TANK_MAX_KG: 40, // deliveries never fill the Electrolysis tank past this — GAME BALANCE (not real data)
+  // Orderable supplies (names, icons and effects live in src/supply/catalog.js).
+  ITEMS: {
+    'solar-repair-kit': { massKg: 8, maxPerOrder: 2, deliveryGameHours: 6 }, // GAME BALANCE (not real data)
+    water: { massKg: 10, maxPerOrder: 3, deliveryGameHours: 8, waterKg: 10 }, // 10 kg container — GAME BALANCE (not real data)
+    'seed-potatoes': { massKg: 2, maxPerOrder: 3, deliveryGameHours: 4, potatoes: 3 }, // bag of 3 — GAME BALANCE (not real data)
+    'battery-pack': { massKg: 45, maxPerOrder: 1, deliveryGameHours: 10, kwh: 8 }, // GAME BALANCE (not real data)
+  },
+};
+// One-way light time Earth → Moon ≈ 1.28 s (SCIENCE.md: "about 1.3 seconds").
+SUPPLY.ONE_WAY_DELAY_S = SUPPLY.EARTH_MOON_DISTANCE_KM / SUPPLY.SPEED_OF_LIGHT_KM_S;
+
+// ---------------------------------------------------------------------------
+// SOLAR ARRAY DAMAGE — micrometeorite hits (repaired with a Solar Panel Repair Kit)
+// ---------------------------------------------------------------------------
+// Real basis: micrometeoroids constantly strike the Moon (SCIENCE.md). How often one
+// damages a panel, and how much power it costs, are game balance.
+export const SOLAR_DAMAGE = {
+  MEAN_GAME_DAYS_BETWEEN_HITS: 2, // average — GAME BALANCE (not real data)
+  GRACE_GAME_HOURS: 12, // no hits during the first half day — GAME BALANCE (not real data)
+  DAMAGED_OUTPUT: 0.4, // a damaged array makes 40 % of its normal power — GAME BALANCE (not real data)
+  KITS_PER_REPAIR: 1, // GAME BALANCE (not real data)
+  // TESTING ONLY: a hit every this many real seconds of play (no grace period, no
+  // randomness), counted while the array is healthy. Set to null for normal play.
+  TEST_HIT_EVERY_REAL_SECONDS: 60,
+};
+
 // Feature flags (later demos).
 export const FEATURES = {
   ENABLE_WATER_GAUGE: false,

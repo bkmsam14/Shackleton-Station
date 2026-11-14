@@ -127,6 +127,7 @@ export function createFarming({ world, camera, renderer, root, feedback, gauges,
   return {
     state,
     interactables,
+    save, // other features that add to the inventory (supply crates) save it with this
     get isOpen() {
       return view.isOpen;
     },
