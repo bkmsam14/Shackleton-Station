@@ -267,6 +267,10 @@ export const RADIATION = {
   WALL_HALF_KG: 3, // GAME BALANCE (not real data) — this much water halves the shelter dose
   PUMP_KWH_PER_KG: 0.05, // GAME BALANCE (not real data) — moving water costs a little power
   RING_LINGER_S: 6, // GAME BALANCE (not real data) — dose ring stays visible after a storm
+  // Storm look + sound (ui/stormFx.js), at the strongest unshielded dose rate:
+  FX_SNOW_PER_SECOND: 170, // GAME BALANCE (not real data) — camera-"snow" speckles spawned per second
+  FX_SNOW_MAX: 90, // GAME BALANCE (not real data) — most speckles on screen at once
+  FX_CLICKS_PER_SECOND: 14, // GAME BALANCE (not real data) — dosimeter ticks per second
 };
 
 // Feature flags (later demos).

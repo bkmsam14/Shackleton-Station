@@ -81,6 +81,7 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **RadLab ISS** (low Earth orbit) Timepix sensors in JPM/Cupola: about 13–17 µGy/h in December 2019.
 
 ### Radiation game simplifications (details left out, nothing false)
+- **Storm look and sound:** the particles are invisible, so there is no visible wave or cloud. The game shows camera **"snow"** (white speckles), as in real SOHO images when protons hit the detectors during proton storms, and a ticking dosimeter; both scale with the game's dose rate. The suit display and dosimeter are made-up devices; the snow effect is real. *Source: NASA SVS — https://svs.gsfc.nasa.gov/3159 ; SOHO — https://soho.nascom.nasa.gov/hotshots/2000_07_14*
 - Dose is shown as **% of a per-storm safety limit** (NASA plans shielding against limits for big particle events); the **mission total only grows** (dose adds up, it never "heals").
 - Location/shelter/water-wall factors and the storm length are game balance. Real shelters would need **thousands of kg** of water; the game's water amounts are game-sized and the game says so.
 - Short real warnings are stretched to at least 40 s of play so kids can react; the report card tells the real warning time.

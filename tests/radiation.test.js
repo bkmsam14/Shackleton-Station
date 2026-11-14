@@ -90,3 +90,14 @@ test('water walls: limits and reasons', () => {
   const st = { tankKg: 10, wallKg: 5 };
   assert.equal(moveWater(st, g, 4).movedKg, RADIATION.WALL_CAPACITY_KG - 5); // capped by capacity
 });
+
+test('exposure level (drives the storm snow and dosimeter ticks): 0 when calm, lower in the shelter', async () => {
+  const { exposureLevel } = await import('../src/systems/radiation.js');
+  const s = createRadiationState([storm()]);
+  assert.equal(exposureLevel(s, 'outside'), 0); // no storm yet
+  run(s, 0, 14.5, { place: 'outside', wallKg: 0 });
+  assert.equal(s.phase, 'storm');
+  assert.equal(exposureLevel(s, 'outside'), 1);
+  assert.ok(exposureLevel(s, 'shelter') < exposureLevel(s, 'habitat'));
+  assert.ok(exposureLevel(s, 'shelter', 6) < exposureLevel(s, 'shelter', 0));
+});

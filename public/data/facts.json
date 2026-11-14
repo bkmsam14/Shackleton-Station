@@ -162,6 +162,12 @@
       "text": "May 2024 had many strong solar flares, including X5.8 (11 May) and X8.7 (14 May), and several particle storms.",
       "value": "NASA DONKI flare alerts and SEP events, May 2024",
       "source": "https://ccmc.gsfc.nasa.gov/donki/"
+    },
+    {
+      "id": "camera-snow",
+      "text": "In a proton storm, spacecraft cameras fill with white speckles (\"snow\") as protons hit their detectors.",
+      "value": "SOHO/LASCO, January 2005 solar events",
+      "source": "https://svs.gsfc.nasa.gov/3159"
     }
   ]
 }

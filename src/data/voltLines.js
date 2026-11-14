@@ -217,6 +217,7 @@ export const FACTS = [
   { id: 'fact-salt', text: 'Oxygen machines use clean water. Salt water makes poison gas!', databank: 'no-salt', mood: 'wow' },
   { id: 'fact-sep', text: 'Only some solar flares send dangerous particles. Scientists watch them all!', databank: 'solar-particles', mood: 'think' },
   { id: 'fact-shelter', text: 'Water, food and supplies can all be a radiation shield!', databank: 'storm-shelter', mood: 'happy' },
+  { id: 'fact-snow', text: 'Storm sparkles on screen? Real space cameras show that “snow” too!', databank: 'camera-snow', mood: 'wow' },
   { id: 'fact-moon-dose', text: 'On the Moon’s surface, radiation is about twice the Space Station’s.', databank: 'moon-radiation', mood: 'think' },
 ];
 

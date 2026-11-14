@@ -37,7 +37,8 @@ import { createElectrolysisInstance } from './instances/electrolysis/index.js';
 import { sfx } from './ui/sfx.js';
 import { createWaterWallsInstance } from './instances/waterWalls/index.js';
 import { createStormReportInstance } from './instances/stormReport/index.js';
-import { createRadiationState, stepRadiation, hoursToArrival } from './systems/radiation.js';
+import { createRadiationState, stepRadiation, hoursToArrival, exposureLevel } from './systems/radiation.js';
+import { createStormFx } from './ui/stormFx.js';
 import { loadSun, SUN_MODES } from './data/spaceWeather.js';
 
 // ---------------------------------------------------------------- setup
@@ -114,6 +115,7 @@ const volt = createVolt(world);
 const tourMarker = createTourMarker();
 world.scene.add(volt.object, tourMarker.object);
 const voltBubble = createVoltBubble(uiRoot);
+const stormFx = createStormFx(uiRoot);
 const voltVoice = createVoltVoice({ store: { load: loadSettings, save: saveSettings } });
 // Volt is an interactable that moves: "Press E to talk to Volt"
 const voltTarget = { id: 'volt', zone: 'habitat', x: 0, z: 0, prompt: 'Press E to talk to Volt', action: { type: 'volt' } };
@@ -702,6 +704,8 @@ renderer.setAnimationLoop(() => {
   }
   if (mode === 'playing' && pendingReport && !instances.isOpen) showStormReport();
   ringLinger = Math.max(0, ringLinger - frameDt);
+  // camera "snow" + dosimeter ticks follow the live dose rate (quiet in the shelter)
+  stormFx.update(frameDt, running ? exposureLevel(radiation, playerPlace(), station.wallKg) : 0);
   world.habitat.waterWall.setWaterLevel(station.wallKg / RADIATION.WALL_CAPACITY_KG);
   const stormMarker = radiation.phase !== 'calm' && playerPlace() !== 'shelter' ? shelterMarkerTarget(zoneId) : null;
   tourMarker.setTarget(stormMarker ?? (assistant.tourActive ? tourTargetPosition(assistant.tourStep?.target, zoneId) : null));

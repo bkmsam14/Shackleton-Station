@@ -93,6 +93,13 @@ export function stepRadiation(state, now, dtGameHours, ctx) {
   return events;
 }
 
+/** 0..1: the dose rate right now ÷ the strongest unshielded storm (0 when no storm). Drives the
+ *  on-screen "snow" and the dosimeter ticks, so shielding is something you can see and hear. */
+export function exposureLevel(state, place, wallKg = 0) {
+  if (state.phase !== 'storm') return 0;
+  return Math.min(1, doseRate(state.storm, place, wallKg) / RADIATION.STORM_DOSE_PER_GAME_HOUR);
+}
+
 /** Hours until the particles arrive (warning phase), else null. */
 export function hoursToArrival(state, now) {
   return state.phase === 'warning' ? Math.max(0, state.storm.arriveGameHour - now) : null;

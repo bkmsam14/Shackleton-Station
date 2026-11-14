@@ -130,4 +130,12 @@ export const DATABANK = [
     source: 'NASA OSDR RadLab — CRaTER on LRO',
     url: 'https://visualization.osdr.nasa.gov/radlab/gui/overview/',
   },
+  {
+    id: 'camera-snow',
+    title: 'Why does the screen sparkle in a storm?',
+    core: 'The particles are invisible. But when they hit a camera sensor, they leave white dots called “snow”. Your suit display shows that snow, and your dosimeter ticks.',
+    deeper: 'NASA and ESA’s SOHO spacecraft shows this in real proton storms: its cameras fill with speckles as protons hit the detectors. Less snow and fewer ticks in the shelter means fewer particles are getting through. The dosimeter and display in the game are made up; the snow effect is real.',
+    source: 'NASA Scientific Visualization Studio — SOHO/LASCO view of the January 2005 solar events',
+    url: 'https://svs.gsfc.nasa.gov/3159',
+  },
 ];

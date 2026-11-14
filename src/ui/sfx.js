@@ -65,6 +65,10 @@ export const sfx = {
       tone({ freq: 660, type: 'triangle', seconds: 0.26, gain: 0.8, delay: i * 0.55 + 0.24 });
     }
   },
+  /** One dosimeter tick (very short and quiet; many of them make the "Geiger" crackle). */
+  tick() {
+    tone({ freq: 2400, to: 1200, type: 'square', seconds: 0.014, gain: 0.22 });
+  },
   click() {
     tone({ freq: 700, to: 500, type: 'sine', seconds: 0.05, gain: 0.4 });
   },
