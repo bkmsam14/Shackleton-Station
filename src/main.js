@@ -9,7 +9,7 @@ import './ui/ui.css';
 import './ui/hud.css';
 
 import * as THREE from 'three';
-import { UI, RECOVERY, TIME } from './config/gameplay.js';
+import { UI, RECOVERY, TIME, POWER, ASSISTANT } from './config/gameplay.js';
 import { createWorld, QUALITY } from './world/World.js';
 import { createPostFX } from './world/postfx.js';
 import { LAYOUT } from './world/layout.js';
@@ -25,7 +25,11 @@ import { createHud } from './ui/hud.js';
 import { createFpsMeter } from './ui/fpsMeter.js';
 import { createPda } from './ui/pda.js';
 import { createCallouts } from './ui/callouts.js';
-import { createElectrolysisState } from './systems/electrolysis.js';
+import { createElectrolysisState, checkAfford } from './systems/electrolysis.js';
+import { createAssistant } from './systems/assistant.js';
+import { createVolt, createTourMarker } from './world/volt.js';
+import { createVoltBubble } from './ui/voltBubble.js';
+import { heightAt } from './world/heightfield.js';
 import { createMastery } from './systems/mastery.js';
 import { createInstanceManager } from './instances/InstanceManager.js';
 import { createElectrolysisInstance } from './instances/electrolysis/index.js';
@@ -72,6 +76,18 @@ const callouts = createCallouts(uiRoot);
 const gauges = createGauges();
 const station = createElectrolysisState(); // the electrolysis unit's own water tank
 const mastery = createMastery({ load: loadSettings, save: saveSettings });
+
+// ---------------------------------------------------------------- Volt, the helper robot
+const assistant = createAssistant({ store: { load: loadSettings, save: saveSettings } });
+const volt = createVolt(world);
+const tourMarker = createTourMarker();
+world.scene.add(volt.object, tourMarker.object);
+const voltBubble = createVoltBubble(uiRoot);
+// Volt is an interactable that moves: "Press E to talk to Volt"
+const voltTarget = { id: 'volt', zone: 'habitat', x: 0, z: 0, prompt: 'Press E to talk to Volt', action: { type: 'volt' } };
+world.interactables.push(voltTarget);
+const voltHead = new THREE.Vector3();
+
 const two = (n) => String(n).padStart(2, '0');
 feedback.setClock(() => {
   const c = getClock(day);
@@ -134,14 +150,9 @@ function enterPlay() {
   feedback.setCrosshairVisible(true);
   if (mode === 'start') {
     hud.showLocation('habitat');
-    feedback.notify('Find the orange hatch to go outside', {
-      long: 'Welcome to Shackleton Station! Walk to the orange hatch and press E to go outside. Press Tab any time for your PDA.',
-      seconds: 4,
-    });
-    // one-time labels the first time each gauge is shown
-    callouts.add('oxygen', hud.rings.oxygen, 'Oxygen: drops faster outside!', 'above');
-    callouts.add('food', hud.rings.food, 'Food: lasts longer when you rest inside', 'above');
-    callouts.add('power', hud.powerEl, 'Base power: charges in sunlight', 'below');
+    // Volt runs the first-day tour (it points at the gauge rings in step 2), or says hello.
+    volt.hopTo(player);
+    assistant.startIfNeeded();
   }
   mode = pausedFromBusy ? 'busy' : 'playing';
   pausedFromBusy = false;
@@ -152,6 +163,7 @@ function togglePda() {
     mode = 'playing';
     feedback.setCrosshairVisible(true);
   } else if (mode === 'playing' && lastHudState) {
+    assistant.notify('pda-opened');
     pda.open(lastHudState, feedback.log);
     mode = 'pda';
     input.clear();
@@ -186,8 +198,68 @@ const menus = createMenus(uiRoot, {
     world.setQuality(q);
     postfx.setEnabled(q === 'high');
   },
+  volt: {
+    getChattiness: () => assistant.chattiness,
+    setChattiness: (level) => assistant.setChattiness(level),
+    tourActive: () => assistant.tourActive,
+    skipTour: () => assistant.skipTour(),
+    replayTour: () => assistant.replayTour(),
+  },
 });
 document.addEventListener('pointerlockerror', onLockFailed);
+
+// ---------------------------------------------------------------- Volt: speaking + world state
+/** Show one of Volt's lines: bubble in the world, face mood, full text in the PDA log. */
+function sayLine(line) {
+  if (!line) return;
+  voltBubble.say(line);
+  volt.model.setMood(line.mood ?? 'happy');
+  const c = getClock(day);
+  feedback.log.unshift({ time: 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute), text: 'Volt: ' + (line.long ?? line.text) });
+  if (feedback.log.length > 14) feedback.log.length = 14;
+  if (line.action === 'show-gauges') {
+    // tour step 2: point at each ring (shown again even if seen before), then move on
+    callouts.add('oxygen', hud.rings.oxygen, 'Oxygen: drops faster outside!', 'above', { force: true });
+    callouts.add('food', hud.rings.food, 'Food: lasts longer when you rest inside', 'above', { force: true });
+    callouts.add('power', hud.powerEl, 'Base power: charges in sunlight', 'below', { force: true });
+    callouts.whenIdle(() => assistant.notify('gauges-shown'));
+  }
+}
+
+/** A game event: Volt says it if it wants to, otherwise show the plain caption. */
+function voltEvent(id, short, long, tone = 'normal') {
+  if (!assistant.notify(id)) feedback.notify(short, { long, tone });
+}
+
+/** Plain facts about the game right now, for Volt's brain (pure data). */
+function voltSnapshot(moved = 0) {
+  const zoneId = player.zoneId;
+  const A = LAYOUT.SOLAR_ARRAY;
+  return {
+    mode,
+    zoneId,
+    moved,
+    nearArray: zoneId === 'outside' && Math.hypot(player.position.x - A.x, player.position.z - A.z) < ASSISTANT.NEAR_ARRAY_M,
+    oxygen: gauges.oxygen,
+    food: gauges.food,
+    power: (gauges.batteryKwh / POWER.BATTERY_CAPACITY_KWH) * 100,
+    tankKg: station.tankKg,
+  };
+}
+
+/** Where the tour marker goes for a tour target, from the player's current zone. */
+function tourTargetPosition(target, zoneId) {
+  const find = (id) => world.interactables.find((i) => i.id === id);
+  const at = (it) => it && { zone: it.zone, x: it.x, z: it.z, y: it.zone === 'outside' ? heightAt(it.x, it.z) : world.zones[it.zone].floorY };
+  const A = LAYOUT.SOLAR_ARRAY;
+  if (!target) return null;
+  if (target === 'electrolysis') return at(find('electrolysis'));
+  if (zoneId === 'habitat') return at(find('hab-inner-door')); // everything else is outside first
+  if (zoneId === 'greenhouse') return target === 'greenhouse' ? null : at(find('gh-inner-door'));
+  if (target === 'array') return { zone: 'outside', x: A.x + 3, z: A.z - 3, y: heightAt(A.x + 3, A.z - 3) };
+  if (target === 'greenhouse') return at(find('gh-outer-door'));
+  return null; // 'airlock' while already outside
+}
 
 player.controls.addEventListener('lock', enterPlay);
 player.controls.addEventListener('unlock', enterPause);
@@ -213,7 +285,10 @@ const instances = createInstanceManager(uiRoot, {
         `Made ${result.o2Kg.toFixed(2)} kg of oxygen by electrolysis. Used ${result.waterKg.toFixed(2)} kg of water ` +
         `and ${result.kwh.toFixed(1)} kWh of power. ${result.gameHours.toFixed(1)} hours passed while it ran.`;
       feedback.log.unshift({ time: 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute), text });
-      feedback.notify('Oxygen made!', { long: text, seconds: 3.5 });
+      // Volt's tour step 4 completes here; otherwise show the usual caption
+      if (!assistant.notify('oxygen-made')) feedback.notify('Oxygen made!', { long: text, seconds: 3.5 });
+    } else if (assistant.tourStep?.id === 'oxygen' && checkAfford(gauges, station, 'small').reason === 'full') {
+      assistant.notify('oxygen-made'); // supply already full (e.g. tour replayed late): don't get stuck
     }
     // Back to the 3D world. Re-locking the mouse needs a click; the "Back to base" button is
     // one. If the browser refuses (e.g. closed with Esc), show the pause menu to click on.
@@ -255,6 +330,8 @@ function onZoneEntered(zoneId) {
         ? 'Went outside. Your suit is full, but working out here uses the oxygen supply about 2× faster.'
         : 'Entered the ' + world.zones[zoneId].name + '. You breathe slower in here, so the oxygen supply lasts longer.',
   });
+  volt.hopTo(player); // Volt came through the door with you
+  assistant.notify('zone:' + zoneId);
 }
 
 function useStation(action) {
@@ -296,6 +373,7 @@ async function gentleFailure(reason) {
   applyRecovery(gauges, { oxygen: RECOVERY.OXYGEN_RESTORE_PERCENT, food: RECOVERY.FOOD_RESTORE_PERCENT });
   const s = LAYOUT.HABITAT.spawn;
   player.placeAt('habitat', LAYOUT.HABITAT.x + s.x, LAYOUT.HABITAT.z + s.z, s.yawDeg);
+  volt.hopTo(player);
 
   const why =
     reason === 'oxygen'
@@ -319,6 +397,7 @@ async function gentleFailure(reason) {
   feedback.notify('Rested ' + RECOVERY.REST_GAME_HOURS + ' hours', {
     long: why + ' You lost ' + RECOVERY.REST_GAME_HOURS + ' hours resting. ' + tip,
   });
+  assistant.notify('recovered'); // the tour (if running) simply carries on from its step
 }
 
 const MEDAL_ICON = { bronze: ' 🥉', silver: ' 🥈', gold: ' 🥇' };
@@ -327,18 +406,27 @@ function promptFor(target) {
   return target.prompt + (MEDAL_ICON[mastery.get('electrolysis').level] ?? '');
 }
 
+const notVolt = (it) => it.id !== 'volt';
+/** Volt only counts when you look right at him (stations and doors always win). */
+function lookingAtVolt() {
+  if (volt.zoneId !== player.zoneId) return false;
+  const dx = volt.position.x - player.position.x;
+  const dz = volt.position.z - player.position.z;
+  const d = Math.hypot(dx, dz);
+  const f = player.forward2d();
+  const fl = Math.hypot(f.x, f.z) || 1;
+  return d < ASSISTANT.TALK_REACH_M && (dx * f.x + dz * f.z) / (d * fl) > Math.cos((ASSISTANT.TALK_AIM_DEG * Math.PI) / 180);
+}
+
 function handleInteraction() {
-  const target = findInteractable(
-    world.interactables,
-    player.zoneId,
-    player.position.x,
-    player.position.z,
-    player.forward2d(),
-  );
+  const target =
+    findInteractable(world.interactables.filter(notVolt), player.zoneId, player.position.x, player.position.z, player.forward2d()) ??
+    (lookingAtVolt() ? voltTarget : null);
   feedback.setPrompt(target ? promptFor(target) : null);
   if (input.consumeInteract() && target) {
     if (target.action.type === 'door') useDoor(target.action);
     else if (target.action.type === 'station') useStation(target.action);
+    else if (target.action.type === 'volt') sayLine(assistant.talk(voltSnapshot()));
   }
 }
 
@@ -348,43 +436,46 @@ let sunWasUp = true;
 function reactToGauges(report, sun) {
   const c = report.crossedLow;
   // the rings themselves turn amber/red; these add a short line and a log entry
+  // Volt says these (with the fix); if Volt stays quiet about one, the plain caption shows.
   if (c.oxygen) {
-    feedback.notify('Oxygen supply low', {
-      tone: 'low',
-      long:
-        player.zoneId === 'outside'
-          ? 'Oxygen supply low! Working outside uses it up about 2× faster — head back inside.'
-          : 'Oxygen supply low! Make more at the Electrolysis unit in the habitat work bay.',
-    });
+    const outside = player.zoneId === 'outside';
+    voltEvent(
+      outside ? 'oxygen-low-outside' : 'oxygen-low',
+      'Oxygen supply low',
+      outside
+        ? 'Oxygen supply low! Working outside uses it up about 2× faster — head back inside.'
+        : 'Oxygen supply low! Make more at the Electrolysis unit in the habitat work bay.',
+      'low',
+    );
   }
-  if (c.food) {
-    feedback.notify('Food low', { tone: 'low', long: 'Food is low! In a later update you will grow and cook your own food.' });
-  }
-  if (c.power) {
-    feedback.notify('Base power low', { tone: 'low', long: 'Base power is low! The battery needs sunlight on the solar array.' });
-  }
+  if (c.food) voltEvent('food-low', 'Food low', 'Food is low! In a later update you will grow and cook your own food.', 'low');
+  if (c.power) voltEvent('power-low', 'Base power low', 'Base power is low! The battery needs sunlight on the solar array.', 'low');
   if (wasPowered !== report.hasPower) {
     wasPowered = report.hasPower;
     world.greenhouse.setPowered(report.hasPower);
     if (!report.hasPower) {
-      feedback.notify('Base power out', {
-        tone: 'critical',
-        long: 'Base power ran out. The grow lights switch off until the Sun charges the battery.',
-      });
+      voltEvent('power-out', 'Base power out', 'Base power ran out. The grow lights switch off until the Sun charges the battery.', 'critical');
     } else {
-      feedback.notify('Power restored', { long: 'Power is back! The solar array is charging the base again.' });
+      voltEvent('power-back', 'Power restored', 'Power is back! The solar array is charging the base again.');
     }
   }
   const sunUp = sun.visibility > 0.5;
   if (sunUp !== sunWasUp) {
     sunWasUp = sunUp;
-    feedback.notify(sunUp ? 'Sun is back' : 'Sun behind the ridge', {
-      long: sunUp
+    voltEvent(
+      sunUp ? 'sun-up' : 'sun-down',
+      sunUp ? 'Sun is back' : 'Sun behind the ridge',
+      sunUp
         ? 'The Sun is back above the ridge. The solar array is making power again.'
         : 'The Sun went behind the ridge. The base runs on its battery until it comes back.',
-    });
+    );
   }
+  // the electrolysis water tank (nothing refills it yet)
+  const tankLow = station.tankKg < ASSISTANT.TANK_LOW_KG;
+  if (tankLow && !tankWasLow) voltEvent('tank-low', 'Water tank low', 'The Electrolysis water tank is getting low.', 'low');
+  tankWasLow = tankLow;
 }
+let tankWasLow = false;
 
 // ---------------------------------------------------------------- adaptive quality
 // AO is the most expensive effect. If frames average > ~17.5 ms for a few seconds on High,
@@ -401,6 +492,8 @@ function watchFrameTime(frameDt) {
 // ---------------------------------------------------------------- loop
 const timer = new THREE.Timer();
 timer.connect(document);
+let lastPX = player.position.x; // for "how far did the player walk" (tour step 1)
+let lastPZ = player.position.z;
 const fpsMeter = createFpsMeter(renderer);
 
 renderer.setAnimationLoop(() => {
@@ -439,6 +532,19 @@ renderer.setAnimationLoop(() => {
   if (mode === 'playing' && (report.oxygenEmpty || report.foodEmpty)) {
     gentleFailure(report.oxygenEmpty ? 'oxygen' : 'food');
   }
+
+  // ---- Volt: roll after the player, think, talk, show the tour marker
+  if (running) volt.update(dt, player, { talking: voltBubble.isShowing, waiting: mode === 'playing' && lookingAtVolt() });
+  const moved = mode === 'playing' ? Math.hypot(player.position.x - lastPX, player.position.z - lastPZ) : 0;
+  lastPX = player.position.x;
+  lastPZ = player.position.z;
+  voltTarget.zone = volt.zoneId ?? zoneId;
+  voltTarget.x = volt.position.x;
+  voltTarget.z = volt.position.z;
+  sayLine(assistant.step(frameDt, voltSnapshot(moved)));
+  tourMarker.setTarget(assistant.tourActive ? tourTargetPosition(assistant.tourStep?.target, zoneId) : null);
+  tourMarker.update(frameDt, zoneId);
+  voltBubble.update(frameDt, camera, volt.headPosition(voltHead), mode === 'playing');
   // the Sun is off indoors, so skip re-rendering its shadow map there
   const outdoors = zoneId === 'outside';
   if (outdoors && !renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = true;
@@ -499,5 +605,5 @@ if (import.meta.env.DEV) {
       greenhouse: ['greenhouse', 1.4, 30, 90, -0.08],
     },
   };
-  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances };
+  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, voltBubble };
 }

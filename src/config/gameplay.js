@@ -192,6 +192,10 @@ ELECTROLYSIS.KWH_PER_KG_O2_MIN =
 export const ASSISTANT = {
   FOLLOW_BEHIND_M: 1.6, // GAME BALANCE (not real data) — how far behind the player
   FOLLOW_SIDE_M: 0.8, // GAME BALANCE (not real data) — and to the right
+  TALK_AHEAD_M: 2.8, // GAME BALANCE (not real data) — while talking: this far in front…
+  TALK_SIDE_M: 1.4, // GAME BALANCE (not real data) — …and to the right, so you can see Volt
+  TALK_REACH_M: 3.5, // GAME BALANCE (not real data) — "E to talk" works this close…
+  TALK_AIM_DEG: 22, // GAME BALANCE (not real data) — …when Volt is this near the crosshair
   SPEED_M_S: 3.4, // GAME BALANCE (not real data) — top rolling speed
   RADIUS_M: 0.32, // GAME BALANCE (not real data) — collision circle
   CATCH_UP_M: 8, // GAME BALANCE (not real data) — farther than this → Volt hops to you
