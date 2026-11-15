@@ -285,7 +285,7 @@ function enterPlay() {
     // Volt runs the first-day tour (it points at the gauge rings in step 2), or says hello.
     volt.hopTo(player);
     voltVoice.prewarm(); // load Volt's robot voice engine in the background
-    assistant.startIfNeeded();
+    assistant.startIfNeeded({ day: getClock(day).day }); // Day 1 always starts with the Training Day
     sunReady.then(() => {
       assistant.notify(sun?.fellBack ? 'sun-stormy' : `sun-${sun?.mode ?? 'stormy'}`);
       const c = getClock(day);
