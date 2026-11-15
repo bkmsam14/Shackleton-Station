@@ -40,3 +40,13 @@ test('the handrails stop you stepping off the side', () => {
   const p = resolveCircle(STAIRS.maxX + 0.1, z, r, airlockColliders());
   assert.ok(p.x < STAIRS.maxX + 0.1 || p.x > STAIRS.maxX + 0.2, 'pushed by the rail');
 });
+
+test('the habitat hatch can only be used from the top of the stairs', async () => {
+  const { findInteractable } = await import('../src/player/interact.js');
+  const { LAYOUT } = await import('../src/world/layout.js');
+  const H = LAYOUT.HABITAT;
+  const door = { id: 'hab-outer-door', zone: 'outside', x: H.x + H.outerDoor.x, z: H.z + H.outerDoor.z, reach: H.outerDoorReach };
+  const up = { x: 0, z: -1 }; // facing the hatch (−Z)
+  assert.equal(findInteractable([door], 'outside', midX, STAIRS.bottomZ + 0.4, up), null, 'not from the ground');
+  assert.equal(findInteractable([door], 'outside', midX, STAIRS.topZ + 0.45, up), door, 'yes at the hatch');
+});

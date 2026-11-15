@@ -28,7 +28,8 @@ export const LAYOUT = {
     innerDoor: { x: 6.5, z: 2.95 },
     insideArrive: { x: 6.5, z: 1.7, yawDeg: 0 }, // after entering: facing −Z, into the bay
     outsideArrive: { x: 6.5, z: 8.9, yawDeg: 180 }, // after exiting: facing +Z, away from the hab
-    outerDoor: { x: 6.5, z: 8.0 },
+    outerDoor: { x: 6.5, z: 6.1 }, // the hatch at the top of the stairs
+    outerDoorReach: 0.8, // E works only on the top steps, right at the hatch
     // Storm shelter = the sleeping nook (−X end). Its +Z wall is lined with water tanks.
     // Being inside this rectangle during a particle storm counts as "in the shelter".
     shelter: { minX: -9.7, maxX: -5.6, minZ: -2.95, maxZ: 2.95, spawn: { x: -6.6, z: 0.4, yawDeg: 90 } },

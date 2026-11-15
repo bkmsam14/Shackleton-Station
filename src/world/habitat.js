@@ -558,7 +558,8 @@ export function createHabitat() {
         zone: 'outside',
         x: H.x + H.outerDoor.x,
         z: H.z + H.outerDoor.z,
-        y: 1.0,
+        y: FY + 1.0,
+        reach: H.outerDoorReach, // only at the hatch, not from the bottom of the stairs
         prompt: 'Press E to enter the Habitat',
         action: { type: 'door', to: 'habitat', arrive: toWorld(H.insideArrive), via: 'airlock' },
       },

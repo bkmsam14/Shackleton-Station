@@ -22,7 +22,7 @@ const MARKS = {
   'water-walls': { up: 2.5, ring: 0.6 },
   shelter: { up: 2.2, ring: 1.0 },
   door: { up: 2.7, ring: 0.7 },
-  'door-outside': { up: 3.9, ring: 0.8 },
+  'door-outside': { up: 3.0, ring: 0.8 }, // measured from the ground there (top of the stairs at the habitat)
   pots: { up: 1.9, ring: 0.55 },
   array: { up: 14, ring: 1.3, size: 3 }, // above the top of the tall panel, big enough to see from afar
   crate: { up: 2.4, ring: 0.7 },
