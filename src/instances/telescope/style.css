@@ -1,0 +1,185 @@
+/* Telescope / Star Hunt — extends the console look (instances/electrolysis/style.css). */
+.ts-picks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 12px 0;
+}
+.ts-pick {
+  display: grid;
+  gap: 4px;
+  min-height: 96px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 3px solid var(--ink);
+  background: linear-gradient(180deg, #24407a, #1a2e5c);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 6px 0 var(--ink);
+  transition: transform 0.08s ease;
+}
+.ts-pick:hover:not([disabled]) {
+  transform: translateY(-2px);
+}
+.ts-pick:active:not([disabled]) {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.ts-pick[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ts-pick.is-found {
+  border-color: #ffd43b;
+}
+.ts-pick-name {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 20px;
+}
+.ts-pick-real,
+.ts-pick-info {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.ts-pick-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ts-pick-info .ez-ic,
+.ts-pick-badge .ez-star,
+.ts-pick-badge svg {
+  width: 20px;
+  height: 20px;
+}
+.ts-pick-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  color: #ffd43b;
+}
+.ts-fact {
+  margin: 8px 0 4px;
+}
+.ts-mission {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  font-size: 18px;
+}
+.ts-mission .ez-ic {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+}
+.ts-view {
+  display: grid;
+  place-items: center;
+}
+.ts-canvas {
+  width: 100%;
+  max-width: 880px;
+  height: auto;
+  aspect-ratio: 880 / 560;
+  cursor: grab;
+  touch-action: none;
+}
+.ts-canvas:active {
+  cursor: grabbing;
+}
+.ts-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 8px 0;
+}
+.ts-pad {
+  min-width: 64px;
+  min-height: 52px;
+  font-size: 26px;
+}
+.ts-help {
+  font-size: 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.ts-card {
+  margin: 12px 0;
+  padding: 14px 18px;
+  border-radius: 18px;
+  border: 3px solid var(--ink);
+  background: linear-gradient(180deg, #1d2f60, #142247);
+  box-shadow: 0 6px 0 var(--ink);
+  font-size: 17px;
+  line-height: 1.45;
+}
+.ts-card small {
+  font-size: 16px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.ts-card ul {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+.ts-card li {
+  margin: 6px 0;
+}
+.ts-colour {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ts-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: #fff;
+}
+.ts-swatch[data-colour='blue-white'] {
+  background: #bcd7ff;
+}
+.ts-swatch[data-colour='yellow-white'] {
+  background: #fff3c4;
+}
+.ts-swatch[data-colour='orange'] {
+  background: #ffc78a;
+}
+.ts-swatch[data-colour='red-orange'] {
+  background: #ff9a6a;
+}
+@media (max-width: 760px) {
+  .ts-picks {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ts-help {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ts-pick {
+    transition: none;
+  }
+}
+.ts-card .ez-h3 {
+  color: var(--text);
+}
+.ts-live {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: #ff7a59;
+  color: var(--ink);
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 15px;
+}

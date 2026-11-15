@@ -13,6 +13,7 @@ import { createEnvironments, ENV_INTENSITY } from './environment.js';
 import { createOutdoorDetails } from './details.js';
 import { createIceSite } from './iceSite.js';
 import { createIceOven } from './iceOven.js';
+import { createTelescope } from './telescope.js';
 import { LAYOUT } from './layout.js';
 import { skyDirection } from '../systems/daycycle.js';
 
@@ -43,6 +44,7 @@ export function createWorld({ quality = 'high', renderer } = {}) {
   // ice mining: the cold-trap crater outside, the Ice Oven in the habitat work bay
   const iceSite = createIceSite(terrain);
   const iceOven = createIceOven(habitat);
+  const telescope = createTelescope();
   habitat.zone.obstacles.push(iceOven.obstacle);
   const outdoorOnly = [
     terrain,
@@ -54,6 +56,7 @@ export function createWorld({ quality = 'high', renderer } = {}) {
     createPowerCable(),
     outdoorDetails.object,
     iceSite.object,
+    telescope.object,
   ];
   scene.add(...outdoorOnly, habitat.object, greenhouse.object);
   let lastZone = null;
@@ -66,6 +69,7 @@ export function createWorld({ quality = 'high', renderer } = {}) {
     ...outdoorDetails.colliders,
     ...habitat.outdoorColliders,
     ...greenhouse.outdoorColliders,
+    ...telescope.colliders,
   ];
   // Pressurized interiors. 'outside' is the surface.
   const zones = { habitat: habitat.zone, greenhouse: greenhouse.zone };
@@ -74,6 +78,7 @@ export function createWorld({ quality = 'high', renderer } = {}) {
     ...greenhouse.interactables,
     ...iceSite.interactables,
     iceOven.interactable,
+    telescope.interactable,
     {
       id: 'solar-info',
       zone: 'outside',
@@ -127,13 +132,14 @@ export function createWorld({ quality = 'high', renderer } = {}) {
       }
       const d = skyDirection(sun.azimuthDeg, sun.elevationDeg);
       sunDir.set(d.x, d.y, d.z);
-      sky.update(camera, sunDir, earthSpin);
+      sky.update(camera, sunDir, earthSpin, sun.skyMatrix, sun.earth);
       lighting.update(focus, sunDir, sun.visibility, zoneId, camera);
       return solarArray.update(dt, sun.azimuthDeg);
     },
     add(obj) {
       scene.add(obj);
     },
+    sky, // real stars: sky.setStars(catalog), sky.addFigure(...), sky.setLabels(on)
     setQuality(name) {
       const nq = QUALITY[name];
       lighting.setShadowMapSize(nq.shadowMap);

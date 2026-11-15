@@ -1,8 +1,13 @@
 // heightfield.js — pure terrain height function (no Three.js).
+// REAL TERRAIN: heights come from NASA LRO LOLA maps of the lunar south pole (world/lola.js,
+// data/lolaTerrain.js): 5 m/px around the base, 80 m/px (with the Moon's curvature) out to 45 km.
+// Game additions on top (labelled in SCIENCE.md): the levelled base pad, the small cold-trap
+// crater, the telescope mound, tiny craters and sub-5-m bumps the 5 m map cannot show.
 // Used both to build the terrain mesh and by the player to stand on the ground,
 // so what you see is what you walk on.
 
 import { LAYOUT } from './layout.js';
+import { nearHeight, midHeight, NEAR_HALF_M } from './lola.js';
 
 // --- deterministic noise ----------------------------------------------------
 function hash2(ix, iz) {
@@ -56,20 +61,21 @@ function smoothstep(e0, e1, x) {
 // Small impact craters: bowl + raised rim. Positions avoid the flat base area.
 export const CRATERS = (() => {
   const rand = mulberry32(1969);
+  // (the big made-up craters are gone: the real LOLA terrain has the real ones)
   const list = [
-    { x: -42, z: -30, r: 14, depth: 3.2 },
-    { x: 58, z: 12, r: 18, depth: 4 },
-    { x: 20, z: 78, r: 11, depth: 2.4 },
-    { x: -70, z: 55, r: 24, depth: 5 },
     // the ice-mining cold trap (deep for its size, so its floor stays in shadow)
     { x: LAYOUT.ICE_CRATER.x, z: LAYOUT.ICE_CRATER.z, r: LAYOUT.ICE_CRATER.r, depth: LAYOUT.ICE_CRATER.depth },
+    // the telescope's little rise (a negative "crater" = a mound)
+    { x: LAYOUT.TELESCOPE.x, z: LAYOUT.TELESCOPE.z, r: LAYOUT.TELESCOPE.rise.r, depth: -LAYOUT.TELESCOPE.rise.height },
   ];
+  // tiny craters (a few metres across): smaller than the 5 m map can show — game detail
   for (let i = 0; i < 40; i++) {
-    const r = 1.5 + rand() * rand() * 9;
+    const r = 1 + rand() * rand() * 2.5;
     const x = (rand() * 2 - 1) * 210;
     const z = (rand() * 2 - 1) * 210;
     if (baseMask(x, z) > 0.05) continue;
     if (Math.hypot(x - LAYOUT.ICE_CRATER.x, z - LAYOUT.ICE_CRATER.z) < LAYOUT.ICE_CRATER.r * 2 + r) continue;
+    if (Math.hypot(x - LAYOUT.TELESCOPE.x, z - LAYOUT.TELESCOPE.z) < LAYOUT.TELESCOPE.rise.r * 2 + r) continue;
     list.push({ x, z, r, depth: r * (0.18 + rand() * 0.1) });
   }
   return list;
@@ -101,12 +107,22 @@ function craterHeight(x, z) {
   return h;
 }
 
+/** The real LOLA ground (m, relative to the base site): 5 m map near, 80 m map further out. */
+export function realHeight(x, z) {
+  const r = Math.hypot(x, z);
+  const blend0 = NEAR_HALF_M - 60;
+  if (r <= blend0) return nearHeight(x, z) ?? midHeight(x, z);
+  if (r >= NEAR_HALF_M) return midHeight(x, z);
+  const w = smoothstep(blend0, NEAR_HALF_M, r);
+  return (nearHeight(x, z) ?? midHeight(x, z)) * (1 - w) + midHeight(x, z) * w;
+}
+
 /** Ground height (metres) at world position x, z. */
 export function heightAt(x, z) {
-  const rough = fbm(x * 0.018, z * 0.018, 4) * 2.2 + fbm(x * 0.11, z * 0.11, 2) * 0.25;
-  const far = Math.hypot(x, z);
-  const rise = smoothstep(120, 260, far) * 6; // land rises gently toward the far hills
-  const natural = rough + craterHeight(x, z) + rise;
+  const r = Math.hypot(x, z);
+  // sub-5 m bumps (game detail), only near the base where you can see them
+  const detail = r < 600 ? fbm(x * 0.11, z * 0.11, 2) * 0.25 : 0;
+  const natural = realHeight(x, z) + detail + (r < 600 ? craterHeight(x, z) : 0);
   const m = baseMask(x, z);
   return natural * (1 - m) + LAYOUT.BASE_GROUND_Y * m;
 }

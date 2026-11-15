@@ -4,6 +4,8 @@
 
 let ctx = null;
 let failed = false;
+let master = null; // one volume knob for every game sound (pause menu → Sound effects)
+let volume = 0.8;
 const MASTER_GAIN = 0.18; // keep it gentle
 
 function audio() {
@@ -12,11 +14,28 @@ function audio() {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) throw new Error('no WebAudio');
     ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = volume;
+    master.connect(ctx.destination);
   } catch {
     failed = true;
   }
   return ctx;
 }
+
+/** The shared AudioContext + master gain (null if audio is unavailable). Used by ui/ambience.js. */
+export function getAudio() {
+  const ac = audio();
+  if (ac && ac.state === 'suspended') ac.resume().catch(() => {});
+  return ac ? { ctx: ac, out: master } : null;
+}
+
+/** Sound-effects volume 0..1 (saved by main.js). */
+export function setVolume(v) {
+  volume = Math.max(0, Math.min(1, Number(v) || 0));
+  if (master && ctx) master.gain.setTargetAtTime(volume, ctx.currentTime, 0.05);
+}
+export const getVolume = () => volume;
 
 function tone({ freq, to = freq, type = 'sine', seconds = 0.15, gain = 1, delay = 0 }) {
   const ac = audio();
@@ -32,7 +51,7 @@ function tone({ freq, to = freq, type = 'sine', seconds = 0.15, gain = 1, delay 
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.exponentialRampToValueAtTime(MASTER_GAIN * gain, t0 + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + seconds);
-    osc.connect(g).connect(ac.destination);
+    osc.connect(g).connect(master);
     osc.start(t0);
     osc.stop(t0 + seconds + 0.02);
   } catch {

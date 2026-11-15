@@ -9,11 +9,11 @@ import './ui/ui.css';
 import './ui/hud.css';
 
 import * as THREE from 'three';
-import { UI, RECOVERY, TIME, POWER, ASSISTANT, RADIATION } from './config/gameplay.js';
+import { UI, RECOVERY, TIME, POWER, ASSISTANT, RADIATION, SKY, AIRLOCK } from './config/gameplay.js';
 import { createWorld, QUALITY } from './world/World.js';
 import { createPostFX } from './world/postfx.js';
 import { LAYOUT } from './world/layout.js';
-import { createDayCycle, stepDayCycle, getSun, getClock } from './systems/daycycle.js';
+import { createDayCycle, stepDayCycle, getSun, getClock, setLiveSky } from './systems/daycycle.js';
 import { createGauges, stepGauges, applyRecovery } from './systems/gauges.js';
 import { loadSettings, saveSettings } from './systems/save.js';
 import { createInput } from './player/input.js';
@@ -48,6 +48,13 @@ import { createHelmetLamp } from './world/iceSite.js';
 import { createIceDrillInstance } from './instances/iceDrill/index.js';
 import { createIceOvenInstance } from './instances/iceOven/index.js';
 import { createIceState, stepOven, spillBag, spotReady, coldTrapLoadKw, DIG_SPOTS } from './systems/iceMining.js';
+import { loadStars } from './data/stars.js';
+import { TARGETS } from './data/constellations.js';
+import { createTelescopeInstance } from './instances/telescope/index.js';
+import { createAirlockRoom } from './world/airlockRoom.js';
+import { createAmbience } from './ui/ambience.js';
+import { createAirlockCycle, stepAirlock, payCycle } from './systems/airlock.js';
+import { setVolume, getVolume } from './ui/sfx.js';
 import { createTraining } from './training/index.js';
 import { drillStorm } from './training/script.js';
 import { createTrainingReportInstance } from './instances/trainingReport/index.js';
@@ -76,11 +83,23 @@ const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerH
 const postfx = createPostFX(renderer, world.scene, camera);
 postfx.setEnabled(quality === 'high');
 function renderFrame(dt = 0) {
+  // during an airlock cycle we only draw the little airlock room (its own scene)
+  if (airlockRun) {
+    renderer.render(airlockRoom.scene, camera);
+    return;
+  }
   postfx.setZone(player?.zoneId ?? 'habitat');
   if (postfx.enabled) postfx.render(dt);
   else renderer.render(world.scene, camera);
 }
 const input = createInput();
+// ---------------------------------------------------------------- airlock + sounds
+// Doors marked via: 'airlock' run a real-looking cycle (systems/airlock.js) in a small room
+// (world/airlockRoom.js). The sounds follow the air pressure: SOUND NEEDS AIR (ui/ambience.js).
+const airlockRoom = createAirlockRoom(renderer);
+const ambience = createAmbience();
+let airlockRun = null; // { cycle, resolve }
+setVolume(loadSettings().sfxVolume ?? 0.8);
 const player = createPlayerController(camera, document.body, world, input);
 const day = createDayCycle();
 
@@ -103,6 +122,45 @@ const saveIce = () => saveSettings({ ice: { bagKg: ice.bagKg, oven: ice.oven, sp
 const helmetLamp = createHelmetLamp(world.scene, camera); // lights the dark cold-trap floor
 let wasInColdTrap = false;
 let iceSaveIn = 5;
+// ---------------------------------------------------------------- real stars + Star Album
+// The sky shows the real Yale Bright Star Catalog (NASA HEASARC). Constellations you find with
+// the telescope go in the album (saved) and get faint lines + names in the sky outside.
+const starAlbum = new Set(Array.isArray(loadSettings().starAlbum) ? loadSettings().starAlbum : []);
+let starNamesOn = loadSettings().starNames !== false;
+let starCatalog = null;
+function figureFor(target, catalog) {
+  if (target.cloud) return { id: target.id, name: target.name, segments: [], centre: { ra: target.cloud.ra, dec: target.cloud.dec } };
+  const segments = [];
+  const pts = [];
+  for (const path of target.paths) {
+    const stars = path.map((hr) => catalog.byHr.get(hr)).filter(Boolean);
+    pts.push(...stars);
+    for (let i = 1; i < stars.length; i++) segments.push([stars[i - 1], stars[i]]);
+  }
+  // label above the figure's brightest star
+  const top = pts.reduce((a, b) => (b.mag < a.mag ? b : a), pts[0]);
+  return { id: target.id, name: target.name, segments, centre: { ra: top.ra, dec: top.dec } };
+}
+const starsReady = loadStars().then((catalog) => {
+  if (!catalog) return null;
+  starCatalog = catalog;
+  world.sky.setStars(catalog, renderer.getPixelRatio());
+  world.sky.setStarCount(quality === 'high');
+  world.sky.setLabels(starNamesOn);
+  for (const t of TARGETS) if (starAlbum.has(t.id)) world.sky.addFigure(figureFor(t, catalog));
+  return catalog;
+});
+const album = {
+  has: (id) => starAlbum.has(id),
+  add(id) {
+    if (starAlbum.has(id)) return;
+    starAlbum.add(id);
+    saveSettings({ starAlbum: [...starAlbum] });
+    const t = TARGETS.find((x) => x.id === id);
+    if (t && starCatalog) world.sky.addFigure(figureFor(t, starCatalog));
+  },
+};
+
 /** Is the player down on the dark floor of the cold-trap crater? */
 const inColdTrap = () => player.zoneId === 'outside' && world.iceSite.inColdTrap(player.position.x, player.position.z);
 
@@ -126,6 +184,10 @@ function useSun(loaded) {
 function pickSun(mode) {
   sunMode = mode;
   saveSettings({ sun: mode });
+  // LIVE: the Sun, Earth and stars follow the real date and time (ephemeris.js) — the sky over
+  // the Moon's south pole right now. Works offline too (it is computed, not downloaded).
+  setLiveSky(day, mode === 'live');
+  world.solarArray.resetTracking(); // the Sun may now be somewhere else: face it straight away
   return loadSun(mode).then((loaded) => {
     if (loaded.mode === sunMode || loaded.fellBack) useSun(loaded);
     return loaded;
@@ -156,6 +218,7 @@ feedback.setClock(() => {
   const c = getClock(day);
   return 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute);
 });
+let earthHiddenSaid = false;
 let lastHudState = null; // latest gauge snapshot (used by the PDA)
 
 // ---------------------------------------------------------------- game state
@@ -281,6 +344,21 @@ const menus = createMenus(uiRoot, {
     getVoice: () => voltVoice.enabled,
     setVoice: (on) => voltVoice.setEnabled(on),
   },
+  sound: {
+    get: () => getVolume(),
+    set(v) {
+      setVolume(v);
+      saveSettings({ sfxVolume: v });
+    },
+  },
+  starNames: {
+    get: () => starNamesOn,
+    set(on) {
+      starNamesOn = on;
+      saveSettings({ starNames: on });
+      world.sky.setLabels(on);
+    },
+  },
 });
 document.addEventListener('pointerlockerror', onLockFailed);
 
@@ -389,6 +467,8 @@ player.controls.addEventListener('lock', enterPlay);
 player.controls.addEventListener('unlock', enterPause);
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && player.dragLook) enterPause(); // pointer-lock mode gets Esc via 'unlock'
+  // E / Space fast-forward an airlock cycle once you have seen one
+  if (airlockRun && (e.code === 'KeyE' || e.code === 'Space') && (loadSettings().airlockCycles ?? 0) >= 1) airlockRun.cycle.skipping = true;
 });
 feedback.setCrosshairVisible(false);
 
@@ -420,6 +500,11 @@ const instances = createInstanceManager(uiRoot, {
       saveIce();
       if (result.bestStreak > (loadSettings().iceBestStreak ?? 0)) saveSettings({ iceBestStreak: result.bestStreak });
       stormLog(`Drilled ${result.soilKg.toFixed(0)} kg of icy soil (about ${result.waterKg.toFixed(1)} kg of water in it). Bag: ${result.bagKg.toFixed(0)} kg — bake it in the Ice Oven.`);
+    }
+    if (id === 'telescope' && result.completed) {
+      const t = TARGETS.find((x) => x.id === result.id);
+      stormLog(`Telescope: found ${t?.name ?? result.id} (${result.stars} stars).${result.isNew ? ' New card in your Star Album!' : ''}`);
+      if (result.isNew) voltEvent('star-found', 'New star card!', 'You found a new constellation. Look for its name in the sky outside.');
     }
     if (id === 'ice-oven' && result.completed) {
       assistant.notify('ice-oven-started');
@@ -512,11 +597,22 @@ const supply = createSupply({
 let edgeToastAt = -99;
 let elapsed = 0;
 
+/** Run one airlock cycle in the airlock room. Resolves when the far hatch is open. */
+function runAirlockCycle(direction, moduleName) {
+  return new Promise((resolve) => {
+    airlockRoom.setup(direction, moduleName);
+    camera.rotation.set(0, 0, 0, 'YXZ'); // face the hatch you are going to
+    airlockRun = { cycle: createAirlockCycle(direction), resolve, t: 0 };
+    ambience.airlockStart();
+  });
+}
+
 async function useDoor(action) {
   voltVoice.stop();
   mode = 'busy';
   player.frozen = true;
   feedback.setPrompt(null);
+  if (action.via === 'airlock') return useAirlock(action);
   await feedback.fadeTo(true, UI.DOOR_FADE_SECONDS);
   feedback.showFadeCard('<p class="fade-status">Cycling the airlock…</p>');
   await wait(650);
@@ -527,6 +623,36 @@ async function useDoor(action) {
   if (mode === 'busy') mode = 'playing';
   else pausedFromBusy = false;
   onZoneEntered(action.to);
+}
+
+/** Door with an airlock: fade → cycle in the airlock room → fade → arrive. Costs a little air. */
+async function useAirlock(action) {
+  const goingOut = action.to === 'outside';
+  const moduleId = goingOut ? player.zoneId : action.to;
+  const moduleName = world.zones[moduleId]?.name ?? 'Habitat';
+  await feedback.fadeTo(true, UI.DOOR_FADE_SECONDS);
+  const cycleDone = runAirlockCycle(goingOut ? 'out' : 'in', moduleName);
+  await feedback.fadeTo(false, UI.DOOR_FADE_SECONDS);
+  await cycleDone;
+  await wait(450);
+  await feedback.fadeTo(true, UI.DOOR_FADE_SECONDS);
+  airlockRun = null;
+  ambience.airlockStop();
+  player.placeAt(action.to, action.arrive.x, action.arrive.z, action.arrive.yawDeg);
+  // never free: a little air leaves with the vented gas, and the cycle takes base time
+  const cost = payCycle(gauges);
+  advanceGameHours(cost.gameHours, goingOut ? moduleId === 'greenhouse' ? 'greenhouse' : 'habitat' : 'habitat');
+  await feedback.fadeTo(false, UI.DOOR_FADE_SECONDS);
+  player.frozen = false;
+  if (mode === 'busy') mode = 'playing';
+  else pausedFromBusy = false;
+  const cycles = (loadSettings().airlockCycles ?? 0) + 1;
+  saveSettings({ airlockCycles: cycles });
+  stormLog(
+    `Airlock cycle (${goingOut ? 'out' : 'in'}): most of the air was pumped back, a little was lost — ${AIRLOCK.O2_LOSS_KG} kg of oxygen. ${AIRLOCK.GAME_MINUTES} minutes passed.`,
+  );
+  onZoneEntered(action.to);
+  if (cycles <= AIRLOCK.VOLT_LESSONS) voltEvent(goingOut ? 'airlock-quiet' : 'airlock-loud', goingOut ? 'Silence: sound needs air' : 'Sounds are back: air carries sound');
 }
 
 function onZoneEntered(zoneId) {
@@ -554,6 +680,20 @@ function useStation(action) {
   }
   if (action.station === 'ice-drill') {
     instances.open('ice-drill', createIceDrillInstance, { ice, mastery, spotId: action.spotId, nowHour: gameHourNow(), bestStreak: loadSettings().iceBestStreak ?? 0, voice: voltVoice });
+    return;
+  }
+  if (action.station === 'telescope') {
+    const s = getSun(day);
+    const open = (catalog) =>
+      instances.open('telescope', createTelescopeInstance, {
+        catalog,
+        sky: { sunAz: s.azimuthDeg, sunAlt: s.elevationDeg, matrix: s.skyMatrix, earthAz: s.earth.az, earthAlt: s.earth.alt, live: s.live, dateMs: s.dateMs },
+        album,
+        mastery,
+        voice: voltVoice,
+      });
+    if (starCatalog) open(starCatalog);
+    else starsReady.then((c) => mode === 'playing' && open(c));
     return;
   }
   if (action.station === 'ice-oven') {
@@ -891,6 +1031,23 @@ renderer.setAnimationLoop(() => {
     stepDayCycle(day, simDt);
     player.update(dt);
   }
+  // ---- airlock cycle: step it, pin the camera inside the airlock room, play the air sounds
+  if (airlockRun) {
+    const run = airlockRun;
+    const events = stepAirlock(run.cycle, dt);
+    run.t += dt;
+    for (const e of events) {
+      if (e === 'hatch-close') ambience.clunk(run.cycle.pressure);
+      else if (e === 'equal') ambience.chime();
+      else if (e === 'hatch-open') ambience.clunk(run.cycle.pressure);
+      else if (e === 'done') run.resolve();
+    }
+    ambience.airlockUpdate(run.cycle.pressure, run.cycle.phase);
+    airlockRoom.update(dt, run.cycle, events);
+    camera.position.copy(airlockRoom.eye);
+    camera.position.y += airlockRoom.shakeOffset(run.t);
+  }
+  ambience.update(player.zoneId, mode === 'playing' || mode === 'busy');
   if (mode === 'playing') {
     handleInteraction();
     if (player.hitMapEdge && elapsed - edgeToastAt > 6) {
@@ -930,6 +1087,11 @@ renderer.setAnimationLoop(() => {
     extraLoadKw: coldTrapLoadKw(coldTrap), // suit heaters + lamp, recharged by the base
   });
   if (running) reactToGauges(report, sun);
+  // live sky: Earth really dips below the horizon here for part of each month (libration)
+  if (running && sun.live && !earthHiddenSaid && sun.earth.alt < 0 && zoneId === 'outside') {
+    earthHiddenSaid = true;
+    voltEvent('earth-hidden', 'Earth is below the horizon right now', 'Right now Earth is below the horizon at the south pole. It bobs up and down every month (libration), so radio links need it above the horizon — or a relay satellite.');
+  }
   farming.update(frameDt, simDt, { lit: report.hasPower });
   supply.update(frameDt, dt, zoneId, { pace, training: training.active });
   if (mode === 'playing' && (report.oxygenEmpty || report.foodEmpty)) {
@@ -988,7 +1150,8 @@ renderer.setAnimationLoop(() => {
     radiation: radiationHud(),
     sun,
     ice,
-    carry: ice.bagKg > 0 ? `Icy soil ${Math.round(ice.bagKg)} kg → Ice Oven` : ice.oven ? 'Ice Oven baking…' : '',
+    album: [...starAlbum],
+    carry:ice.bagKg > 0 ? `Icy soil ${Math.round(ice.bagKg)} kg → Ice Oven` : ice.oven ? 'Ice Oven baking…' : '',
   };
   hud.update(lastHudState);
 
@@ -1069,5 +1232,5 @@ if (import.meta.env.DEV) {
       greenhouse: ['greenhouse', 1.4, 30, 90, -0.08],
     },
   };
-  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, guide, walkable, voltBubble, voltVoice, get radiation() { return radiation; }, get sun() { return sun; }, playerPlace, sunReady, ice, helmetLamp };
+  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, guide, walkable, voltBubble, voltVoice, get radiation() { return radiation; }, get sun() { return sun; }, playerPlace, sunReady, ice, helmetLamp, get airlockRun() { return airlockRun; } };
 }

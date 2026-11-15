@@ -126,7 +126,8 @@ export function createHud(root) {
       const { gauges: g, report: r } = s;
       const hh = String(s.clock.hour).padStart(2, '0');
       const mm = String(s.clock.minute).padStart(2, '0');
-      set('time', `Day ${s.clock.day} · ${hh}:${mm}`, (v) => (el.time.textContent = v));
+      // Live mode: the sky is the real sky right now (the life-support clock stays the game clock)
+      set('time', `Day ${s.clock.day} · ${hh}:${mm}${s.sun?.live ? ' · LIVE SKY' : ''}`, (v) => (el.time.textContent = v));
 
       const o2 = setRing('oxygen', g.oxygen);
       const food = setRing('food', g.food);

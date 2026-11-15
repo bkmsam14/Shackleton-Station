@@ -1,5 +1,88 @@
 # Changelog — Shackleton Station
 
+## 0.10.1 — Calmer Water Walls and Ice Oven screens
+
+- **Simpler for kids:** each screen now has one picture, one big number and one main button.
+  Water Walls: the particle animation + "8 of 100 particles reach you", the tank ⇄ walls slider,
+  and "Pump into walls (uses 1% power)". Ice Oven: "60 kg of icy soil → about 3.4 kg of water", a
+  3-step Heat → Ice → vapour → Water picture with a progress bar, and "Bake (uses 4% power)".
+- Extra facts and sources moved behind an optional **Did you know?** button; the easy question
+  after pumping stays. Removed the bar chart, cost meters, Earth-vs-Moon box and small print.
+- The airlock room got a realistic crew-lock interior (cylinder, padded panels, real-style hatches,
+  spacesuits, control panel, caution beacons).
+
+## 0.10.0 — The airlock: hatches, pumps and the sound of air
+
+### Gameplay
+- Going out or in (habitat and greenhouse) now runs a short **airlock cycle** you see from inside:
+  the hatch behind you seals, a wall gauge shows the air pressure falling (or rising), the lights go
+  amber → green, and the far hatch opens. You can look around; E/Space fast-forwards after the first.
+- **Sound needs air:** the pump hiss gets quieter and duller as the air is pumped out, then near
+  silence; you still feel the pump through your boots. Outside you only hear your suit (breathing +
+  fan); inside, the module's air vents hum. Volt explains it the first few times.
+- **Never free:** each cycle loses a little air (0.03 kg of oxygen) and takes 15 base minutes.
+- **Sound effects volume** slider in the pause menu (saved).
+
+## 0.9.0 — Real terrain: the Shackleton crater rim (NASA LOLA)
+
+### Gameplay
+- **You walk on the real Moon.** The ground around the base is the real terrain of the Shackleton
+  crater rim, measured by NASA's LRO laser altimeter (LOLA): 5 m detail near the base, 80 m out to
+  45 km, plus the real far skyline. Shackleton's 4 km-deep, permanently dark bowl lies right next
+  to the base, with its far rim lit by the low Sun.
+- **The base moved to a real well-lit spot**, ~450 m from the south pole on the ridge (the exact pole
+  is on a slope and often shadowed by a nearby hill) — picked by scanning the real terrain, the
+  way landing-site studies do.
+- **Real dark periods:** the Sun now hides behind the real ridges and mountains instead of a made-up
+  ridge (game mode: the Sun is visible from 82% of directions).
+
+### Code
+- `scripts/fetch-lola.mjs` → `src/data/lolaTerrain.js`; `world/lola.js` (map ↔ world, heights,
+  horizon); `heightfield.js` uses real heights; `terrain.js` builds the real disc + distant land +
+  skyline; `sunVisibility(az, elevation)` uses the real horizon. Removed the made-up big craters and
+  the ridge settings. Tests: `tests/terrain.test.js`.
+
+## 0.8.0 — Live sky: the real sky over Shackleton right now
+
+### Gameplay
+- Pick **Live** on the start screen: besides live NASA space weather, the **Sun, Earth and stars are
+  exactly where they are over the Moon's south pole at this moment**, moving at real speed. The HUD
+  clock says "LIVE SKY"; the PDA shows the real date, Sun height, whether Earth is up, and how much
+  of Earth is lit; the telescope's Star Hunt uses the live sky too.
+- Earth really dips below the horizon for part of each month here (libration) — Volt tells you when.
+
+### Science
+- `systems/ephemeris.js`: Moon orientation from the IAU model (NASA JPL NAIF pck00011), Sun (USNO),
+  Moon orbit (Astronomical Almanac); checked against NASA JPL Horizons (Sun < 0.05°, Earth < 0.3°).
+- One sky matrix (`getSun().skyMatrix`) now places stars, constellation lines and the telescope view
+  in both the sped-up game sky and the live sky.
+
+## 0.7.0 — Telescope: the real starry sky + Star Hunt
+
+### Gameplay
+- **Real stars everywhere:** the random dots are gone. The sky now shows 1,640 real stars from the
+  Yale Bright Star Catalog (via NASA HEASARC), with real brightness and colour, placed for the
+  Moon's south pole and slowly turning (once per 27.3-day sidereal month, sped up).
+- **Telescope** on a small rise north-east of the habitat (follow the lamps). **Star Hunt**: pick
+  a target, pan and zoom the real sky to find it, keep it in the crosshair to lock on, then tap the
+  stars in order to draw it. Volt can help (hint arrow, "Help me, Volt!"). Stars + mastery.
+- **6 targets:** Southern Cross, Alpha & Beta Centauri, Orion, Canis Major (Sirius), Carina
+  (Canopus) and the Large Magellanic Cloud — each with a card of real facts and sources.
+- **Sun shutter:** pointing near the Sun closes the shutter — "Never look at the Sun through a
+  telescope!"
+- **Star Album** in the PDA; found constellations show faint lines + names in the sky outside when
+  you look at them (toggle: pause menu → Star names in the sky).
+
+### Science fix
+- The Sun went round the sky the wrong way for the lunar south pole. It now turns counter-clockwise
+  seen from above (the Moon spins the same way as Earth). The first dark period comes a little
+  later in a session than before.
+
+### Code
+- `scripts/fetch-stars.mjs`, `public/data/stars-bsc.json`, `systems/skyMath.js` (+ tests),
+  `data/stars.js`, `data/constellations.js` (+ tests), `world/telescope.js`,
+  `instances/telescope/`; `world/sky.js` draws the real stars; `getSun()` returns `skyTurnDeg`.
+
 ## 0.6.0 — Ice mining: make water from Moon ice
 
 ### Gameplay

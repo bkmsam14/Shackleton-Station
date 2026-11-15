@@ -111,6 +111,48 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **Carrying the bag:** Moon gravity is 1.62 m/s² (NASA Moon Fact Sheet), so 60 kg weighs like ~10 kg on Earth. Mass (and inertia) stays the same — the game only says it "feels like" / "weighs".
 - **Game simplifications:** bag size, kg per chunk, drill round, rocks, mega lumps, streaks and the scanner charges are game balance. The cold trap's extra base power is the suit heaters and lamp being recharged by the base (game balance amount); we do **not** claim cold makes you breathe more oxygen.
 
+### The starry sky from the lunar south pole (telescope)
+- **Real stars:** the sky uses the **Yale Bright Star Catalog** (5th rev. ed., Hoffleit & Warren 1991) as hosted by NASA HEASARC (table bsc5p): stars with V ≤ 5.5 that can be seen from the lunar south pole (1,640 stars). Built by `scripts/fetch-stars.mjs` → `public/data/stars-bsc.json`. *Source: https://heasarc.gsfc.nasa.gov/W3Browse/star-catalog/bsc5p.html*
+- **Geometry:** the Moon's spin axis is ~1.5° from the ecliptic pole (NASA Moon Fact Sheet: 6.68° to its orbit, orbit 5.145° to the ecliptic), so straight up at the south pole is (almost) the **south ecliptic pole**. Altitude ≈ −(ecliptic latitude): stars **never rise or set**, they circle at a fixed height; stars north of the ecliptic (Polaris, the Big Dipper) are never visible. Left out: the ~1.5° wobble. Conversion RA/Dec → ecliptic uses the J2000 obliquity 23.4393° (IAU).
+- **Turning:** the sky turns once per **sidereal month (27.3 days)**; the Sun once per synodic month (29.5 days) because it creeps ~0.986° a day along the ecliptic. Both are sped up with the Sun loop (`SKY.GAME_SUN_LOOP_REAL_SECONDS`). Test: `tests/skyMath.test.js` checks the 27.32-day lap.
+- **Direction (correction, v0.7.0):** the Moon spins the same way as Earth, so at the south pole the sky turns **counter-clockwise seen from above**. The Sun used to go round the wrong way; fixed in `daycycle.sunAzimuthDeg`.
+- **Start date:** the Sun starts at ecliptic longitude 48° (≈ 8 May, the Stormy Sun replay date) — `SKY.SUN_ECLIPTIC_LON_START_DEG`.
+- **Distances in the Star Album:** Hipparcos new reduction (van Leeuwen 2007) via NASA HEASARC (hipnewcat), light-years = 3261.56 ÷ parallax (mas), rounded: Acrux ~320, Gacrux ~89, Hadar ~390, Rigel ~860, Canopus ~310, Sirius 8.6. Alpha Centauri ~4.4 ly (NASA APOD — https://science.nasa.gov/image-article/apod-2025-january-1-alpha-centauri-the-closest-star-system/). Betelgeuse "roughly 500–700 ly — still being measured" (Hipparcos ~500 with a large error; NASA says ~700 — https://science.nasa.gov/universe/what-is-betelgeuse-inside-the-strange-volatile-star). LMC ~160,000 ly (Pietrzyński et al., Nature 2013: 49.97 kpc ≈ 163,000 ly).
+- **Betelgeuse size:** "in place of our Sun it would swallow Mercury, Venus, Earth and Mars" — true for both NASA's figure (past Jupiter's orbit) and the smaller 2020 estimate (past Mars).
+- **Crux** is the smallest of the 88 IAU constellations (~68 square degrees). *Source: IAU*
+- **No twinkling on the Moon:** twinkling comes from Earth's moving air. *Source: NASA StarChild — https://starchild.gsfc.nasa.gov/docs/StarChild/questions/question26.html*
+- **Star colours:** colour comes from B−V in the catalog; the dot tint uses the Ballesteros (2012) B−V → temperature approximation and a blackbody colour. No temperatures are shown as data.
+- **Sun safety:** "Never look at the Sun through a telescope" — the scope's sun shutter closes within 25° of the Sun (game balance angle).
+- **Game simplifications:** zoom levels, lock-on time, round time and the hint arrow are game balance; the telescope view uses a flat (gnomonic) map projection.
+
+### Live sky: the real sky right now (Live mode)
+- **What:** with "Live" picked on the start screen, the Sun, Earth (with its real phase) and the stars are placed for the real date and time over the Moon's south pole (90°S), moving at real speed. Space weather is live DONKI (as before).
+- **How (`src/systems/ephemeris.js`):**
+  - Moon orientation: IAU WGCCRE model as published by NASA JPL NAIF, `pck00011.tpc` (BODY301_POLE_RA/DEC/PM + NUT_PREC terms E1–E13). *Source: https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc*
+  - Sun: US Naval Observatory "approximate solar coordinates" (~1′). *Source: https://aa.usno.navy.mil/faq/sun_approx*
+  - Moon's orbit (where Earth is): Astronomical Almanac low-precision formulae (~0.3°).
+  - Topocentric: the observer stands on the surface (Moon radius 1,737.4 km, NASA Moon Fact Sheet).
+  - Earth's phase from the Moon = (1 + cos(angle at Earth between Sun and Moon)) / 2.
+- **Checked against NASA JPL Horizons** (DE441, observer at 0°E 90°S on the Moon) for 5 dates 2024–2027: Sun within 0.01°, Earth within ~0.15° (`tests/ephemeris.test.js`). *Source: https://ssd.jpl.nasa.gov/horizons/*
+- **Real facts it shows:** the Sun stays within ~1.5° of the horizon (and can dip just below it); Earth bobs up and down by several degrees each month (libration) and is **below the horizon** for part of the time at the exact pole; full Earth when it is new Moon on Earth.
+- **Simplifications:** UTC is used as TT (~70 s, invisible here); the game's base layout keeps Earth's mean direction at `SKY.EARTH_AZIMUTH_DEG` (a rotation of the whole sky, never a mirror); the Sun hides behind the real LOLA horizon (see "Real terrain").
+
+### Real terrain: Shackleton crater rim (NASA LOLA)
+- **Data:** NASA Lunar Reconnaissance Orbiter, LOLA laser altimeter gridded elevation maps of the south pole (PDS Geosciences Node, LOLA GDR polar): **LDEM_875S_5M** (5 m/px, near the base) and **LDEM_80S_80M** (80 m/px, out to ~300 km). Built by `scripts/fetch-lola.mjs` (HTTP range request for the 5 m rows; ~10 MB of the 1.8 GB file) → `src/data/lolaTerrain.js` (121 KB). *Source: https://pds-geosciences.wustl.edu/missions/lro/lola.htm*
+- **Projection (PDS label):** polar stereographic, sphere 1,737.4 km, centre 90°S; x = (sample − offset)·scale, y = −(line − offset)·scale, lon = atan2(x, y). **Checked:** the Shackleton floor centre comes out at 89.66°S, 127.5°E (published ≈ 89.7°S, 129°E).
+- **The south pole lies on Shackleton's rim.** But the exact pole sits on a ~10° slope and a hill ~200 m away blocks the low Sun: from the pole the Sun at 0.75° is visible from only ~37% of directions (80 m map).
+- **Base site:** we scanned the 80 m map within 4 km of the pole for the most sunlit, flattest point — like landing-site studies do — and put the base on the ridge **~450 m from the pole (lon 225°)**, ground 1,334.9 m above the 1,737.4 km reference sphere, slope ~1°. From there (5 m map + 80 m map, Moon's curvature, eye 1.6 m) the Sun at 1.5° is visible from **82%** of directions (73% at 0.75°). Being 450 m from the pole changes the sky by ~0.015° (the Live sky is computed for 90°S).
+- **Shackleton** is right next to the base: its floor lies ~4.2 km below the rim near the base (LOLA: floor −2,868 m vs base +1,335 m relative to the reference sphere). Its inside is permanently shadowed — in the game it looks like a dark gulf with the far rim lit.
+- **Distant terrain** out to 45 km (80 m map) and the far skyline beyond (horizon angles out to 290 km) are drawn with their true directions and elevation angles; they are moved closer to the camera so they fit in the 3D view (you can only walk ~240 m, so parallax is invisible).
+- **Game additions on the real terrain:** the levelled base pad (a real base would grade a pad), the small cold-trap crater for ice mining, the telescope mound, tiny craters < 6 m and bumps smaller than the 5 m map can show.
+- **Earth stays in view in game mode:** the real horizon toward Earth (lon 0) is ~0.9° high; game Earth sits at 4°.
+
+### Airlock and sound (v0.10.0)
+- **Sound needs air:** sound waves are compression waves and need molecules to travel; there is no sound in a vacuum. *Source: NASA Astrobiology, Ask an Astrobiologist — https://webarchive.library.unt.edu/eot2008/20080920072225/http://astrobiology.nasa.gov/ask-an-astrobiologist/question/?id=78*
+- In the game the airlock hiss gets quieter and duller as the pressure drops (thin air carries less sound, high notes first); outside the world is silent and you only hear your suit (breathing + fan). The pump motor stays faintly audible "through your boots": vibrations travel through solids.
+- **Airlocks lose a little air each cycle:** pumps move most of the air back, the rest is lost; NASA studies ways to reduce these losses. *Source: NASA NTRS 20080013418 "Minimizing EVA Airlock Time and Depress Gas Losses" — https://ntrs.nasa.gov/citations/20080013418*. A US ISS airlock loses about 1 lb (≈ 0.45 kg) of air per cycle (University of Maryland ENAE 697 spacecraft design lecture — https://spacecraft.ssl.umd.edu/academics/697S23/697S23L22.airlocksx.pdf; academic, not NASA). Sources disagree on details, so the game only says "most of the air is pumped back, a little is lost each time".
+- **Game simplifications:** the cycle takes ~5.6 real seconds (real ones take much longer); pressure is shown as % of module air; the loss is 0.03 kg of oxygen (1 % of the supply) and 15 base minutes per cycle — all game balance.
+
 ### Dust
 - Lunar regolith is sharp, abrasive and sticky. It clings to suits and covers equipment.
 - **There is no wind, so there are no dust storms on the Moon.** Dust gets thrown up by rocket exhaust, rovers and walking.
@@ -156,14 +198,14 @@ How the game uses them (ratios stay real, amounts are scaled):
 ## Simplifications in Demo 0 (details left out, nothing false)
 - **Two clocks.** Life support runs 360× faster than real life; the Sun's trip around the sky is sped up more (about 20 real minutes instead of 29.5 days). Both real values are shown on the start and pause screens.
 - **One oxygen supply.** Real suits carry their own tank that is refilled before each walk; the game merges suit + base into one supply.
-- **One ridge.** Dark periods come from one simple ridge on the horizon hiding the low Sun.
+- **Real horizon (v0.9.0).** Dark periods come from the real terrain around the base (NASA LOLA): the low Sun hides behind real ridges and mountains. In game mode the Sun is kept at 1.5° (the top of its real ±1.5° range); in Live mode it has its real height.
 - **Shadows are near-black** outside (no atmosphere), lit only by faint earthshine — whose strength follows Earth's phase — and the regolith around you. A **helmet lamp** lights the way in shadow (real spacesuit helmets carry lights; we don't state a brightness).
 - **Earthshine strength** is scaled by Earth's lit fraction as seen from the Moon: (1 − cos(angle between Sun and Earth)) / 2 — geometry, not a measured brightness.
 - **Earth fixed in the sky.** Libration (small wobbles) is left out.
 
 ## Needs verification (do not show until resolved)
 - [x] ~~BVAD per-person oxygen and food values~~ → done, see "Life support numbers" above. (Water values are copied too, for the future water gauge.)
-- Percentage of time the Shackleton rim is sunlit, and a source for terrain-caused dark periods (LRO/LOLA illumination studies).
+- A **published** sunlit-time percentage for our base site (LRO/LOLA illumination studies, e.g. Mazarico et al. 2011). The game only shows what we computed ourselves from the LOLA horizon: "the Sun at 1.5° is visible from 82% of directions".
 - Real spacesuit oxygen duration (xEMU / EMU) if we ever show suit-tank time.
 - BVAD exercise oxygen rates (Tables 3-23 / 3-25) if "sprinting drains oxygen faster" is added.
 - A Moon surface vs ISS dose comparison from a NASA source (for example Artemis I or LRO CRaTER results).

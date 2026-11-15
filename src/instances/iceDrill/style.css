@@ -202,3 +202,50 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------------------------------------------------------- simple oven (v0.10.1) */
+.io-big {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 16px 0 8px;
+  font-size: 22px;
+  text-align: center;
+}
+.io-big .ez-ic {
+  width: 40px;
+  height: 40px;
+}
+.io-big b {
+  font-family: var(--font-head);
+  font-size: 30px;
+  color: #9fe8ff;
+}
+.io-arrow {
+  font-family: var(--font-head);
+  font-size: 30px;
+  color: var(--cyan);
+}
+.io-flow-3 {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 520px;
+  margin: 10px auto;
+}
+.io-flow-3 li {
+  font-size: 18px;
+}
+.io-simple .io-progress {
+  max-width: 520px;
+  margin: 8px auto;
+  text-align: center;
+}
+@media (max-width: 760px) {
+  .io-flow-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .io-flow-3 li::after {
+    display: none;
+  }
+}

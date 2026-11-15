@@ -125,6 +125,10 @@ export function createSolarArray(groundY) {
       return facingAz;
     },
     /** @returns alignment 0..1 (cosine of the angle between panel normal and the Sun) */
+    /** Face the Sun again at once on the next update (e.g. after switching to the Live sky). */
+    resetTracking() {
+      facingAz = null;
+    },
     update(dt, sunAzDeg) {
       if (facingAz === null) facingAz = sunAzDeg;
       const diff = deltaDeg(sunAzDeg, facingAz);

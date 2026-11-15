@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { SKY } from '../config/gameplay.js';
 import { skyDirection } from '../systems/daycycle.js';
 import { mulberry32 } from './heightfield.js';
+import { bvToTemperatureK, temperatureToRgb, eqVector } from '../systems/skyMath.js';
 
 const SUN_DIST = 2000;
 const EARTH_DIST = 1900;
@@ -74,44 +75,74 @@ export function createSky({ starCount = 2600 } = {}) {
   const group = new THREE.Group();
   group.name = 'sky';
 
-  // --- stars -------------------------------------------------------------
-  const rand = mulberry32(2026);
-  const makeStars = (n, size, brightness) => {
-    const p = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) {
-      // uniform on the sphere, but skip below −4° (behind the ground)
-      let y;
-      let x;
-      let z;
-      do {
-        const u = rand() * 2 - 1;
-        const t = rand() * Math.PI * 2;
-        const s = Math.sqrt(1 - u * u);
-        x = s * Math.cos(t);
-        y = u;
-        z = s * Math.sin(t);
-      } while (y < -0.07);
-      p[i * 3] = x * STAR_DIST;
-      p[i * 3 + 1] = y * STAR_DIST;
-      p[i * 3 + 2] = z * STAR_DIST;
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(p, 3));
-    const m = new THREE.PointsMaterial({
-      color: new THREE.Color(brightness, brightness, brightness),
-      size,
-      sizeAttenuation: false,
-      depthWrite: false,
-      fog: false,
-    });
-    const pts = new THREE.Points(g, m);
-    pts.frustumCulled = false;
-    pts.renderOrder = -10;
-    return pts;
-  };
-  const starsDim = makeStars(Math.floor(starCount * 0.8), 1.4, 0.55);
-  const starsBright = makeStars(Math.floor(starCount * 0.2), 2.4, 1.0);
-  group.add(starsDim, starsBright);
+  // --- stars: the REAL sky (Yale Bright Star Catalog via NASA HEASARC) -----------------
+  // Filled in by setStars() once the catalog has loaded. Positions are J2000 equatorial
+  // vectors; each frame the whole star group gets the sky matrix (systems/skyMath.js), so the
+  // same code shows the sped-up game sky and the real "Live sky".
+  const starGroup = new THREE.Group();
+  starGroup.matrixAutoUpdate = false;
+  starGroup.name = 'realStars';
+  group.add(starGroup);
+  const starMat = new THREE.ShaderMaterial({
+    uniforms: { pixelRatio: { value: 1 }, maxMag: { value: 9 } },
+    vertexShader: /* glsl */ `
+      attribute float aSize;
+      attribute float aMag;
+      attribute vec3 aColor;
+      uniform float pixelRatio;
+      uniform float maxMag;
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        vColor = aColor;
+        vAlpha = aMag > maxMag ? 0.0 : clamp(1.15 - aMag * 0.13, 0.25, 1.0);
+        gl_PointSize = aSize * pixelRatio;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader: /* glsl */ `
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        float d = length(gl_PointCoord - 0.5);
+        float a = smoothstep(0.5, 0.15, d) * vAlpha;
+        if (a < 0.02) discard;
+        gl_FragColor = vec4(vColor * 1.25, a);
+      }`,
+    transparent: true,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  let starPoints = null;
+  // constellation lines + names you have found (fade in when you look toward them)
+  const figures = new Map(); // id → { line, label, dir: Vector3 (turn-0 frame), fade }
+  let labelsOn = true;
+  const tmpDir = new THREE.Vector3();
+  const viewDir = new THREE.Vector3();
+
+  function starPos(ra, dec, dist = STAR_DIST) {
+    const v = eqVector(ra, dec);
+    return new THREE.Vector3(v[0], v[1], v[2]).multiplyScalar(dist);
+  }
+
+  function nameSprite(text) {
+    const cv = document.createElement('canvas');
+    cv.width = 512;
+    cv.height = 96;
+    const c = cv.getContext('2d');
+    c.font = '600 54px Fredoka, Nunito, sans-serif';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.lineWidth = 8;
+    c.strokeStyle = 'rgba(0,0,0,0.75)';
+    c.strokeText(text, 256, 48);
+    c.fillStyle = '#bfefff';
+    c.fillText(text, 256, 48);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false, opacity: 0 }));
+    sp.scale.set(STAR_DIST * 0.34, STAR_DIST * 0.064, 1);
+    return sp;
+  }
 
   // --- sun -----------------------------------------------------------------
   const sunR = discRadius(SKY.SUN_ANGULAR_DIAMETER_DEG, SUN_DIST);
@@ -185,7 +216,7 @@ export function createSky({ starCount = 2600 } = {}) {
   earthPivot.add(earth);
   group.add(earthPivot);
 
-  const earthDir = skyDirection(SKY.EARTH_AZIMUTH_DEG, SKY.EARTH_ELEVATION_DEG);
+  const earthDir = { ...skyDirection(SKY.EARTH_AZIMUTH_DEG, SKY.EARTH_ELEVATION_DEG) };
   const tmp = new THREE.Vector3();
 
   return {
@@ -195,16 +226,95 @@ export function createSky({ starCount = 2600 } = {}) {
      * @param sunDir  {x,y,z} unit vector to the Sun
      * @param earthSpin  radians — Earth's rotation from the game clock
      */
-    update(camera, sunDirVec, earthSpin) {
+    update(camera, sunDirVec, earthSpin, skyMatrix = null, earthAzAlt = null) {
       group.position.copy(camera.position);
+      if (skyMatrix) {
+        const m = skyMatrix;
+        starGroup.matrix.set(m[0], m[1], m[2], 0, m[3], m[4], m[5], 0, m[6], m[7], m[8], 0, 0, 0, 0, 1);
+        starGroup.matrixWorldNeedsUpdate = true;
+      }
+      if (earthAzAlt) {
+        const e = skyDirection(earthAzAlt.az, earthAzAlt.alt);
+        earthDir.x = e.x;
+        earthDir.y = e.y;
+        earthDir.z = e.z;
+      }
+      if (figures.size) {
+        camera.getWorldDirection(viewDir);
+        for (const f of figures.values()) {
+          tmpDir.copy(f.dir).applyMatrix4(starGroup.matrix);
+          // the name sits just above the figure in WORLD space (so it is never upside down)
+          f.label.position.copy(tmpDir).multiplyScalar(STAR_DIST * 0.98);
+          f.label.position.y += f.label.userData.lift;
+          const target = labelsOn && tmpDir.dot(viewDir) > 0.9 ? 1 : 0; // within ~25° of your view
+          f.fade += (target - f.fade) * 0.06;
+          f.line.material.opacity = f.fade * 0.55;
+          f.label.material.opacity = f.fade;
+          f.line.visible = f.label.visible = f.fade > 0.01;
+        }
+      }
       tmp.set(sunDirVec.x, sunDirVec.y, sunDirVec.z).multiplyScalar(SUN_DIST);
       sun.position.copy(tmp);
       earthPivot.position.set(earthDir.x, earthDir.y, earthDir.z).multiplyScalar(EARTH_DIST);
       earth.rotation.y = earthSpin;
       earthMat.uniforms.sunDir.value.set(sunDirVec.x, sunDirVec.y, sunDirVec.z);
     },
+    /** Low quality: draw only the brighter stars. */
     setStarCount(high) {
-      starsDim.visible = high;
+      starMat.uniforms.maxMag.value = high ? 9 : 4.5;
+    },
+    /** catalog: { stars: [{lon, lat, mag, bv}] } from data/stars.js */
+    setStars(catalog, pixelRatio = 1) {
+      if (starPoints) starGroup.remove(starPoints);
+      const n = catalog.stars.length;
+      const pos = new Float32Array(n * 3);
+      const col = new Float32Array(n * 3);
+      const size = new Float32Array(n);
+      const mag = new Float32Array(n);
+      catalog.stars.forEach((s, i) => {
+        const p = starPos(s.ra, s.dec);
+        pos.set([p.x, p.y, p.z], i * 3);
+        const rgb = temperatureToRgb(bvToTemperatureK(s.bv));
+        // keep colours gentle (stars look mostly white to the eye, tinted blue or orange)
+        col.set(rgb.map((c) => 0.45 + c * 0.55), i * 3);
+        size[i] = Math.max(1.3, 4.6 - s.mag * 0.62); // brighter stars are bigger dots
+        mag[i] = s.mag;
+      });
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      g.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
+      g.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+      g.setAttribute('aMag', new THREE.BufferAttribute(mag, 1));
+      starPoints = new THREE.Points(g, starMat);
+      starPoints.frustumCulled = false;
+      starPoints.renderOrder = -10;
+      starMat.uniforms.pixelRatio.value = pixelRatio;
+      starGroup.add(starPoints);
+    },
+    /**
+     * Show the lines + name of a constellation you found. figure: { id, name, segments:
+     * [[{ra,dec},{ra,dec}], …], centre: {ra,dec} } (J2000 degrees)
+     */
+    addFigure(figure) {
+      if (figures.has(figure.id)) return;
+      const pts = [];
+      for (const [p, q] of figure.segments) pts.push(starPos(p.ra, p.dec, STAR_DIST * 0.99), starPos(q.ra, q.dec, STAR_DIST * 0.99));
+      const line = new THREE.LineSegments(
+        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({ color: 0x7fd8ff, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }),
+      );
+      line.frustumCulled = false;
+      line.renderOrder = -9;
+      const label = nameSprite(figure.name);
+      const c = starPos(figure.centre.ra, figure.centre.dec, STAR_DIST * 0.98);
+      label.userData.lift = STAR_DIST * 0.07;
+      label.renderOrder = -8;
+      starGroup.add(line);
+      group.add(label); // positioned each frame in update()
+      figures.set(figure.id, { line, label, dir: c.clone().normalize(), fade: 0 });
+    },
+    setLabels(on) {
+      labelsOn = on;
     },
   };
 }

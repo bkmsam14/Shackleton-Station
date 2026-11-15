@@ -92,17 +92,33 @@ export const SKY = {
   // In the game the Sun circles once in this many REAL seconds (shown on screen).
   GAME_SUN_LOOP_REAL_SECONDS: 1200, // GAME BALANCE (not real data)
   SUN_START_AZIMUTH_DEG: 200, // GAME BALANCE (not real data) — where the Sun starts
-  // Azimuth range where a distant ridge hides the low Sun (dark period).
-  // Simplification of real terrain shadowing — "Needs verification" in SCIENCE.md.
-  RIDGE_START_AZIMUTH_DEG: 300, // GAME BALANCE (not real data)
-  RIDGE_END_AZIMUTH_DEG: 345, // GAME BALANCE (not real data)
-  RIDGE_FADE_DEG: 3, // GAME BALANCE (not real data) — soft sunrise/sunset edge
+  // Dark periods come from the REAL horizon around the base (NASA LOLA terrain, world/lola.js):
+  // the low Sun hides behind real ridges and mountains (daycycle.sunVisibility).
   // Angular sizes as seen from the Moon.
   SUN_ANGULAR_DIAMETER_DEG: 0.53, // NASA Sun Fact Sheet (~1.39e6 km at ~1 AU)
   EARTH_ANGULAR_DIAMETER_DEG: 1.9, // derived: 12,742 km ÷ 384,400 km (NASA fact sheets)
   SKY_DISC_SCALE: 1.6, // GAME BALANCE (not real data) — drawn a bit bigger for small screens
   EARTH_AZIMUTH_DEG: 150, // GAME BALANCE (not real data) — Earth's fixed direction
   EARTH_ELEVATION_DEG: 4, // GAME BALANCE (not real data) — low on horizon (libration ±6.7°)
+  // Real stars (src/systems/skyMath.js). The Moon spins the same way as Earth, so seen from the
+  // south pole the whole sky turns COUNTER-clockwise when viewed from above (azimuth goes down).
+  // The Sun's place among the stars on the first day: ecliptic longitude ≈ 48° is where the
+  // Sun is around 8 May (the Stormy Sun replay date). It creeps ~1° per day (one lap a year).
+  SUN_ECLIPTIC_LON_START_DEG: 48, // ≈ 8 May (from the vernal equinox, 20 March, + ~49 days)
+  STAR_MAX_MAG: 5.5, // faintest stars drawn (about the naked-eye limit with no light pollution)
+};
+
+// ---------------------------------------------------------------------------
+// TELESCOPE — Star Hunt mini-game (src/instances/telescope/)
+// ---------------------------------------------------------------------------
+export const TELESCOPE = {
+  SUN_GLARE_DEG: 25, // GAME BALANCE (not real data) — the sun shutter closes this close to the Sun
+  ZOOM_FOV_DEG: [70, 36, 16], // GAME BALANCE (not real data) — finder → normal → close
+  LOCK_SECONDS: 1, // GAME BALANCE (not real data) — hold the target in the crosshair this long
+  LOCK_RADIUS_DEG: 6, // GAME BALANCE (not real data) — "in the crosshair" (at normal zoom)
+  ROUND_SECONDS: 90, // GAME BALANCE (not real data) — find + draw the constellation
+  PAN_DEG_PER_S: 40, // GAME BALANCE (not real data) — keyboard panning speed at normal zoom
+  STAR_SECONDS: 45, // GAME BALANCE (not real data) — finish under this for the 2nd star
 };
 
 // ---------------------------------------------------------------------------
@@ -373,6 +389,25 @@ export const ICE = {
   COLD_TRAP_EXTRA_KW: 1.5, // GAME BALANCE (not real data)
   SPOT_COOLDOWN_GAME_HOURS: 24, // GAME BALANCE (not real data) — a dug spot rests a day
   FAIL_KEEP_FRACTION: 0.5, // GAME BALANCE (not real data) — gentle failure spills half the bag
+};
+
+// ---------------------------------------------------------------------------
+// AIRLOCK — the cycle between a module and the vacuum outside (src/systems/airlock.js)
+// Real airlocks pump most of the air back into the cabin, but some gas is lost every cycle
+// (NASA NTRS 20080013418). A US ISS airlock loses about 1 lb ≈ 0.45 kg of air per cycle
+// (University of Maryland spacecraft design course — see SCIENCE.md). Amounts here are game-sized.
+// ---------------------------------------------------------------------------
+export const AIRLOCK = {
+  // the steps of one cycle, in real seconds (sped up: real cycles take much longer)
+  CLOSE_S: 0.9, // GAME BALANCE (not real data) — the hatch behind you closes and seals
+  PUMP_S: 3.2, // GAME BALANCE (not real data) — pumps move the air (out: back into the cabin)
+  VENT_S: 0.6, // GAME BALANCE (not real data) — the last bit is vented to space / let in
+  OPEN_S: 0.9, // GAME BALANCE (not real data) — lights go green, the far hatch opens
+  PUMP_STOP_FRACTION: 0.12, // GAME BALANCE (not real data) — air left when the pumps stop
+  SKIP_SPEED: 6, // GAME BALANCE (not real data) — E/Space fast-forwards after the first cycle
+  O2_LOSS_KG: 0.03, // GAME BALANCE (not real data) — oxygen lost with the vented air (1 % of the supply)
+  GAME_MINUTES: 15, // GAME BALANCE (not real data) — time the cycle takes on the base clock
+  VOLT_LESSONS: 3, // Volt explains "sound needs air" the first 3 cycles
 };
 
 // ---------------------------------------------------------------------------

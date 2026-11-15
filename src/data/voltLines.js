@@ -90,6 +90,33 @@ export const EVENTS = {
     text: 'The Ice Oven is done! Fresh Moon water is in the tank.',
     mood: 'cheer',
   },
+  'earth-hidden': {
+    kind: 'news',
+    text: 'Earth is below our horizon right now! It bobs up and down monthly.',
+    long: 'Right now Earth is below the horizon at the Moon’s south pole. Seen from here it slowly bobs up and down every month (libration), so it is not always in view.',
+    mood: 'wow',
+  },
+  // --- airlock (the first few cycles)
+  'airlock-quiet': {
+    kind: 'news',
+    text: 'Hear how quiet it got? Sound needs air, and there’s none out here!',
+    long: 'Sound travels by shaking air. In the airlock the pump noise faded as the air was pumped out, and outside in the vacuum there is no sound at all — you only hear your own suit: your breathing and its fan.',
+    mood: 'wow',
+    databank: 'sound-needs-air',
+  },
+  'airlock-loud': {
+    kind: 'news',
+    text: 'Air is back, so sounds are back! Hear the vents humming?',
+    mood: 'happy',
+    databank: 'sound-needs-air',
+  },
+  // --- telescope
+  'star-found': {
+    kind: 'news',
+    text: 'New star card! Look up outside — its name shows in the sky.',
+    long: 'You found a new constellation with the telescope. It is in your Star Album (PDA, Tab), and when you look at it outside, its lines and name appear in the real sky.',
+    mood: 'cheer',
+  },
   'recovered': {
     kind: 'news',
     text: 'Phew, you’re safe! Let’s keep an eye on those rings.',
@@ -130,7 +157,8 @@ export const EVENTS = {
   },
   'sun-live': {
     kind: 'news',
-    text: 'Live Sun! Real space weather from the last 7 days.',
+    text: 'Live! Real space weather and the real sky, right now.',
+    long: 'Live mode: real NASA space weather from the last 7 days, and the Sun, Earth and stars exactly where they are over the Moon’s south pole right now (computed with NASA JPL / IAU models).',
     mood: 'wow',
   },
 };
@@ -173,6 +201,11 @@ export const FACTS = [
   { id: 'fact-snow', text: 'Storm sparkles on screen? Real space cameras show that “snow” too!', databank: 'camera-snow', mood: 'wow' },
   { id: 'fact-ice-share', text: 'Icy Moon soil: 100 kg holds only about 6 kg of water!', databank: 'moon-ice-soil', mood: 'think' },
   { id: 'fact-scan', text: 'Spacecraft find Moon ice by sniffing its hydrogen from orbit!', databank: 'hydrogen-scan', mood: 'wow' },
+  { id: 'fact-real-ground', text: 'This is real Moon ground, mapped by a laser on NASA’s LRO!', databank: 'real-terrain', mood: 'wow' },
+  { id: 'fact-shackleton', text: 'Shackleton crater next to us is about 4 km deep, and always dark inside.', databank: 'real-terrain', mood: 'think' },
+  { id: 'fact-twinkle', text: 'Stars don’t twinkle on the Moon. Twinkling comes from Earth’s air!', databank: 'moon-sky', mood: 'wow' },
+  { id: 'fact-polaris', text: 'From here you can never see the North Star. It’s always below us!', databank: 'moon-sky', mood: 'think' },
+  { id: 'fact-star-colour', text: 'Blue stars are hotter than red ones. Colour tells temperature!', databank: 'star-colours', mood: 'happy' },
   { id: 'fact-isru', text: 'Making water from Moon ice means fewer deliveries from Earth!', databank: 'isru', mood: 'happy' },
   { id: 'fact-moon-dose', text: 'On the Moon’s surface, radiation is about twice the Space Station’s.', databank: 'moon-radiation', mood: 'think' },
 ];

@@ -240,6 +240,72 @@
       "text": "NASA's Lunar Prospector found extra hydrogen near the Moon's poles in 1998 by counting neutrons, a clue that ice is there.",
       "value": "Lunar Prospector neutron spectrometer, 1998",
       "source": "https://ntrs.nasa.gov/citations/20230012260"
+    },
+    {
+      "id": "moon-sky-circle",
+      "text": "At the Moon's south pole the stars never rise or set; they circle once every 27.3 days.",
+      "value": "Sidereal month 27.3 days; axis ~1.5° from the ecliptic pole",
+      "source": "https://heasarc.gsfc.nasa.gov/W3Browse/star-catalog/bsc5p.html"
+    },
+    {
+      "id": "no-twinkle",
+      "text": "Stars don't twinkle on the Moon: twinkling is caused by Earth's moving air.",
+      "value": "NASA StarChild",
+      "source": "https://starchild.gsfc.nasa.gov/docs/StarChild/questions/question26.html"
+    },
+    {
+      "id": "alpha-centauri",
+      "text": "Alpha Centauri is the closest star system to the Sun, about 4.4 light-years away.",
+      "value": "~4.4 ly",
+      "source": "https://science.nasa.gov/image-article/apod-2025-january-1-alpha-centauri-the-closest-star-system/"
+    },
+    {
+      "id": "crux-smallest",
+      "text": "Crux, home of the Southern Cross, is the smallest of the 88 constellations.",
+      "value": "~68 square degrees",
+      "source": "https://www.iau.org/public/themes/constellations/"
+    },
+    {
+      "id": "lmc-distance",
+      "text": "The Large Magellanic Cloud is a small galaxy about 160,000 light-years away.",
+      "value": "49.97 kpc ≈ 163,000 ly (Pietrzyński et al. 2013)",
+      "source": "https://www.nature.com/articles/nature11878"
+    },
+    {
+      "id": "earth-libration",
+      "text": "Seen from the Moon's south pole, Earth bobs up and down each month and is sometimes below the horizon.",
+      "value": "Checked with NASA JPL Horizons (e.g. 15 Nov 2026 00:00 UTC: Earth 3.6° below the horizon)",
+      "source": "https://ssd.jpl.nasa.gov/horizons/"
+    },
+    {
+      "id": "sun-low-pole",
+      "text": "At the Moon's south pole the Sun always stays within about 1.5° of the horizon.",
+      "value": "NASA JPL Horizons: Sun elevation between about −1.5° and +1.5°",
+      "source": "https://ssd.jpl.nasa.gov/horizons/"
+    },
+    {
+      "id": "pole-on-shackleton-rim",
+      "text": "The Moon's south pole lies on the rim of Shackleton crater.",
+      "value": "NASA LRO LOLA 80 m map: pole 1,290 m above the reference sphere, on the rim",
+      "source": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm"
+    },
+    {
+      "id": "shackleton-depth",
+      "text": "Shackleton crater is about 4 km deep and permanently dark inside.",
+      "value": "LOLA: floor −2,868 m vs rim near the base +1,335 m (reference sphere 1,737.4 km)",
+      "source": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm"
+    },
+    {
+      "id": "sound-vacuum",
+      "text": "Sound cannot travel in a vacuum: sound waves need molecules to compress.",
+      "value": "NASA Astrobiology — Ask an Astrobiologist",
+      "source": "https://webarchive.library.unt.edu/eot2008/20080920072225/http://astrobiology.nasa.gov/ask-an-astrobiologist/question/?id=78"
+    },
+    {
+      "id": "airlock-air-loss",
+      "text": "Airlocks pump most of their air back into the station, but a little is lost every cycle.",
+      "value": "NASA NTRS 20080013418",
+      "source": "https://ntrs.nasa.gov/citations/20080013418"
     }
   ]
 }
