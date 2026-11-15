@@ -1070,3 +1070,14 @@
 @media (prefers-reduced-motion: reduce) {
   .mm-patch, .mm-led, .ds.is-on, .mc-patch, .mc-stamp { animation: none; }
 }
+
+/* New-mission confirm (inside the main-menu panel) */
+.mm-confirm-text {
+  margin: 8px 0 18px;
+  font-size: 20px;
+  line-height: 1.45;
+}
+.mm-confirm-row {
+  display: grid;
+  gap: 12px;
+}

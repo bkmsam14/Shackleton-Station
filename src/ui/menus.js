@@ -165,6 +165,13 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
       ${music ? musicRow() : ''}`,
     how: () => `<h2 class="mm-h2">How to play</h2>${GOAL}${CONTROLS}${TIME_NOTE}`,
     credits: () => `<h2 class="mm-h2">Credits</h2>${CREDITS}`,
+    // our own confirm (browser pop-ups are often blocked in embedded browsers)
+    newMission: () => `<h2 class="mm-h2">Start a new mission?</h2>
+      <p class="mm-confirm-text">You'll go back to Day 1. Your Day ${mission?.()?.day ?? ''} progress will be lost.</p>
+      <div class="mm-confirm-row">
+        <button type="button" class="mm-btn mm-btn-main" data-confirm-new><span class="mm-ic">${MI.star}</span>Yes, start over</button>
+        <button type="button" class="mm-btn" data-confirm-keep><span class="mm-ic">${MI.play}</span>Keep my mission</button>
+      </div>`,
   };
 
   const pause = document.createElement('div');
@@ -304,8 +311,10 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
   }
   syncMission();
   start.querySelector('[data-action="new"]').addEventListener('click', () => {
-    const m = mission?.();
-    if (window.confirm(`Start a new mission from Day 1? Your Day ${m?.day ?? ''} progress will be lost.`)) onNewMission?.();
+    openPanel('newMission');
+    panelBody.querySelector('[data-confirm-new]').addEventListener('click', () => onNewMission?.());
+    panelBody.querySelector('[data-confirm-keep]').addEventListener('click', closePanel);
+    panelBody.querySelector('[data-confirm-keep]').focus();
   });
 
   // Sun picker (main menu Settings: the storms are planned when the game starts)
