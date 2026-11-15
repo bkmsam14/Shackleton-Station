@@ -308,7 +308,7 @@ export const SOLAR_DAMAGE = {
   KITS_PER_REPAIR: 1, // GAME BALANCE (not real data)
   // TESTING ONLY: a hit every this many real seconds of play (no grace period, no
   // randomness), counted while the array is healthy. Set to null for normal play.
-  TEST_HIT_EVERY_REAL_SECONDS: 60,
+  TEST_HIT_EVERY_REAL_SECONDS: null,
 };
 
 // Feature flags (later demos).
