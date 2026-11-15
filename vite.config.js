@@ -39,4 +39,9 @@ export default defineConfig(({ command }) => ({
     port: 5173,
     strictPort: false,
   },
+  // `vite preview` behind a Cloudflare quick tunnel (random *.trycloudflare.com address).
+  preview: {
+    port: 4173,
+    allowedHosts: ['.trycloudflare.com'],
+  },
 }));

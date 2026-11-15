@@ -10,3 +10,7 @@ Thumbs.db
 
 # raw API responses cached by scripts/fetch-space-weather.mjs
 scripts/.cache/
+
+# Cloudflare tunnel hosting (scripts/tunnel-watchdog.ps1)
+dist-tunnel/
+.tunnel/
