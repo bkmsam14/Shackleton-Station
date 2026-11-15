@@ -4,6 +4,7 @@
 import { TIME, SKY, DAYS } from '../config/gameplay.js';
 import { version } from '../../package.json';
 import { voltBot } from '../instances/electrolysis/icons.js';
+import { missionPatch, MI } from './menuArt.js';
 
 const CONTROLS = `
   <div class="controls-grid">
@@ -127,25 +128,33 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
   start.className = 'menu mm';
   start.innerHTML = `
     <div class="mm-side" role="dialog" aria-labelledby="title-start">
-      <p class="mm-kicker">A Moon base adventure · NASA Space Apps 2026</p>
-      <h1 class="mm-title" id="title-start">Shackleton<span>Station</span></h1>
-      <p class="mm-tag">Survive ${DAYS.COUNT} days at the Moon's south pole.</p>
-      <div class="mm-buttons">
-        <button type="button" class="mm-btn mm-btn-main" data-action="start"><span class="mm-ic">▶</span><span data-play-label>Play</span></button>
-        <button type="button" class="mm-btn" data-action="new" hidden><span class="mm-ic">★</span>New mission</button>
-        <button type="button" class="mm-btn" data-panel="settings"><span class="mm-ic">⚙</span>Settings</button>
-        <button type="button" class="mm-btn" data-panel="how"><span class="mm-ic">?</span>How to play</button>
-        <button type="button" class="mm-btn" data-panel="credits"><span class="mm-ic">♥</span>Credits</button>
+      <div class="mm-head">
+        ${missionPatch(112)}
+        <div>
+          <p class="mm-kicker">A Moon base adventure · NASA Space Apps 2026</p>
+          <h1 class="mm-title" id="title-start">Shackleton<span>Station</span></h1>
+        </div>
       </div>
-      <div class="menu-hint" data-hint></div>
-      <p class="mm-version">v${version} · real NASA data inside</p>
+      <p class="mm-tag">Survive ${DAYS.COUNT} days at the Moon's south pole.</p>
+      <div class="mm-console">
+        <span class="mm-rivet" aria-hidden="true"></span><span class="mm-rivet" aria-hidden="true"></span><span class="mm-rivet" aria-hidden="true"></span><span class="mm-rivet" aria-hidden="true"></span>
+        <div class="mm-buttons">
+          <button type="button" class="mm-btn mm-btn-main" data-action="start"><span class="mm-ic">${MI.play}</span><span data-play-label>Play</span></button>
+          <button type="button" class="mm-btn mm-btn-alt" data-action="new" hidden><span class="mm-ic">${MI.star}</span>New mission</button>
+          <button type="button" class="mm-btn" data-panel="settings"><span class="mm-ic">${MI.gear}</span>Settings</button>
+          <button type="button" class="mm-btn" data-panel="how"><span class="mm-ic">${MI.book}</span>How to play</button>
+          <button type="button" class="mm-btn" data-panel="credits"><span class="mm-ic">${MI.heart}</span>Credits</button>
+        </div>
+        <div class="menu-hint" data-hint></div>
+        <p class="mm-status"><span class="mm-led" aria-hidden="true"></span>BASE ONLINE · SHACKLETON RIM · v${version} · real NASA data inside</p>
+      </div>
     </div>
     <div class="mm-volt" aria-hidden="true">
       <div class="mm-volt-bubble">Hi, I'm <b>Volt</b>! Ready for the Moon?</div>
       <div class="mm-volt-bot">${voltBot('cheer')}</div>
     </div>
     <section class="mm-panel menu-card" data-mm-panel hidden aria-live="polite">
-      <button type="button" class="mm-close" data-mm-close aria-label="Close">✕</button>
+      <button type="button" class="mm-close" data-mm-close aria-label="Close">${MI.close}</button>
       <div data-mm-body></div>
     </section>`;
   const PANELS = {

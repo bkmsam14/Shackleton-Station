@@ -612,3 +612,461 @@
 .menu.mm[hidden] {
   display: none;
 }
+
+/* =====================================================================================
+   MENUS + DAY CARDS — "toy flight console" look (Nov 2026 polish), the same language as the
+   mini-games: ink outlines, solid colours, hard (not blurry) shadows, buttons that press down,
+   riveted panels, and small monospace mission-control labels for a touch of seriousness.
+   Overrides the earlier menu rules in this file. Contrast: ink #10182c on gold/orange ≥ 9:1,
+   white on console navy ≥ 12:1, muted #c9d4e8 on navy ≥ 9:1.
+   ===================================================================================== */
+:root {
+  --ink: #10182c;
+  --console: #16214a;
+  --console-deep: #0d1531;
+  --console-edge: #2d3c72;
+  --gold: #ffc94a;
+  --paper: #fff4dc;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+
+/* ---- main menu ---- */
+.menu.mm {
+  background: linear-gradient(90deg, rgba(5, 9, 24, 0.82) 0%, rgba(5, 9, 24, 0.5) 38%, rgba(5, 9, 24, 0) 70%);
+}
+.mm-side {
+  gap: 12px;
+}
+.mm-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.mm-patch {
+  flex: 0 0 auto;
+  filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.45));
+  animation: mm-patch-in 0.7s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.mm-kicker {
+  font-family: var(--mono);
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: #9fe8ff;
+}
+.mm-title {
+  font-size: clamp(46px, 7.2vw, 84px);
+  line-height: 0.92;
+  letter-spacing: 1px;
+  color: #ffffff;
+  /* an ink outline + a hard drop, like a sticker (no glow) */
+  text-shadow:
+    3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 3px 0 var(--ink), 0 -3px 0 var(--ink),
+    2px 2px 0 var(--ink), -2px 2px 0 var(--ink), 2px -2px 0 var(--ink), -2px -2px 0 var(--ink),
+    0 8px 0 var(--ink);
+}
+.mm-title span {
+  color: var(--orange);
+  text-shadow:
+    3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 3px 0 var(--ink), 0 -3px 0 var(--ink),
+    2px 2px 0 var(--ink), -2px 2px 0 var(--ink), 2px -2px 0 var(--ink), -2px -2px 0 var(--ink),
+    0 8px 0 var(--ink);
+}
+/* the tagline is a little label strip stuck on, slightly crooked */
+.mm-tag {
+  justify-self: start;
+  margin: 6px 0 8px;
+  padding: 6px 16px;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 20px;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 4px 0 var(--ink);
+}
+.mm-console {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 18px 18px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  background: var(--console);
+  box-shadow: inset 0 0 0 3px var(--console-edge), 0 8px 0 rgba(0, 0, 0, 0.5);
+}
+.mm-rivet {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #8a96b8;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35), 0 0 0 2px var(--ink);
+}
+.mm-rivet:nth-of-type(1) { top: 9px; left: 9px; }
+.mm-rivet:nth-of-type(2) { top: 9px; right: 9px; }
+.mm-rivet:nth-of-type(3) { bottom: 9px; left: 9px; }
+.mm-rivet:nth-of-type(4) { bottom: 9px; right: 9px; }
+.mm-buttons {
+  width: 100%;
+  gap: 12px;
+}
+.mm-btn {
+  min-height: 56px;
+  padding: 0 20px;
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  background: #24346a;
+  color: #ffffff;
+  font: 600 22px var(--font-head);
+  box-shadow: 0 5px 0 var(--ink);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.12s ease;
+}
+.mm-btn:hover,
+.mm-btn:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 var(--ink);
+  background: #2e4386;
+  border-color: var(--ink);
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+.mm-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.mm-btn .mm-ic {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--gold);
+  color: var(--ink);
+}
+.mi {
+  width: 22px;
+  height: 22px;
+}
+.mm-btn-main {
+  min-height: 70px;
+  font-size: 30px;
+  background: var(--orange);
+  color: var(--ink); /* 10.5:1 */
+  box-shadow: 0 6px 0 var(--ink);
+}
+.mm-btn-main:hover,
+.mm-btn-main:focus-visible {
+  background: #ffc46e;
+}
+.mm-btn-main .mm-ic {
+  background: var(--ink);
+  color: var(--orange);
+}
+.mm-btn-alt {
+  background: #1f6d7a;
+}
+.mm-btn-alt:hover,
+.mm-btn-alt:focus-visible {
+  background: #23808f;
+}
+.mm-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 2px dashed var(--console-edge);
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: #c9d4e8;
+}
+.mm-led {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #7be0a0;
+  box-shadow: 0 0 0 2px var(--ink);
+  animation: mm-led 2.4s ease-in-out infinite;
+}
+.mm-volt-bubble {
+  border-radius: 18px 18px 4px 18px;
+  box-shadow: 0 5px 0 var(--ink);
+}
+@keyframes mm-patch-in {
+  from { opacity: 0; transform: scale(0.6) rotate(-25deg); }
+}
+@keyframes mm-led {
+  50% { opacity: 0.35; }
+}
+
+/* ---- console panels: main-menu Settings / How to play / Credits, and the pause menu ---- */
+.menu-card,
+.mm-panel {
+  border: 3px solid var(--ink);
+  border-radius: 24px;
+  background: var(--console);
+  box-shadow: inset 0 0 0 3px var(--console-edge), 0 10px 0 rgba(0, 0, 0, 0.5);
+}
+.menu-card::before {
+  /* a strip of flight-hardware tape across the top */
+  content: "";
+  display: block;
+  height: 10px;
+  margin: -14px -16px 16px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(135deg, var(--gold) 0 14px, var(--ink) 14px 28px);
+  opacity: 0.9;
+}
+.mm-h2,
+.menu-card .menu-title {
+  color: var(--gold);
+  text-shadow: 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 2px 0 var(--ink), 0 -2px 0 var(--ink), 0 5px 0 var(--ink);
+}
+.menu-card .menu-title span {
+  color: var(--orange);
+}
+.mm-close {
+  display: inline-grid;
+  place-items: center;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: #24346a;
+  color: #ffffff;
+  box-shadow: 0 4px 0 var(--ink);
+}
+.mm-close:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.menu .btn {
+  border: 3px solid var(--ink);
+  background: var(--orange);
+  color: var(--ink);
+  box-shadow: 0 6px 0 var(--ink);
+}
+.menu .btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.menu .seg {
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: var(--console-deep);
+  box-shadow: 0 4px 0 var(--ink);
+}
+.menu .seg button + button {
+  border-left: 2px solid var(--ink);
+}
+.menu .seg button[aria-pressed="true"] {
+  background: var(--gold);
+  color: var(--ink);
+}
+.menu .label {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #9fe8ff;
+}
+.menu .note {
+  border: 2px dashed var(--console-edge);
+  background: var(--console-deep);
+}
+.menu .controls-grid .keycap {
+  border: 2px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+}
+.mm-goal ul li {
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--console-deep);
+}
+.mm-dot {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+/* ---- fade cards: day report, rescue card, mission complete ---- */
+.fade-card {
+  position: relative;
+  max-width: min(600px, calc(100vw - 32px));
+  padding: 22px 28px 22px;
+  border: 3px solid var(--ink);
+  border-radius: 24px;
+  background: var(--console);
+  box-shadow: inset 0 0 0 3px var(--console-edge), 0 10px 0 rgba(0, 0, 0, 0.6);
+  text-align: left;
+}
+.fade-card h2 {
+  font-size: 32px;
+  text-align: center;
+  color: var(--gold);
+  text-shadow: 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 2px 0 var(--ink), 0 -2px 0 var(--ink), 0 5px 0 var(--ink);
+}
+.fade-card > p {
+  text-align: center;
+}
+.log-strip {
+  display: flex;
+  justify-content: space-between;
+  margin: -22px -28px 16px;
+  padding: 8px 18px;
+  border-bottom: 3px solid var(--ink);
+  border-radius: 20px 20px 0 0;
+  background: var(--orange);
+  color: var(--ink); /* 10.5:1 */
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+}
+.fade-card .day-stars {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.ds {
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.45));
+}
+.ds.is-on {
+  animation: ds-pop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.ds.is-on:nth-child(2) { animation-delay: 0.15s; }
+.ds.is-on:nth-child(3) { animation-delay: 0.3s; }
+.log-rows {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.log-rows li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 9px 12px;
+  border: 2px solid var(--console-edge);
+  border-radius: 12px;
+  background: var(--console-deep);
+  font-size: 17px;
+  line-height: 1.4;
+  color: #e6ecf7;
+}
+.log-rows li.is-good {
+  border-color: #3f8f63;
+}
+.log-rows li.is-warn {
+  border-color: #a8673a;
+}
+.log-ic {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+  background: var(--gold);
+  color: var(--ink);
+}
+.log-rows li.is-good .log-ic { background: #7be0a0; }
+.log-rows li.is-warn .log-ic { background: #ffb08a; }
+.log-ic .mi {
+  width: 20px;
+  height: 20px;
+}
+/* "Day 3": big outlined numbers + a quiet mission-control date line */
+.day-title em {
+  display: block;
+  color: var(--gold);
+}
+.day-title em .mi {
+  width: 44px;
+  height: 44px;
+}
+.day-title span {
+  color: #ffffff;
+  text-shadow:
+    4px 0 0 var(--ink), -4px 0 0 var(--ink), 0 4px 0 var(--ink), 0 -4px 0 var(--ink),
+    3px 3px 0 var(--ink), -3px 3px 0 var(--ink), 3px -3px 0 var(--ink), -3px -3px 0 var(--ink),
+    0 10px 0 var(--ink);
+}
+.day-title small {
+  padding: 4px 14px;
+  border-top: 2px solid #3a4a7a;
+  border-bottom: 2px solid #3a4a7a;
+  font-family: var(--mono);
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #c9d4e8;
+}
+.fade-card:has(.day-title) {
+  box-shadow: none;
+}
+/* mission complete: the patch + a crooked rubber stamp */
+.mc-badge {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 0 0 22px;
+}
+.mc-patch {
+  filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.5));
+  animation: mm-patch-in 0.8s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.mc-stamp {
+  position: absolute;
+  bottom: -18px;
+  padding: 4px 14px;
+  border: 4px solid #ff7a59;
+  border-radius: 10px;
+  background: rgba(13, 21, 49, 0.9);
+  color: #ffb39d; /* 8:1 on the dark stamp */
+  font: 700 22px var(--font-head);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transform: rotate(-8deg);
+  animation: mc-stamp 0.5s 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+.day-summary li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--console-deep);
+  font-family: var(--mono);
+  font-size: 17px;
+  letter-spacing: 1px;
+}
+.day-summary b {
+  display: inline-flex;
+  gap: 2px;
+}
+.day-again {
+  display: block;
+  margin: 16px auto 0;
+  border: 3px solid var(--ink);
+  background: var(--orange);
+  color: var(--ink);
+  box-shadow: 0 6px 0 var(--ink);
+}
+.day-again:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+@keyframes ds-pop {
+  from { opacity: 0; transform: scale(0.3) rotate(-30deg); }
+}
+@keyframes mc-stamp {
+  from { opacity: 0; transform: rotate(-8deg) scale(2.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-patch, .mm-led, .ds.is-on, .mc-patch, .mc-stamp { animation: none; }
+}

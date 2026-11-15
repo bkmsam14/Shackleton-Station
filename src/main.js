@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { UI, RECOVERY, TIME, POWER, ASSISTANT, RADIATION, SKY, AIRLOCK, DAYS, FARMING } from './config/gameplay.js';
 import { shiftInfo, createMission, serializeMission, addRescue, stepMission, plantsGrowTonight, dayStars, endDay as endMissionDay, overnightRefill, fmtCountdown, dayStartSeconds } from './systems/days.js';
 import { replayDay1Ms } from './systems/spaceWeather.js';
+import { missionPatch, MI, starRow as drawnStars } from './ui/menuArt.js';
 import { createWorld, QUALITY } from './world/World.js';
 import { createPostFX } from './world/postfx.js';
 import { LAYOUT } from './world/layout.js';
@@ -322,6 +323,8 @@ function enterPlay() {
     volt.hopTo(player);
     voltVoice.prewarm(); // load Volt's robot voice engine in the background
     assistant.startIfNeeded({ day: getClock(day).day }); // Day 1 always starts with the Training Day
+    // the Training Day belongs to Day 1: an unfinished tour doesn't come back on later days
+    if (mission.day > 1 && assistant.tourActive) assistant.skipTour();
     sunReady.then(() => {
       assistant.notify(sun?.fellBack ? 'sun-stormy' : `sun-${sun?.mode ?? 'stormy'}`);
       const c = getClock(day);
@@ -1138,7 +1141,6 @@ function replayDateFor(n) {
   const d = new Date(replayDay1Ms(sun.data.replayStart) + (n - 1) * 86400000);
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
-const starRow = (n) => '★'.repeat(n) + '☆'.repeat(3 - n);
 
 /**
  * The shift is over: congratulations card → the night passes (you sleep in the nook, which is
@@ -1154,6 +1156,7 @@ async function finishDay() {
   const stars = dayStars(mission, done);
   const rescues = mission.rescues[done - 1] ?? 0;
   const lit = plantsGrowTonight(mission, FARMING.LIGHT_SHARE_TO_GROW);
+  if (assistant.tourActive) assistant.skipTour(); // Day 1 ended before the tour did: training is over
   const r = endMissionDay(mission);
   await feedback.fadeTo(true, RECOVERY.FADE_SECONDS);
   if (r.won) {
@@ -1181,16 +1184,19 @@ async function finishDay() {
   volt.hopTo(player);
   const readyNames = [...new Set(ready)].map((c) => ({ potato: 'potatoes', lettuce: 'lettuce', radish: 'radishes' })[c] ?? c);
   feedback.showFadeCard(`
-    <h2>🎉 Day ${done} complete!</h2>
-    <p class="day-stars" aria-label="${stars} of 3 stars">${starRow(stars)}</p>
+    <div class="log-strip"><span>SHIFT REPORT</span><span>DAY ${done} / ${DAYS.COUNT}</span></div>
+    <h2>Day ${done} complete!</h2>
+    <p class="day-stars" aria-label="${stars} of 3 stars">${drawnStars(stars)}</p>
     <p>You kept the base going for a whole ${DAYS.SHIFT_HOURS}-hour shift${rescues ? ` (Volt had to rescue you ${rescues === 1 ? 'once' : `${rescues} times`})` : ', with no rescues'}.</p>
-    <p class="small">Overnight the oxygen, power and water were filled back up. That's a game rule: a real base has to make them.${added.o2Kg > 0.001 ? ` Making ${added.o2Kg.toFixed(2)} kg of oxygen would really take ${(added.o2Kg * 1.125).toFixed(2)} kg of water.` : ''}</p>
-    ${readyNames.length ? `<p class="small">🌱 Ready to harvest: ${readyNames.join(', ')}!</p>` : lit ? '' : '<p class="small">🌑 The grow lights were off for most of the day, so the plants could not grow tonight.</p>'}
-    ${nightStorm ? '<p class="small">☀️ A particle storm came in the night. You were asleep in the sleeping nook, which is the storm shelter.</p>' : ''}
-    <p class="small">Your hunger and your food carry over to tomorrow.</p>`);
+    <ul class="log-rows">
+      <li><span class="log-ic">${MI.refill}</span><span>Overnight the oxygen, power and water were filled back up. That's a game rule: a real base has to make them.${added.o2Kg > 0.001 ? ` Making ${added.o2Kg.toFixed(2)} kg of oxygen would really take ${(added.o2Kg * 1.125).toFixed(2)} kg of water.` : ''}</span></li>
+      ${readyNames.length ? `<li class="is-good"><span class="log-ic">${MI.sprout}</span><span>Ready to harvest: ${readyNames.join(', ')}!</span></li>` : lit ? '' : `<li class="is-warn"><span class="log-ic">${MI.moon}</span><span>The grow lights were off for most of the day, so the plants could not grow tonight.</span></li>`}
+      ${nightStorm ? `<li class="is-warn"><span class="log-ic">${MI.sun}</span><span>A particle storm came in the night. You were asleep in the sleeping nook, which is the storm shelter.</span></li>` : ''}
+      <li><span class="log-ic">${MI.food}</span><span>Your hunger and your food carry over to tomorrow.</span></li>
+    </ul>`);
   await wait(5200);
   const date = replayDateFor(mission.day);
-  feedback.showFadeCard(`<div class="day-title"><span>Day ${mission.day}</span>${date ? `<small>${date} · replay of real space weather</small>` : ''}</div>`);
+  feedback.showFadeCard(`<div class="day-title"><em>${MI.moon}</em><span>Day ${mission.day}</span>${date ? `<small>${date} · replay of real space weather</small>` : ''}</div>`);
   await wait(DAYS.TITLE_SECONDS * 1000);
   feedback.showFadeCard('');
   await feedback.fadeTo(false, RECOVERY.FADE_SECONDS);
@@ -1204,9 +1210,10 @@ async function finishDay() {
 
 /** All days survived. */
 function showMissionComplete() {
-  const rows = Array.from({ length: DAYS.COUNT }, (_, i) => `<li>Day ${i + 1} <b>${starRow(dayStars(mission, i + 1))}</b></li>`).join('');
+  const rows = Array.from({ length: DAYS.COUNT }, (_, i) => `<li><span>Day ${i + 1}</span><b aria-label="${dayStars(mission, i + 1)} of 3 stars">${drawnStars(dayStars(mission, i + 1), 28)}</b></li>`).join('');
   feedback.showFadeCard(`
-    <h2>🚀 Mission complete!</h2>
+    <div class="mc-badge">${missionPatch(120, 'mc-patch')}<span class="mc-stamp">Mission complete</span></div>
+    <h2>Mission complete!</h2>
     <p>You survived ${DAYS.COUNT} days at Shackleton Crater, on the Moon's south pole.</p>
     <ul class="day-summary">${rows}</ul>
     <p class="small">You made oxygen from water, grew food, fixed the base and hid from real solar storms, just like a real lunar crew will have to.</p>
