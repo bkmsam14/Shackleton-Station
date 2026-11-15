@@ -270,6 +270,18 @@
       "text": "The Large Magellanic Cloud is a small galaxy about 160,000 light-years away.",
       "value": "49.97 kpc ≈ 163,000 ly (Pietrzyński et al. 2013)",
       "source": "https://www.nature.com/articles/nature11878"
+    },
+    {
+      "id": "earth-libration",
+      "text": "Seen from the Moon's south pole, Earth bobs up and down each month and is sometimes below the horizon.",
+      "value": "Checked with NASA JPL Horizons (e.g. 15 Nov 2026 00:00 UTC: Earth 3.6° below the horizon)",
+      "source": "https://ssd.jpl.nasa.gov/horizons/"
+    },
+    {
+      "id": "sun-low-pole",
+      "text": "At the Moon's south pole the Sun always stays within about 1.5° of the horizon.",
+      "value": "NASA JPL Horizons: Sun elevation between about −1.5° and +1.5°",
+      "source": "https://ssd.jpl.nasa.gov/horizons/"
     }
   ]
 }

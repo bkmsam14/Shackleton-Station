@@ -125,6 +125,18 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **Sun safety:** "Never look at the Sun through a telescope" — the scope's sun shutter closes within 25° of the Sun (game balance angle).
 - **Game simplifications:** zoom levels, lock-on time, round time and the hint arrow are game balance; the telescope view uses a flat (gnomonic) map projection.
 
+### Live sky: the real sky right now (Live mode)
+- **What:** with "Live" picked on the start screen, the Sun, Earth (with its real phase) and the stars are placed for the real date and time over the Moon's south pole (90°S), moving at real speed. Space weather is live DONKI (as before).
+- **How (`src/systems/ephemeris.js`):**
+  - Moon orientation: IAU WGCCRE model as published by NASA JPL NAIF, `pck00011.tpc` (BODY301_POLE_RA/DEC/PM + NUT_PREC terms E1–E13). *Source: https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc*
+  - Sun: US Naval Observatory "approximate solar coordinates" (~1′). *Source: https://aa.usno.navy.mil/faq/sun_approx*
+  - Moon's orbit (where Earth is): Astronomical Almanac low-precision formulae (~0.3°).
+  - Topocentric: the observer stands on the surface (Moon radius 1,737.4 km, NASA Moon Fact Sheet).
+  - Earth's phase from the Moon = (1 + cos(angle at Earth between Sun and Moon)) / 2.
+- **Checked against NASA JPL Horizons** (DE441, observer at 0°E 90°S on the Moon) for 5 dates 2024–2027: Sun within 0.01°, Earth within ~0.15° (`tests/ephemeris.test.js`). *Source: https://ssd.jpl.nasa.gov/horizons/*
+- **Real facts it shows:** the Sun stays within ~1.5° of the horizon (and can dip just below it); Earth bobs up and down by several degrees each month (libration) and is **below the horizon** for part of the time at the exact pole; full Earth when it is new Moon on Earth.
+- **Simplifications:** UTC is used as TT (~70 s, invisible here); the game's base layout keeps Earth's mean direction at `SKY.EARTH_AZIMUTH_DEG` (a rotation of the whole sky, never a mirror); the Sun-hiding ridge is still the game's simplified ridge, not real terrain.
+
 ### Dust
 - Lunar regolith is sharp, abrasive and sticky. It clings to suits and covers equipment.
 - **There is no wind, so there are no dust storms on the Moon.** Dust gets thrown up by rocket exhaust, rovers and walking.

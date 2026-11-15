@@ -1,5 +1,20 @@
 # Changelog — Shackleton Station
 
+## 0.8.0 — Live sky: the real sky over Shackleton right now
+
+### Gameplay
+- Pick **Live** on the start screen: besides live NASA space weather, the **Sun, Earth and stars are
+  exactly where they are over the Moon's south pole at this moment**, moving at real speed. The HUD
+  clock says "LIVE SKY"; the PDA shows the real date, Sun height, whether Earth is up, and how much
+  of Earth is lit; the telescope's Star Hunt uses the live sky too.
+- Earth really dips below the horizon for part of each month here (libration) — Volt tells you when.
+
+### Science
+- `systems/ephemeris.js`: Moon orientation from the IAU model (NASA JPL NAIF pck00011), Sun (USNO),
+  Moon orbit (Astronomical Almanac); checked against NASA JPL Horizons (Sun < 0.05°, Earth < 0.3°).
+- One sky matrix (`getSun().skyMatrix`) now places stars, constellation lines and the telescope view
+  in both the sped-up game sky and the live sky.
+
 ## 0.7.0 — Telescope: the real starry sky + Star Hunt
 
 ### Gameplay
