@@ -608,3 +608,7 @@
 @keyframes mm-panel-in-center {
   from { opacity: 0; transform: translate(-50%, -46%); }
 }
+/* must come after `.menu.mm { display: grid }`: same weight, so the later rule wins */
+.menu.mm[hidden] {
+  display: none;
+}

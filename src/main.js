@@ -1403,7 +1403,8 @@ renderer.setAnimationLoop(() => {
     shift: (() => {
       const info = shiftInfo(day.gameSeconds);
       const left = info.secondsLeft / training.pace();
-      return { count: DAYS.COUNT, left: fmtCountdown(left), ending: left < 30 };
+      // the Training Day runs the clock 20× slower: no countdown until Volt's tour is done
+      return { count: DAYS.COUNT, left: training.active ? null : fmtCountdown(left), ending: !training.active && left < 30 };
     })(),
     station,
     radiation: radiationHud(),
