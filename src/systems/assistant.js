@@ -21,10 +21,14 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
   } catch {
     saved = {};
   }
-  let tourDone = Boolean(saved.tourDone);
+  // A finished tour only counts for the tour that was finished: when the tour changes
+  // (e.g. the old 7-step tour → the Training Day), everyone gets the new one once.
+  const tourVersion = lines.TOUR_VERSION ?? 1;
+  const sameTour = (saved.tourVersion ?? 1) === tourVersion;
+  let tourDone = Boolean(saved.tourDone) && sameTour;
   let chattiness = CHATTINESS.includes(saved.chattiness) ? saved.chattiness : 'chatty';
   // the tour (Training Day) is long: remember the step so a reload carries on from there
-  const savedStep = Number.isInteger(saved.tourIndex) && saved.tourIndex >= 0 && saved.tourIndex < lines.TOUR.length ? saved.tourIndex : 0;
+  const savedStep = sameTour && Number.isInteger(saved.tourIndex) && saved.tourIndex >= 0 && saved.tourIndex < lines.TOUR.length ? saved.tourIndex : 0;
 
   let tourIndex = -1; // -1 = no tour running
   let tourEnded = null; // 'done' | 'skipped' — read once with consumeTourEnd()
@@ -41,7 +45,7 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
 
   function persist() {
     try {
-      store?.save({ volt: { tourDone, chattiness, tourIndex: tourIndex >= 0 ? tourIndex : 0 } });
+      store?.save({ volt: { tourDone, chattiness, tourVersion, tourIndex: tourIndex >= 0 ? tourIndex : 0 } });
     } catch {
       // storage blocked — fine, it only means the tour may show again next time
     }
