@@ -28,7 +28,7 @@ const ease = (t) => t * t * (3 - 2 * t);
 const CUTTER_HOLD = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.45, 0.85, 1.0, 'YXZ'));
 const potatoes = (n) => `${n} ${n === 1 ? 'potato' : 'potatoes'}`;
 
-export function createFarmView({ camera, renderer, root, world, state, pots, feedback, sync, save, hooks }) {
+export function createFarmView({ camera, renderer, root, world, state, pots, feedback, sync, save, hooks, onEvent = () => {} }) {
   // ------------------------------------------------------------ DOM
   const el = document.createElement('div');
   el.className = 'farm-view';
@@ -294,6 +294,7 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
         sfx.plop();
         burst(KIND.CRUMB, v.soilWorld, 10, COL.soil, 0.2);
         save();
+        onEvent('potato-planted');
         setStep('plant'); // refresh counts while the seed settles
         v.dig = true;
         sync(potId);
@@ -444,6 +445,7 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     updateMeter();
     if (done) {
       save();
+      onEvent('potato-watered');
       sfx.success();
       busy = true;
       animate(0.9, () => {}, () => {
@@ -515,6 +517,7 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     const r = cutLeaf(state, potId);
     save();
     const harvested = r.harvested;
+    if (harvested) onEvent('potato-harvested');
     if (harvested) {
       // the plant is gone from the pot; keep its geometry alive until the animation ends
       const plant = v.plant;

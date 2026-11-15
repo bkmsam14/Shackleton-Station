@@ -17,7 +17,7 @@ const STAND_X = 8.0; // gap between the two rack runs (x 7.4 → 8.6, greenhouse
 const STAND_Z = 1.75; // same line as the racks, on both sides of the aisle
 const POT_DX = 0.27;
 
-export function createFarming({ world, camera, renderer, root, feedback, gauges, getMode, hooks }) {
+export function createFarming({ world, camera, renderer, root, feedback, gauges, getMode, hooks, onEvent = () => {} }) {
   const ox = G.x - G.length / 2; // world x of the greenhouse's west end
   const group = new THREE.Group();
   group.name = 'farming';
@@ -99,9 +99,10 @@ export function createFarming({ world, camera, renderer, root, feedback, gauges,
     sync,
     save,
     hooks,
+    onEvent, // 'potato-planted' | 'potato-watered' | 'potato-harvested' (the Training Day listens)
   });
 
-  const panel = createInventoryPanel({ root, state, gauges, feedback, getMode, isViewOpen: () => view.isOpen, save });
+  const panel = createInventoryPanel({ root, state, gauges, feedback, getMode, isViewOpen: () => view.isOpen, save, onEvent });
 
   function potPrompt(pot) {
     if (pot.stage === STAGE.READY) return 'Press E to harvest';
@@ -128,6 +129,13 @@ export function createFarming({ world, camera, renderer, root, feedback, gauges,
     state,
     interactables,
     save, // other features that add to the inventory (supply crates) save it with this
+    /** Training Day: every growing plant is ready now (the script says it was sped up). */
+    ripenAll() {
+      const ready = stepGrowth(state, 1e9, { lit: true });
+      ready.forEach(sync);
+      if (ready.length) save();
+      return ready.length;
+    },
     get isOpen() {
       return view.isOpen;
     },
