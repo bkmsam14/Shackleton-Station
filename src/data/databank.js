@@ -115,6 +115,22 @@ export const DATABANK = [
     url: 'https://www.nasa.gov/overview-in-situ-resource-utilization/',
   },
   {
+    id: 'moon-sky',
+    title: 'The starry sky from the Moon’s south pole',
+    core: 'Here the stars never rise or set — they slowly circle around you, once every 27.3 days. They don’t twinkle, because the Moon has almost no air.',
+    deeper: 'Straight up is almost exactly the south ecliptic pole, so a star’s height never changes. Stars north of the ecliptic, like the North Star (Polaris) and the Big Dipper, are never seen. The stars in this game come from the Yale Bright Star Catalog, hosted by NASA HEASARC; twinkling is caused by Earth’s moving air (NASA StarChild).',
+    source: 'NASA HEASARC — Yale Bright Star Catalog; NASA StarChild — Why do stars twinkle?',
+    url: 'https://heasarc.gsfc.nasa.gov/W3Browse/star-catalog/bsc5p.html',
+  },
+  {
+    id: 'star-colours',
+    title: 'Star colours and light-years',
+    core: 'Blue-white stars are the hottest; orange and red stars are cooler. A light-year is how far light travels in a year.',
+    deeper: 'Astronomers measure colour with a number called B−V. Distances in the Star Album come from the Hipparcos satellite, which measured how stars shift a tiny bit as we orbit the Sun (parallax).',
+    source: 'Hipparcos catalogue (new reduction) via NASA HEASARC',
+    url: 'https://heasarc.gsfc.nasa.gov/W3Browse/all/hipnewcat.html',
+  },
+  {
     id: 'black-sky',
     title: 'Why is the sky black?',
     core: 'The Moon has almost no air, so there is nothing to make the sky blue. It stays black even in daytime.',

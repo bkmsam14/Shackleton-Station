@@ -9,7 +9,8 @@ import './ui/ui.css';
 import './ui/hud.css';
 
 import * as THREE from 'three';
-import { UI, RECOVERY, TIME, POWER, ASSISTANT, RADIATION } from './config/gameplay.js';
+import { UI, RECOVERY, TIME, POWER, ASSISTANT, RADIATION, SKY } from './config/gameplay.js';
+import { eclipticFromEquatorial } from './systems/skyMath.js';
 import { createWorld, QUALITY } from './world/World.js';
 import { createPostFX } from './world/postfx.js';
 import { LAYOUT } from './world/layout.js';
@@ -46,6 +47,9 @@ import { createHelmetLamp } from './world/iceSite.js';
 import { createIceDrillInstance } from './instances/iceDrill/index.js';
 import { createIceOvenInstance } from './instances/iceOven/index.js';
 import { createIceState, stepOven, spillBag, spotReady, coldTrapLoadKw, DIG_SPOTS } from './systems/iceMining.js';
+import { loadStars } from './data/stars.js';
+import { TARGETS } from './data/constellations.js';
+import { createTelescopeInstance } from './instances/telescope/index.js';
 
 // ---------------------------------------------------------------- setup
 let quality = loadSettings().quality === 'low' ? 'low' : 'high';
@@ -97,6 +101,48 @@ const saveIce = () => saveSettings({ ice: { bagKg: ice.bagKg, oven: ice.oven, sp
 const helmetLamp = createHelmetLamp(world.scene, camera); // lights the dark cold-trap floor
 let wasInColdTrap = false;
 let iceSaveIn = 5;
+// ---------------------------------------------------------------- real stars + Star Album
+// The sky shows the real Yale Bright Star Catalog (NASA HEASARC). Constellations you find with
+// the telescope go in the album (saved) and get faint lines + names in the sky outside.
+const starAlbum = new Set(Array.isArray(loadSettings().starAlbum) ? loadSettings().starAlbum : []);
+let starNamesOn = loadSettings().starNames !== false;
+let starCatalog = null;
+function figureFor(target, catalog) {
+  if (target.cloud) {
+    const e = eclipticFromEquatorial(target.cloud.ra, target.cloud.dec);
+    return { id: target.id, name: target.name, segments: [], centre: { lon: e.lon, lat: e.lat } };
+  }
+  const segments = [];
+  const pts = [];
+  for (const path of target.paths) {
+    const stars = path.map((hr) => catalog.byHr.get(hr)).filter(Boolean);
+    pts.push(...stars);
+    for (let i = 1; i < stars.length; i++) segments.push([stars[i - 1], stars[i]]);
+  }
+  // label above the figure's brightest star
+  const top = pts.reduce((a, b) => (b.mag < a.mag ? b : a), pts[0]);
+  return { id: target.id, name: target.name, segments, centre: { lon: top.lon, lat: top.lat } };
+}
+const starsReady = loadStars().then((catalog) => {
+  if (!catalog) return null;
+  starCatalog = catalog;
+  world.sky.setStars(catalog, renderer.getPixelRatio());
+  world.sky.setStarCount(quality === 'high');
+  world.sky.setLabels(starNamesOn);
+  for (const t of TARGETS) if (starAlbum.has(t.id)) world.sky.addFigure(figureFor(t, catalog));
+  return catalog;
+});
+const album = {
+  has: (id) => starAlbum.has(id),
+  add(id) {
+    if (starAlbum.has(id)) return;
+    starAlbum.add(id);
+    saveSettings({ starAlbum: [...starAlbum] });
+    const t = TARGETS.find((x) => x.id === id);
+    if (t && starCatalog) world.sky.addFigure(figureFor(t, starCatalog));
+  },
+};
+
 /** Is the player down on the dark floor of the cold-trap crater? */
 const inColdTrap = () => player.zoneId === 'outside' && world.iceSite.inColdTrap(player.position.x, player.position.z);
 
@@ -268,6 +314,14 @@ const menus = createMenus(uiRoot, {
     getVoice: () => voltVoice.enabled,
     setVoice: (on) => voltVoice.setEnabled(on),
   },
+  starNames: {
+    get: () => starNamesOn,
+    set(on) {
+      starNamesOn = on;
+      saveSettings({ starNames: on });
+      world.sky.setLabels(on);
+    },
+  },
 });
 document.addEventListener('pointerlockerror', onLockFailed);
 
@@ -363,6 +417,11 @@ const instances = createInstanceManager(uiRoot, {
       saveIce();
       if (result.bestStreak > (loadSettings().iceBestStreak ?? 0)) saveSettings({ iceBestStreak: result.bestStreak });
       stormLog(`Drilled ${result.soilKg.toFixed(0)} kg of icy soil (about ${result.waterKg.toFixed(1)} kg of water in it). Bag: ${result.bagKg.toFixed(0)} kg — bake it in the Ice Oven.`);
+    }
+    if (id === 'telescope' && result.completed) {
+      const t = TARGETS.find((x) => x.id === result.id);
+      stormLog(`Telescope: found ${t?.name ?? result.id} (${result.stars} stars).${result.isNew ? ' New card in your Star Album!' : ''}`);
+      if (result.isNew) voltEvent('star-found', 'New star card!', 'You found a new constellation. Look for its name in the sky outside.');
     }
     if (id === 'ice-oven' && result.completed) {
       saveIce();
@@ -493,6 +552,20 @@ function useStation(action) {
   }
   if (action.station === 'ice-drill') {
     instances.open('ice-drill', createIceDrillInstance, { ice, mastery, spotId: action.spotId, nowHour: gameHourNow(), bestStreak: loadSettings().iceBestStreak ?? 0, voice: voltVoice });
+    return;
+  }
+  if (action.station === 'telescope') {
+    const s = getSun(day);
+    const open = (catalog) =>
+      instances.open('telescope', createTelescopeInstance, {
+        catalog,
+        sky: { sunAz: s.azimuthDeg, sunAlt: s.elevationDeg, turn: s.skyTurnDeg, earthAz: SKY.EARTH_AZIMUTH_DEG, earthAlt: SKY.EARTH_ELEVATION_DEG },
+        album,
+        mastery,
+        voice: voltVoice,
+      });
+    if (starCatalog) open(starCatalog);
+    else starsReady.then((c) => mode === 'playing' && open(c));
     return;
   }
   if (action.station === 'ice-oven') {
@@ -879,7 +952,8 @@ renderer.setAnimationLoop(() => {
     radiation: radiationHud(),
     sun,
     ice,
-    carry: ice.bagKg > 0 ? `Icy soil ${Math.round(ice.bagKg)} kg → Ice Oven` : ice.oven ? 'Ice Oven baking…' : '',
+    album: [...starAlbum],
+    carry:ice.bagKg > 0 ? `Icy soil ${Math.round(ice.bagKg)} kg → Ice Oven` : ice.oven ? 'Ice Oven baking…' : '',
   };
   hud.update(lastHudState);
 

@@ -149,6 +149,13 @@ export const EVENTS = {
     text: 'The Ice Oven is done! Fresh Moon water is in the tank.',
     mood: 'cheer',
   },
+  // --- telescope
+  'star-found': {
+    kind: 'news',
+    text: 'New star card! Look up outside — its name shows in the sky.',
+    long: 'You found a new constellation with the telescope. It is in your Star Album (PDA, Tab), and when you look at it outside, its lines and name appear in the real sky.',
+    mood: 'cheer',
+  },
   'recovered': {
     kind: 'news',
     text: 'Phew, you’re safe! Let’s keep an eye on those rings.',
@@ -232,6 +239,9 @@ export const FACTS = [
   { id: 'fact-snow', text: 'Storm sparkles on screen? Real space cameras show that “snow” too!', databank: 'camera-snow', mood: 'wow' },
   { id: 'fact-ice-share', text: 'Icy Moon soil: 100 kg holds only about 6 kg of water!', databank: 'moon-ice-soil', mood: 'think' },
   { id: 'fact-scan', text: 'Spacecraft find Moon ice by sniffing its hydrogen from orbit!', databank: 'hydrogen-scan', mood: 'wow' },
+  { id: 'fact-twinkle', text: 'Stars don’t twinkle on the Moon. Twinkling comes from Earth’s air!', databank: 'moon-sky', mood: 'wow' },
+  { id: 'fact-polaris', text: 'From here you can never see the North Star. It’s always below us!', databank: 'moon-sky', mood: 'think' },
+  { id: 'fact-star-colour', text: 'Blue stars are hotter than red ones. Colour tells temperature!', databank: 'star-colours', mood: 'happy' },
   { id: 'fact-isru', text: 'Making water from Moon ice means fewer deliveries from Earth!', databank: 'isru', mood: 'happy' },
   { id: 'fact-moon-dose', text: 'On the Moon’s surface, radiation is about twice the Space Station’s.', databank: 'moon-radiation', mood: 'think' },
 ];

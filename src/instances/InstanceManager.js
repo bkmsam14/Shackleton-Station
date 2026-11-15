@@ -58,5 +58,9 @@ export function createInstanceManager(uiRoot, hooks) {
     get isOpen() {
       return current !== null;
     },
+    /** the open instance's API (dev tools / tests) */
+    get api() {
+      return current?.api ?? null;
+    },
   };
 }

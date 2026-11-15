@@ -63,6 +63,8 @@ export const CRATERS = (() => {
     { x: -70, z: 55, r: 24, depth: 5 },
     // the ice-mining cold trap (deep for its size, so its floor stays in shadow)
     { x: LAYOUT.ICE_CRATER.x, z: LAYOUT.ICE_CRATER.z, r: LAYOUT.ICE_CRATER.r, depth: LAYOUT.ICE_CRATER.depth },
+    // the telescope's little rise (a negative "crater" = a mound)
+    { x: LAYOUT.TELESCOPE.x, z: LAYOUT.TELESCOPE.z, r: LAYOUT.TELESCOPE.rise.r, depth: -LAYOUT.TELESCOPE.rise.height },
   ];
   for (let i = 0; i < 40; i++) {
     const r = 1.5 + rand() * rand() * 9;
@@ -70,6 +72,7 @@ export const CRATERS = (() => {
     const z = (rand() * 2 - 1) * 210;
     if (baseMask(x, z) > 0.05) continue;
     if (Math.hypot(x - LAYOUT.ICE_CRATER.x, z - LAYOUT.ICE_CRATER.z) < LAYOUT.ICE_CRATER.r * 2 + r) continue;
+    if (Math.hypot(x - LAYOUT.TELESCOPE.x, z - LAYOUT.TELESCOPE.z) < LAYOUT.TELESCOPE.rise.r * 2 + r) continue;
     list.push({ x, z, r, depth: r * (0.18 + rand() * 0.1) });
   }
   return list;

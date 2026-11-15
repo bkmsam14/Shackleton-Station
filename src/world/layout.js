@@ -64,7 +64,13 @@ export const LAYOUT = {
     [4.6, 10.2], [-0.5, 10.6], [-6, 11.4], [-11.5, 12.4], [-16.4, 13.4],
     // solar array → cold-trap crater (ice mining)
     [-25.5, 15.6], [-31, 17], [-36.5, 18.4], [-41.5, 19.4],
+    // habitat airlock → telescope (around the habitat's east end)
+    [12.5, 9.5], [17.5, 4.5], [22.5, -1.5], [27.5, -8], [31.5, -14.5],
   ],
+
+  // Telescope on a small rise north-east of the habitat (Star Hunt). The rise is a gentle
+  // mound in heightfield.js.
+  TELESCOPE: { x: 36, z: -21, signYawDeg: 200, rise: { r: 6, height: 1.3 } },
 
   // Ice mining: a small, permanently shadowed "cold trap" crater past the solar array.
   // The bowl is carved into the terrain (heightfield.js); dig spots sit on its floor.

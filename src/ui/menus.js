@@ -55,6 +55,15 @@ function voltRow() {
     <button type="button" class="link-btn" data-action="tour"></button></div>`;
 }
 
+/** Names + lines of constellations you found, shown in the real sky outside. */
+function starNamesRow() {
+  return `<div class="menu-row"><span class="label">Star names in the sky</span>
+    <div class="seg" role="group" aria-label="Show the names of constellations you found">
+      <button type="button" data-starnames="on">On</button>
+      <button type="button" data-starnames="off">Off</button>
+    </div></div>`;
+}
+
 /** Volt's voice on/off (browser text-to-speech). Hidden if the browser can't speak. */
 function voiceRow() {
   return `<div class="menu-row"><span class="label">Volt’s voice</span>
@@ -80,7 +89,7 @@ const SUN_NOTES = {
   live: 'Real NASA space weather from the last 7 days, fetched now (needs internet).',
 };
 
-export function createMenus(root, { onStart, onResume, onQuality, getQuality, volt = null, sun = null }) {
+export function createMenus(root, { onStart, onResume, onQuality, getQuality, volt = null, sun = null, starNames = null }) {
   const start = document.createElement('div');
   start.className = 'menu';
   start.innerHTML = `
@@ -109,6 +118,7 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
       ${qualityToggle('pause')}
       ${volt ? voltRow() : ''}
       ${volt?.voiceSupported ? voiceRow() : ''}
+      ${starNames ? starNamesRow() : ''}
       ${CONTROLS}
       ${TIME_NOTE}
       ${CREDITS}
@@ -154,6 +164,20 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
       else volt.replayTour();
       syncVolt();
     });
+  }
+  // star names in the sky (pause menu)
+  function syncStarNames() {
+    const on = starNames.get() ? 'on' : 'off';
+    pause.querySelectorAll('[data-starnames]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.starnames === on)));
+  }
+  if (starNames) {
+    pause.querySelectorAll('[data-starnames]').forEach((b) =>
+      b.addEventListener('click', () => {
+        starNames.set(b.dataset.starnames === 'on');
+        syncStarNames();
+      }),
+    );
+    syncStarNames();
   }
   // Sun picker (start screen only: the storms are planned when the game starts)
   function syncSun() {
