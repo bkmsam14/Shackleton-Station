@@ -36,7 +36,7 @@ export const TEXT = {
     'Water is made of tiny pieces called <b>molecules</b>. Each water molecule is <b>H₂O</b>: 1 <b class="t-o">oxygen</b> atom and 2 <b class="t-h">hydrogen</b> atoms.',
     '<b>Electrolysis</b> means using electricity to split water apart. The oxygen goes into the base air for you to breathe!',
   ],
-  introGo: "Let's zap!",
+  introGo: "Let's go!",
   chooseTitle: 'How much oxygen?',
   chooseSub: 'Bigger batches use more water and more power. Plan ahead!',
   powerNote:
@@ -113,6 +113,31 @@ export const QUIZ = [
     source: SOURCES.eclss,
   },
   {
+    q: 'Which electrode makes the hydrogen bubbles?',
+    options: [
+      { text: '−', icon: null },
+      { text: '+', icon: null },
+    ],
+    answer: 0,
+    big: true,
+    hint: 'In Bubble Detective, which side sent up the H₂ bubbles?',
+    explain: 'Hydrogen forms at the negative (−) electrode and oxygen at the positive (+) electrode.',
+    source: SOURCES.rscWater,
+  },
+  {
+    q: '2 water molecules split. How many oxygen molecules (O₂) do you get?',
+    options: [
+      { text: '1', icon: null },
+      { text: '2', icon: null },
+      { text: '4', icon: null },
+    ],
+    answer: 0,
+    big: true,
+    hint: 'Count the O atoms in 2 H₂O, then pair them up!',
+    explain: '2 H₂O has 2 oxygen atoms. Two O atoms join as one O₂. Nothing is lost: 2 H₂O → 2 H₂ + O₂.',
+    source: SOURCES.rscWater,
+  },
+  {
     q: 'Where could a Moon base find water?',
     options: [
       { text: 'Ice in dark craters', icon: 'snow' },
@@ -125,6 +150,81 @@ export const QUIZ = [
     source: SOURCES.moonIce,
   },
 ];
+
+// First-time "How to play" cards, one per mini-game (ui/tutorial.js shows them).
+// Pictures first (tutorialArt.js), captions of a few words. `say` is what Volt reads out.
+export const TUTORIALS = {
+  zapper: {
+    title: 'Molecule Zapper',
+    panels: [
+      { art: 'zapClick', caption: 'Click the water', say: 'Click a water molecule.' },
+      { art: 'zapSplit', caption: 'Zap! It splits', say: 'Zap! Hydrogen goes to the minus side, oxygen to the plus side.' },
+      { art: 'zapTubes', caption: '2× more H₂', say: 'You get twice as much hydrogen as oxygen.' },
+    ],
+  },
+  bubbles: {
+    title: 'Bubble Detective',
+    panels: [
+      { art: 'bubRise', caption: 'Bubbles rise', say: 'Bubbles rise from the two plates.' },
+      { art: 'bubMinus', caption: '<b>−</b> side → <b>H₂</b>', say: 'A bubble from the minus side is hydrogen. Tap H2.' },
+      { art: 'bubPlus', caption: '<b>+</b> side → <b>O₂</b>', say: 'A bubble from the plus side is oxygen. Tap O2.' },
+    ],
+  },
+  atoms: {
+    title: 'Atom Match',
+    panels: [
+      { art: 'atomSplit', caption: '2 H₂O split', say: 'Two water molecules split into atoms.' },
+      { art: 'atomH', caption: 'Tap <b>H</b> + <b>H</b>', say: 'Tap two hydrogen atoms to make H2.' },
+      { art: 'atomO', caption: 'Tap <b>O</b> + <b>O</b>', say: 'Tap two oxygen atoms to make O2, the oxygen we breathe.' },
+    ],
+  },
+};
+
+// Volt teaches the IDEA around each mini-game, in three short beats (few words!):
+//   CONCEPT — one line on the How-to-play card: what the real machine does
+//   TIPS    — one-time reactions during play, at the moment the kid sees it happen
+//   LEARN   — "What really happened" after play: a diagram + two lines + the real-world
+//             link (shown the first LEARN_SHOWS times per game, so it never nags)
+// Every fact is in docs/SCIENCE.md → Electrolysis (RSC; NASA OGA / ECLSS; stoichiometry).
+export const CONCEPT = {
+  zapper: 'Electricity can pull water apart into two gases!',
+  bubbles: 'Our machine has two metal plates in water. Electricity makes gas bubbles on both!',
+  atoms: 'Splitting water never destroys atoms. They just find new partners!',
+};
+
+export const TIPS = {
+  bubbles: {
+    h2: 'Hydrogen! It always comes from the − plate.',
+    o2: 'Oxygen! It comes from the + plate. We breathe it!',
+    ratio: 'See? Two hydrogen bubbles for every oxygen one.',
+  },
+  atoms: {
+    H2: 'H + H = H₂: hydrogen gas!',
+    O2: 'O + O = O₂: the oxygen we breathe!',
+  },
+};
+
+export const LEARN_SHOWS = 2;
+export const LEARN = {
+  zapper: {
+    art: 'learnZapper',
+    lines: ['Electricity split water into hydrogen and oxygen.', '2 H₂O → 2 H₂ + O₂'],
+    real: 'The Space Station makes its oxygen this way.',
+    source: SOURCES.oga,
+  },
+  bubbles: {
+    art: 'learnBubbles',
+    lines: ['The − plate makes hydrogen. The + plate makes oxygen.', 'Twice as much hydrogen, because water is H₂O.'],
+    real: 'On the Space Station, oxygen goes into the air and hydrogen is sent away: it burns very easily.',
+    source: SOURCES.eclss,
+  },
+  atoms: {
+    art: 'learnAtoms',
+    lines: ['Same 6 atoms before and after: just new partners.', '2 H₂O → 2 H₂ + O₂'],
+    real: 'That’s why 1 kg of oxygen needs about 1.1 kg of water.',
+    source: SOURCES.rscWater,
+  },
+};
 
 /** Shuffle the options for display (so the right answer is not always in the same spot). */
 export function shuffledOptions(question, random = Math.random) {

@@ -1,7 +1,9 @@
 // lighting.js — Moon lighting.
 //  • ONE shadow-casting directional light: the low, harsh Sun (no atmosphere = no haze).
-//  • Shadows outside are near-black: the only other light is faint earthshine (whose
-//    strength follows Earth's real phase) plus the regolith/horizon environment map.
+//  • Shadows outside are dark but readable: real Moon shadows are near-black (no air to
+//    scatter light), but kids could hardly see the ground, so — a team decision — a soft
+//    fill and stronger earthshine + ground reflection lift them a little. Still a black sky
+//    and sharp shadows; the Sun direction and timing are unchanged.
 //  • A helmet lamp (spot light on the camera, outside only, no shadows) lets kids see
 //    in the dark shadows — real spacesuit helmets carry lights too.
 // The shadow camera follows the player so the shadow map stays sharp near you.
@@ -9,11 +11,11 @@ import * as THREE from 'three';
 import { SKY } from '../config/gameplay.js';
 import { skyDirection } from '../systems/daycycle.js';
 
-const SUN_INTENSITY = 3.6;
+const SUN_INTENSITY = 4.4; // brighter for readability (was 3.6)
 const SHADOW_HALF = 40; // metres around the player that get shadows (tight = sharper)
 const SHADOW_DISTANCE = 220; // light sits this far toward the Sun
-const EARTHSHINE_MAX = 0.12; // at full Earth — faint, bluish
-const OUTDOOR_FILL = 0.035; // almost nothing: shadows stay near-black
+const EARTHSHINE_MAX = 0.3; // at full Earth — bluish (lifted for readability, was 0.12)
+const OUTDOOR_FILL = 0.45; // soft fill so shadows are dark grey, not black (was 0.035)
 const HELMET_LAMP = 14; // candela-ish; reaches ~15 m
 // Indoors (graphics overhaul): warm-white light from above, a soft blue-purple bounce
 // from below — the "animated film" ambience. The greenhouse fill is nearly neutral so the
@@ -89,8 +91,8 @@ export function createLighting(scene, { shadowMapSize = 2048 } = {}) {
         earthshine.intensity = 0;
         helmet.intensity = 0;
       } else {
-        fill.color.setHex(0x8a93a3);
-        fill.groundColor.setHex(0x7a766e);
+        fill.color.setHex(0xa3adc2); // faint cool light from above (stylized, see top)
+        fill.groundColor.setHex(0x8c877e); // sunlit regolith bouncing light back up
         fill.intensity = OUTDOOR_FILL;
         // Earth's lit fraction seen from the Moon: 0 when the Sun is behind Earth
         // ("new Earth"), 1 when the Sun is opposite Earth ("full Earth").

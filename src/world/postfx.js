@@ -20,6 +20,11 @@ import {
 import { N8AOPostPass } from 'n8ao';
 
 // AO feel per zone (world units). Small radius indoors = contact shadows in corners.
+// Camera exposure per place. Outside is brighter than physics (team decision): the real
+// Moon ground is dark and the Sun only grazes it at the pole, so kids could hardly see.
+// Like a camera opening up for a dark scene: the sky stays black, shadows stay sharp.
+export const EXPOSURE = { outside: 1.8, inside: 1.0 };
+
 const AO = {
   outside: { aoRadius: 3.0, distanceFalloff: 1.0, intensity: 3.5 },
   habitat: { aoRadius: 1.4, distanceFalloff: 1.0, intensity: 3.8 },
@@ -77,11 +82,15 @@ export function createPostFX(renderer, scene, camera) {
     /** Draw a scene straight to the screen (the airlock room), always tone-mapped. */
     renderPlain(scene, cam) {
       const before = renderer.toneMapping;
+      const exposure = renderer.toneMappingExposure;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = EXPOSURE.inside; // the airlock room is lit like a module
       renderer.render(scene, cam);
       renderer.toneMapping = before;
+      renderer.toneMappingExposure = exposure;
     },
     setZone(zoneId) {
+      renderer.toneMappingExposure = zoneId === 'outside' ? EXPOSURE.outside : EXPOSURE.inside;
       if (zoneId === zone) return;
       zone = zoneId;
       Object.assign(ao.configuration, AO[zoneId] ?? AO.outside);

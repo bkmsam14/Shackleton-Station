@@ -1,0 +1,664 @@
+/* minigames.css — Bubble Detective + Atom Match + the game picker (same console look as
+   the Molecule Zapper: ink outlines, big text ≥ 18px, 44px+ targets, calm motion). */
+
+/* ---------------------------------------------------------------- today's game
+   (picked at random by the station: the kid can't choose an easier one) */
+.ez-today {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 10px;
+  color: #ffffff;
+  font-family: var(--font-head);
+  font-size: 20px;
+}
+.ez-today svg {
+  width: 26px;
+  height: 26px;
+}
+.ez-today b {
+  color: var(--gold);
+}
+.ez-game-new {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+.ez-help {
+  min-width: 44px;
+}
+
+.ez-play {
+  position: relative;
+  min-height: min(430px, 58vh); /* the card keeps its size while the How-to-play card is up */
+}
+
+/* ---------------------------------------------------------------- Bubble Detective */
+.bd-stage {
+  display: grid;
+  grid-template-columns: 84px 1fr 84px;
+  gap: 12px;
+  height: min(340px, 46vh);
+}
+.bd-tank,
+.am-bin {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: space-between;
+  padding: 8px 0;
+  border-radius: 22px;
+  border: 3px solid var(--ink);
+  background: rgba(10, 16, 36, 0.75);
+  overflow: hidden;
+  color: #ffffff;
+  font-family: var(--font-head);
+}
+.bd-tank-name,
+.am-bin-name {
+  position: relative;
+  z-index: 1;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: rgba(10, 16, 36, 0.75); /* stays readable on a full white tank */
+  font-size: 22px;
+  font-weight: 700;
+}
+.bd-count,
+.am-bin-count {
+  position: relative;
+  z-index: 1;
+  min-width: 34px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: rgba(10, 16, 36, 0.75);
+  text-align: center;
+  font-size: 26px;
+  text-shadow: 0 2px 0 var(--ink);
+}
+.bd-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  transition: height 0.45s ease;
+}
+.bd-tank-h .bd-fill {
+  background: linear-gradient(180deg, #ffffff, #c9d6f2);
+}
+.bd-tank-o .bd-fill {
+  background: linear-gradient(180deg, #8ff0ff, #3cb9d6);
+}
+.bd-tank-h .bd-count,
+.bd-tank-o .bd-count {
+  color: #ffffff;
+}
+.is-bump {
+  animation: mg-bump 0.35s ease;
+}
+.bd-cell {
+  position: relative;
+  border-radius: 22px;
+  border: 3px solid var(--ink);
+  overflow: hidden;
+  background: linear-gradient(180deg, #1b2a52 0%, #1b2a52 26%, #2a6f9a 27%, #1f5b86 100%);
+}
+.bd-water {
+  position: absolute;
+  inset: 26% 0 0 0;
+  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 18px);
+}
+.bd-electrode {
+  position: absolute;
+  bottom: 0;
+  width: 34px;
+  height: 64%;
+  transform: translateX(-50%);
+  border-radius: 10px 10px 0 0;
+  border: 3px solid var(--ink);
+  display: grid;
+  justify-items: center;
+  padding-top: 4px;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 26px;
+}
+.bd-minus {
+  left: 28%;
+  background: #4a5468;
+  color: #ffffff;
+}
+.bd-plus {
+  left: 72%;
+  background: #f2873f;
+  color: var(--ink);
+}
+.bd-bubble {
+  position: absolute;
+  bottom: 12%; /* forms on the side of its electrode, then rises to the surface */
+  width: 66px;
+  height: 66px;
+  margin-left: -33px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.85), rgba(200, 220, 255, 0.35) 45%, rgba(120, 150, 210, 0.3));
+  color: var(--ink);
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 22px;
+  transition: bottom 1.6s cubic-bezier(0.2, 0.7, 0.3, 1), left 0.5s ease, opacity 0.5s ease, transform 0.5s ease;
+}
+.bd-bubble.from-minus {
+  left: calc(28% + 52px);
+}
+.bd-bubble.from-plus {
+  left: calc(72% - 52px);
+}
+.bd-bubble.is-rising {
+  bottom: 54%;
+}
+.bd-bubble.is-h2 {
+  background: radial-gradient(circle at 35% 30%, #ffffff, #e4ebfb 60%, #c9d6f2);
+}
+.bd-bubble.is-o2 {
+  background: radial-gradient(circle at 35% 30%, #c9f7ff, #6fe3f0 60%, #3cb9d6);
+}
+.bd-bubble.to-left,
+.bd-bubble.to-right {
+  bottom: 78%;
+  opacity: 0;
+  transform: scale(0.5);
+}
+.bd-bubble.to-left {
+  left: -8%;
+}
+.bd-bubble.to-right {
+  left: 108%;
+}
+.bd-bubble.is-shake,
+.am-atom.is-shake {
+  animation: mg-shake 0.4s ease;
+}
+.bd-pop {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 92%;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 14px;
+  border: 2px solid var(--ink);
+  background: var(--bubble);
+  color: var(--ink);
+  font-size: 18px;
+  text-align: center;
+}
+.bd-pop.is-hint {
+  background: #fff1bf;
+}
+.bd-pop.is-good {
+  background: #d8f7e3;
+}
+.bd-answers {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.bd-ans {
+  justify-content: center;
+  min-height: 60px;
+  font-size: 20px;
+}
+.bd-ans kbd {
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 2px solid var(--ink);
+  background: #ffffff;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+}
+.bd-ans-h {
+  background: #f2f5ff;
+  color: var(--ink);
+}
+.bd-ans-o {
+  background: #6fe3f0;
+  color: var(--ink);
+}
+.bd-left {
+  color: #c9d4e8;
+  font-size: 18px;
+}
+
+/* ---------------------------------------------------------------- Atom Match */
+.am-recipe {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 10px;
+  color: #ffffff;
+  font-family: var(--font-head);
+  font-size: 24px;
+  font-weight: 700;
+}
+.am-arrow,
+.am-plus {
+  color: var(--gold);
+}
+.am-goal {
+  padding: 2px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  color: var(--ink);
+}
+.am-goal-h {
+  background: #f2f5ff;
+}
+.am-goal-o {
+  background: #6fe3f0;
+}
+.am-stage {
+  display: grid;
+  grid-template-columns: 84px 1fr 84px;
+  gap: 12px;
+  height: min(300px, 40vh);
+}
+.am-bin-h {
+  background: linear-gradient(180deg, rgba(242, 245, 255, 0.25), rgba(10, 16, 36, 0.75));
+}
+.am-bin-o {
+  background: linear-gradient(180deg, rgba(111, 227, 240, 0.3), rgba(10, 16, 36, 0.75));
+}
+.am-field {
+  position: relative;
+  border-radius: 22px;
+  border: 3px solid var(--ink);
+  background: radial-gradient(circle at 50% 45%, rgba(79, 209, 232, 0.18), rgba(10, 16, 36, 0.6) 70%);
+  overflow: hidden;
+}
+.am-atom {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  border: 4px solid var(--ink);
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 26px;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4);
+  transition: left 0.45s ease, top 0.45s ease, opacity 0.45s ease, transform 0.2s ease;
+}
+.am-H {
+  background: radial-gradient(circle at 35% 30%, #ffffff, #e4ebfb 70%);
+}
+.am-O {
+  width: 78px;
+  height: 78px;
+  margin: -39px 0 0 -39px;
+  background: radial-gradient(circle at 35% 30%, #ffb3b3, #ff6b6b 70%);
+  font-size: 30px;
+}
+.am-atom:hover {
+  transform: scale(1.06);
+}
+.am-atom:focus-visible {
+  outline: 3px solid #4fd1e8;
+  outline-offset: 3px;
+}
+.am-atom.is-picked {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 5px var(--gold), 0 4px 0 rgba(0, 0, 0, 0.4);
+}
+.am-atom.is-paired {
+  pointer-events: none;
+  opacity: 0;
+  top: 50%;
+}
+.am-atom.to-left {
+  left: -6%;
+}
+.am-atom.to-right {
+  left: 106%;
+}
+.am-msg {
+  min-height: 28px;
+  margin: 10px 0 0;
+  color: #ffffff;
+  font-size: 18px;
+  text-align: center;
+}
+.am-msg.is-hint {
+  color: #ffd27a; /* 11:1 on the console */
+}
+.am-msg.is-good {
+  color: #9af0b8;
+}
+.am-round {
+  margin: 2px 0 0;
+  color: #c9d4e8;
+  font-size: 16px;
+  text-align: center;
+}
+
+@keyframes mg-bump {
+  50% {
+    transform: scale(1.06);
+  }
+}
+@keyframes mg-shake {
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .am-field.is-split .am-atom {
+    animation: am-split 0.5s ease both;
+    animation-delay: var(--d);
+  }
+}
+@keyframes am-split {
+  from {
+    left: 50%;
+    top: 45%;
+    transform: scale(0.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bd-bubble,
+  .am-atom,
+  .bd-fill {
+    transition: none;
+  }
+}
+@media (max-width: 640px) {
+  .bd-stage,
+  .am-stage {
+    grid-template-columns: 64px 1fr 64px;
+  }
+}
+
+/* ---------------------------------------------------------------- tutorial pictures
+   Small looping animations (tutorialArt.js). One 3.2 s loop each; with reduced motion they
+   freeze on a frame that still shows the idea. */
+.ta {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ta g,
+.ta circle,
+.ta polyline,
+.ta path,
+.ta rect,
+.ta text {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.ta-cursor {
+  animation: ta-cursor 3.2s ease-in-out infinite;
+}
+.ta-ring {
+  opacity: 0;
+  animation: ta-ring 3.2s ease-out infinite;
+}
+.ta-ring-a {
+  animation-name: ta-ring-a;
+}
+.ta-ring-b {
+  animation-name: ta-ring-b;
+}
+.ta-flash {
+  opacity: 0;
+  animation: ta-flash 3.2s linear infinite;
+}
+.ta-to-minus {
+  animation: ta-to-minus 3.2s ease-in-out infinite;
+}
+.ta-to-plus {
+  animation: ta-to-plus 3.2s ease-in-out infinite;
+}
+.ta-fill {
+  transform-origin: center bottom;
+}
+.ta-fill-full {
+  animation: ta-fill-full 3.2s ease-out infinite;
+}
+.ta-fill-half {
+  animation: ta-fill-half 3.2s ease-out infinite;
+}
+.ta-rise {
+  animation: ta-rise 3.2s linear infinite;
+}
+.ta-late {
+  animation-delay: -1.6s; /* a second bubble from the − side: two for every one from + */
+}
+.ta-later {
+  animation-delay: -0.8s;
+}
+.ta-bob {
+  animation: ta-bob 1.6s ease-in-out infinite;
+}
+.ta-arrow {
+  animation: ta-pulse 1.6s ease-in-out infinite;
+}
+.ta-glow {
+  animation: ta-glow 1.6s ease-in-out infinite;
+}
+.ta-out {
+  animation: ta-out 3.2s ease-in-out infinite;
+}
+.ta-in {
+  opacity: 0;
+  animation: ta-in 3.2s ease-in-out infinite;
+}
+.ta-join-r {
+  animation: ta-join-r 3.2s ease-in-out infinite;
+}
+.ta-join-l {
+  animation: ta-join-l 3.2s ease-in-out infinite;
+}
+.ta-join-r.ta-wide {
+  animation-name: ta-join-r-o; /* bigger O atoms stop when they touch */
+}
+.ta-join-l.ta-wide {
+  animation-name: ta-join-l-o;
+}
+.ta-result {
+  opacity: 0;
+  animation: ta-result 3.2s ease-in-out infinite;
+}
+@keyframes ta-cursor {
+  0%, 10% { transform: translate(22px, 20px); }
+  40%, 100% { transform: translate(0, 0); }
+  45% { transform: translate(0, 0) scale(0.88); }
+}
+@keyframes ta-ring {
+  0%, 42% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(0.8); }
+  80%, 100% { opacity: 0; transform: scale(1.5); }
+}
+@keyframes ta-ring-a {
+  0%, 8% { opacity: 0; transform: scale(0.6); }
+  14%, 30% { opacity: 1; transform: scale(0.9); }
+  40%, 100% { opacity: 0; transform: scale(0.9); }
+}
+@keyframes ta-ring-b {
+  0%, 26% { opacity: 0; transform: scale(0.6); }
+  32%, 44% { opacity: 1; transform: scale(0.9); }
+  52%, 100% { opacity: 0; transform: scale(0.9); }
+}
+@keyframes ta-flash {
+  0%, 18% { opacity: 0; }
+  22%, 30% { opacity: 1; }
+  26% { opacity: 0.3; }
+  36%, 100% { opacity: 0; }
+}
+@keyframes ta-to-minus {
+  0%, 30% { transform: translate(0, 0); opacity: 1; }
+  70%, 88% { transform: translate(-58px, 0); opacity: 1; }
+  100% { transform: translate(-58px, 0); opacity: 0; }
+}
+@keyframes ta-to-plus {
+  0%, 30% { transform: translate(0, 0); opacity: 1; }
+  70%, 88% { transform: translate(58px, 0); opacity: 1; }
+  100% { transform: translate(58px, 0); opacity: 0; }
+}
+@keyframes ta-fill-full {
+  0% { transform: scaleY(0.04); }
+  75%, 100% { transform: scaleY(1); }
+}
+@keyframes ta-fill-half {
+  0% { transform: scaleY(0.04); }
+  75%, 100% { transform: scaleY(0.5); }
+}
+@keyframes ta-rise {
+  0% { transform: translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(-74px); opacity: 0; }
+}
+@keyframes ta-bob {
+  50% { transform: translateY(-5px); }
+}
+@keyframes ta-pulse {
+  50% { opacity: 0.45; }
+}
+@keyframes ta-glow {
+  50% { transform: scale(1.12); }
+}
+@keyframes ta-out {
+  0%, 30% { opacity: 1; transform: scale(1); }
+  45%, 92% { opacity: 0; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes ta-in {
+  0%, 35% { opacity: 0; }
+  50%, 88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes ta-join-r {
+  0%, 38% { transform: translate(0, 0); }
+  58%, 100% { transform: translate(41px, 0); }
+}
+@keyframes ta-join-l {
+  0%, 38% { transform: translate(0, 0); }
+  58%, 100% { transform: translate(-41px, 0); }
+}
+@keyframes ta-join-r-o {
+  0%, 38% { transform: translate(0, 0); }
+  58%, 100% { transform: translate(36px, 0); }
+}
+@keyframes ta-join-l-o {
+  0%, 38% { transform: translate(0, 0); }
+  58%, 100% { transform: translate(-36px, 0); }
+}
+@keyframes ta-result {
+  0%, 55% { opacity: 0; }
+  65%, 95% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ta * {
+    animation-play-state: paused !important;
+    animation-delay: -2.3s !important; /* frozen on a frame that shows the result */
+  }
+}
+
+/* ---------------------------------------------------------------- Volt teaching
+   tip: a one-line reaction during play · learn: "What really happened?" after play */
+.ez-tip {
+  /* floats over the top of the play area, so the game never jumps when it shows */
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  z-index: 6;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 92%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  padding: 6px 14px 6px 6px;
+  border-radius: 18px;
+  border: 3px solid var(--ink);
+  background: var(--bubble);
+  color: var(--ink);
+  font-size: 19px;
+  font-weight: 700;
+}
+.ez-tip[hidden] {
+  display: none;
+}
+.ez-tip svg {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+}
+.ez-tip p {
+  margin: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ez-tip.is-pop {
+    animation: ez-tip-pop 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+  }
+}
+@keyframes ez-tip-pop {
+  from {
+    transform: translateX(-50%) scale(0.85);
+    opacity: 0;
+  }
+}
+.ez-learn-line {
+  margin: 4px 0 0;
+  font-size: 19px;
+}
+.ez-learn-line:last-child {
+  font-family: var(--font-head);
+  font-weight: 700;
+}
+.ez-learn-art {
+  width: min(520px, 100%);
+  margin: 8px auto 6px;
+}
+.ez-learn-real {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  color: #ffffff;
+  font-size: 18px;
+  text-align: center;
+}
+.ez-learn-real svg {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+}

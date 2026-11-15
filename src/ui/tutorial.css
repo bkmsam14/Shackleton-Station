@@ -1,0 +1,131 @@
+/* tutorial.css — the first-time "How to play" card (same comic look as the lessons:
+   ink outlines, light bubble, big text ≥ 18px, 44px+ buttons, motion off on request). */
+.tut {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  border-radius: inherit;
+  background: rgba(8, 12, 28, 0.72);
+  backdrop-filter: blur(3px);
+  pointer-events: auto;
+}
+.tut-card {
+  width: min(760px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 18px 22px 20px;
+  border-radius: 24px;
+  border: 4px solid #10182c;
+  background: #f6f8ff;
+  color: #10182c; /* 17:1 on the card */
+  box-shadow: 0 8px 0 #070c1e, 0 18px 40px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+.tut-kicker {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #b4521c; /* 5.6:1 on the card */
+}
+.tut-title {
+  margin: 2px 0 12px;
+  font-family: var(--font-head);
+  font-size: 28px;
+}
+.tut-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 18px;
+  background: #e6ecfb;
+  text-align: left;
+}
+.tut-lead svg {
+  flex: 0 0 auto;
+  width: 54px;
+  height: 54px;
+}
+.tut-lead p {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.tut-panels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.tut-panel {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+.tut-num {
+  position: absolute;
+  top: -8px;
+  left: -6px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background: #10182c;
+  color: #ffffff;
+  font-family: var(--font-head);
+  font-weight: 700;
+}
+.tut-cap {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.25;
+  text-align: center;
+}
+.tut-go {
+  margin: 0 auto;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tut-card {
+    animation: tut-pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+  }
+  .tut-panel {
+    animation: tut-in 0.4s ease both;
+    animation-delay: calc(0.12s + var(--i) * 0.15s);
+  }
+}
+@keyframes tut-pop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+}
+@keyframes tut-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .tut-panels {
+    grid-template-columns: 1fr;
+  }
+  .tut-panel svg {
+    max-width: 260px;
+  }
+}
