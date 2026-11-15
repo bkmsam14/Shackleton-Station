@@ -1,5 +1,31 @@
 # Changelog — Shackleton Station
 
+## 0.6.0 — Ice mining: make water from Moon ice
+
+### Gameplay
+- **Cold-trap crater** past the solar array (follow the lamps): a crater floor that never sees the
+  Sun. Your helmet lamp switches on down there, frost glitters, and three glowing dig spots wait.
+  Being in the cold trap costs base power (suit heaters + lamp).
+- **Ice Drill** (arcade mini-game): steer the drill through Moon soil, grab blue icy soil, dodge
+  rocks. **Ice streaks** (grab several in a row) with rising crunch sounds, rare **MEGA ICE**
+  lumps, a **scanner pulse** (S) that shows hidden ice for a few seconds, a depth bar, best-streak
+  record, one easy quiz, stars and bronze/silver/gold mastery. A dug spot rests for a game day.
+- **Carry the bag home:** a chip shows how much icy soil you carry and an arrow points to the oven.
+  If you faint on the way (gentle failure), half the soil spills.
+- **Ice Oven** in the work bay next to Electrolysis: heats the soil (base power), the ice turns to
+  vapour and a cold plate catches it as water, which trickles into the Electrolysis tank while you
+  play. The panel compares water from Earth (supply terminal) with water from Moon ice (ISRU).
+
+### Real science
+- Water = **5.6 %** of the soil's mass (NASA LCROSS, Cabeus crater, 2009). 60 kg of soil → 3.4 kg
+  of water. Cold traps colder than −230 °C (LRO Diviner). Bag weight in Moon gravity.
+- New Databank entries (cold traps, how much water in icy soil, finding ice by hydrogen, ISRU),
+  Volt lines and facts.json entries, all with sources.
+
+### Code
+- `systems/iceMining.js` (pure rules + tests), `world/iceSite.js`, `world/iceOven.js`,
+  `instances/iceDrill/`, `instances/iceOven/`; `computePowerFlow` takes `extraLoadKw`.
+
 ## 0.5.0 — Solar storms, storm shelter and water walls (real DONKI + RadLab data)
 
 ### Gameplay
