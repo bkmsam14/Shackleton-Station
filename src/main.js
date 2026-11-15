@@ -359,8 +359,9 @@ function enterPause() {
   }
 }
 
-// calm space music (CC0, ui/music.js): full in the menu and outside, softer inside
+// calm CC0 music (ui/music.js): a space track in the menu + inside, a serene moon track outside
 const music = createMusic({ volume: loadSettings().musicVolume ?? 0.5 });
+if (import.meta.env.DEV) window.__music = music; // dev-only test hook
 const menus = createMenus(uiRoot, {
   onStart: () => {
     music.start();

@@ -38,8 +38,10 @@ const CREDITS = `
     </ul>
     <p>Battery size, tank size and power numbers are game balance, not real data. Art is placeholder.</p>
     <h3>Music</h3>
-    <p>“Outer Space Loop” by wipics — CC0 / public domain, from
-      <a href="https://opengameart.org/content/outer-space-loop" target="_blank" rel="noopener">OpenGameArt.org</a>. Thank you!</p>
+    <p>“Outer Space Loop” by wipics (menu and inside the base) and “Blue Moon Beach” by Tsorthan Grove
+      (outside on the Moon) — both CC0 / public domain, from
+      <a href="https://opengameart.org/content/outer-space-loop" target="_blank" rel="noopener">OpenGameArt.org</a>
+      (<a href="https://opengameart.org/content/blue-moon-beach" target="_blank" rel="noopener">Blue Moon Beach</a>). Thank you!</p>
   </div>`;
 
 /** Music volume (main menu + pause). */

@@ -23,7 +23,8 @@ Merged after the 0.11.0 balance pass; `package.json` still says 0.11.0.
   3-picture "How it works" card; fewer words.
 - **Main menu (indie style):** the live base drifting by under the stars, a big title, Volt
   waving, Continue / New mission / Settings / How to play / Credits.
-- **Sound:** CC0 ambient music ("Outer Space Loop" by wipics), footsteps (metal taps inside, a soft
+- **Sound:** two CC0 music tracks that crossfade: "Outer Space Loop" by wipics in the menu and
+  inside the base, "Blue Moon Beach" by Tsorthan Grove outside on the Moon; footsteps (metal taps inside, a soft
   crunch felt through the boots outside: no air), faster suit breathing when you move, and themed
   sound kits for the mini-games (fizz and bubbles, sparks and hum, hiss and clank, drill, oven).
 - **Micrometeoroids hit the array OR the habitat (never both at once).** One scheduler

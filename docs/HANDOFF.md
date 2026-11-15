@@ -121,7 +121,7 @@ Full list: `CLAUDE.md` → "Current state", plus `CHANGELOG.md`.
 | Crops: potato 2 nights, greens 1 night, need grow light half the day | Owner's design; keeps the grow-lights power trade-off |
 | Gentle failure = 1-hour rest + a counted rescue (stars) | With a countdown, a long rest would help the player |
 | Storms mapped by calendar day | Real dates stay honest; night storms are dosed in the shelter (you sleep in it) |
-| CC0 music "Outer Space Loop" (wipics) | Owner asked for copyright-free ambient music; downloaded with permission |
+| CC0 music: "Outer Space Loop" (wipics) in the menu + inside; "Blue Moon Beach" (Tsorthan Grove) outside | Owner: the space track for menu/habitat only, a serene moon-vibe track outside (FF14's "Mare Lamentorum" as the feel, not copied) |
 
 ---
 

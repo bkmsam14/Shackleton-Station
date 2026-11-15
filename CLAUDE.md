@@ -110,7 +110,8 @@ public/
     space-weather-2024-05.json # archived real DONKI + RadLab data (Stormy Sun)
     stars-bsc.json             # Yale Bright Star Catalog (NASA HEASARC)
     # space-weather-2019-12.json (Calm Sun) is MISSING — see "Known issues"
-  audio/outer-space-loop.mp3   # CC0 music (wipics, OpenGameArt)
+  audio/outer-space-loop.mp3   # CC0 music, menu + inside (wipics, OpenGameArt)
+  audio/blue-moon-beach.ogg    # CC0 music, outside on the Moon (Tsorthan Grove, OpenGameArt)
   textures/  CREDITS.md
 scripts/               # fetch-lola, fetch-space-weather, fetch-stars, balance-sim
 tests/                 # node --test (186 tests)

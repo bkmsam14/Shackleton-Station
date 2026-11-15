@@ -17,7 +17,8 @@ Some colour maps were converted to neutral grey so the game can tint them.
 
 | Used for | Track | Source | License |
 |---|---|---|---|
-| Menu + space ambience | “Outer Space Loop” by wipics | OpenGameArt — https://opengameart.org/content/outer-space-loop | CC0 1.0 (public domain) |
+| Main menu + inside the base | “Outer Space Loop” by wipics | OpenGameArt — https://opengameart.org/content/outer-space-loop | CC0 1.0 (public domain) |
+| Outside on the Moon | “Blue Moon Beach” by Tsorthan Grove (alternate version, without the lo-fi crackle) | OpenGameArt — https://opengameart.org/content/blue-moon-beach | CC0 1.0 (public domain) |
 
 All sound effects are synthesised in the browser (Web Audio), so there are no sound files.
 
