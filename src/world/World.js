@@ -132,7 +132,7 @@ export function createWorld({ quality = 'high', renderer } = {}) {
       }
       const d = skyDirection(sun.azimuthDeg, sun.elevationDeg);
       sunDir.set(d.x, d.y, d.z);
-      sky.update(camera, sunDir, earthSpin, sun.skyTurnDeg ?? 0);
+      sky.update(camera, sunDir, earthSpin, sun.skyMatrix, sun.earth);
       lighting.update(focus, sunDir, sun.visibility, zoneId, camera);
       return solarArray.update(dt, sun.azimuthDeg);
     },

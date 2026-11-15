@@ -99,3 +99,54 @@ export function colourWord(bv) {
   if (bv < 1.4) return 'orange';
   return 'red-orange';
 }
+
+// ---------------------------------------------------------------- one matrix for the whole sky
+// Every sky object is a J2000 equatorial unit vector (from RA/Dec). A 3×3 matrix M turns it into
+// a game-world direction (x, y = up, z). Game mode: equatorial → ecliptic → turned by θ.
+// Live mode (ephemeris.js): equatorial → the Moon's real body frame → the south-pole horizon.
+// Both end with the same "local → world" step, so the 3D sky and the telescope always agree.
+
+/** RA/Dec (degrees) → unit vector (J2000 equatorial). */
+export function eqVector(raDeg, decDeg) {
+  const ra = raDeg * D2R;
+  const dec = decDeg * D2R;
+  return [Math.cos(dec) * Math.cos(ra), Math.cos(dec) * Math.sin(ra), Math.sin(dec)];
+}
+
+const mul3 = (a, b) => {
+  const m = new Array(9);
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) m[r * 3 + c] = a[r * 3] * b[c] + a[r * 3 + 1] * b[3 + c] + a[r * 3 + 2] * b[6 + c];
+  return m;
+};
+export const applyM = (m, v) => [m[0] * v[0] + m[1] * v[1] + m[2] * v[2], m[3] * v[0] + m[4] * v[1] + m[5] * v[2], m[6] * v[0] + m[7] * v[1] + m[8] * v[2]];
+
+/** equatorial → ecliptic (J2000) */
+const ECL_FROM_EQ = (() => {
+  const e = OBLIQUITY_DEG * D2R;
+  return [1, 0, 0, 0, Math.cos(e), Math.sin(e), 0, -Math.sin(e), Math.cos(e)];
+})();
+
+/**
+ * "Local" frame (x toward azimuth −offset, up = −z) → game world (y up; azimuth 0 = −Z, 90 = +X).
+ * az = atan2(ly, lx) + offset, alt = asin(−lz). A proper rotation (det +1): never mirrored.
+ */
+export function localToWorld(offsetDeg) {
+  const s = Math.sin(offsetDeg * D2R);
+  const c = Math.cos(offsetDeg * D2R);
+  return [s, c, 0, 0, 0, -1, -c, s, 0];
+}
+
+/** Game-time sky: the ecliptic frame turned by θ (azimuth = λ + θ, altitude = −β). */
+export const gameSkyMatrix = (turnDeg) => mul3(localToWorld(turnDeg), ECL_FROM_EQ);
+
+/** Live sky: B = equatorial → Moon body frame (ephemeris.js); body 0° meridian at azimuth offsetDeg. */
+export const liveSkyMatrix = (B, offsetDeg) => mul3(localToWorld(offsetDeg), B);
+
+/** World direction → { az, alt } (game convention). */
+export function worldAzAlt(w) {
+  const l = Math.hypot(w[0], w[1], w[2]) || 1;
+  return { az: wrap360(Math.atan2(w[0], -w[2]) * R2D), alt: Math.asin(w[1] / l) * R2D };
+}
+
+/** Where a RA/Dec object is on the sky right now (matrix M from getSun().skyMatrix). */
+export const placeOnSky = (M, raDeg, decDeg) => worldAzAlt(applyM(M, eqVector(raDeg, decDeg)));

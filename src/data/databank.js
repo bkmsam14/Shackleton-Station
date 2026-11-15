@@ -123,6 +123,14 @@ export const DATABANK = [
     url: 'https://heasarc.gsfc.nasa.gov/W3Browse/star-catalog/bsc5p.html',
   },
   {
+    id: 'live-sky',
+    title: 'Live sky: the real sky right now',
+    core: 'In Live mode the Sun, Earth and stars are where they really are over the Moon’s south pole at this moment. Earth sometimes dips below the horizon!',
+    deeper: 'The game computes the Moon’s real tilt and spin (the IAU model published by NASA JPL’s NAIF team), the Sun’s position (US Naval Observatory formula) and the Moon’s orbit (Astronomical Almanac). We checked the results against NASA JPL Horizons: Sun within 0.01°, Earth within about 0.15°. Earth bobs up and down by a few degrees each month — that is called libration.',
+    source: 'NASA JPL NAIF (pck00011, IAU model); NASA JPL Horizons',
+    url: 'https://ssd.jpl.nasa.gov/horizons/',
+  },
+  {
     id: 'star-colours',
     title: 'Star colours and light-years',
     core: 'Blue-white stars are the hottest; orange and red stars are cooler. A light-year is how far light travels in a year.',

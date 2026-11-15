@@ -149,6 +149,12 @@ export const EVENTS = {
     text: 'The Ice Oven is done! Fresh Moon water is in the tank.',
     mood: 'cheer',
   },
+  'earth-hidden': {
+    kind: 'news',
+    text: 'Earth is below our horizon right now! It bobs up and down monthly.',
+    long: 'Right now Earth is below the horizon at the Moon’s south pole. Seen from here it slowly bobs up and down every month (libration), so it is not always in view.',
+    mood: 'wow',
+  },
   // --- telescope
   'star-found': {
     kind: 'news',
@@ -196,7 +202,8 @@ export const EVENTS = {
   },
   'sun-live': {
     kind: 'news',
-    text: 'Live Sun! Real space weather from the last 7 days.',
+    text: 'Live! Real space weather and the real sky, right now.',
+    long: 'Live mode: real NASA space weather from the last 7 days, and the Sun, Earth and stars exactly where they are over the Moon’s south pole right now (computed with NASA JPL / IAU models).',
     mood: 'wow',
   },
 };

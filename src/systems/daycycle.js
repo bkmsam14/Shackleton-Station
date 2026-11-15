@@ -6,7 +6,8 @@
 //    (real life: one synodic month, ~29.5 days).
 
 import { TIME, SKY } from '../config/gameplay.js';
-import { skyTurnDeg, sunEclipticLon } from './skyMath.js';
+import { skyTurnDeg, sunEclipticLon, gameSkyMatrix, liveSkyMatrix } from './skyMath.js';
+import { liveSky, toGameAz } from './ephemeris.js';
 
 export function wrapDeg(a) {
   return ((a % 360) + 360) % 360;
@@ -40,6 +41,7 @@ export function createDayCycle({ startHour = TIME.START_HOUR } = {}) {
   return {
     gameSeconds: startHour * 3600, // life-support clock
     sunRealSeconds: 0, // sun clock
+    liveStartMs: null, // Live sky: real date at sunRealSeconds = 0 (null = game Sun)
   };
 }
 
@@ -63,15 +65,47 @@ export function sunAzimuthDeg(state, sky = SKY) {
   return wrapDeg(sky.SUN_START_AZIMUTH_DEG - (360 * state.sunRealSeconds) / sky.GAME_SUN_LOOP_REAL_SECONDS);
 }
 
+/**
+ * LIVE SKY: from now on the Sun, Earth and stars follow the real date and time (real speed).
+ * on = false goes back to the sped-up game Sun. Returns the state.
+ */
+export function setLiveSky(state, on, nowMs = Date.now()) {
+  state.liveStartMs = on ? nowMs - state.sunRealSeconds * 1000 : null;
+  return state;
+}
+
+/** The real date the live sky shows (ms), or null in game mode. */
+export const liveDateMs = (state) => (state.liveStartMs == null ? null : state.liveStartMs + state.sunRealSeconds * 1000);
+
 /** Sun info for this moment. */
 export function getSun(state, sky = SKY) {
+  const live = liveDateMs(state);
+  if (live !== null) {
+    const real = liveSky(live);
+    const azimuth = toGameAz(real.sun.az);
+    // the real Sun can dip below the horizon too (it moves ±1.5° up and down here)
+    const aboveHorizon = Math.min(1, Math.max(0, (real.sun.alt + 0.27) / 0.54)); // Sun's disc ≈ 0.53°
+    return {
+      azimuthDeg: azimuth,
+      elevationDeg: real.sun.alt,
+      visibility: sunVisibility(azimuth, sky) * aboveHorizon,
+      live: true,
+      dateMs: live,
+      earth: { az: toGameAz(real.earth.az), alt: real.earth.alt, lit: real.earthLit },
+      skyMatrix: liveSkyMatrix(real.B, sky.EARTH_AZIMUTH_DEG),
+    };
+  }
   const azimuth = sunAzimuthDeg(state, sky);
+  const turn = skyTurnDeg(azimuth, sunEclipticLon(state.sunRealSeconds, sky));
   return {
     azimuthDeg: azimuth,
     elevationDeg: sky.SUN_ELEVATION_DEG,
     visibility: sunVisibility(azimuth, sky),
     // how far the starry sky has turned (azimuth of anything on the sky = λ + skyTurnDeg)
-    skyTurnDeg: skyTurnDeg(azimuth, sunEclipticLon(state.sunRealSeconds, sky)),
+    skyTurnDeg: turn,
+    live: false,
+    earth: { az: sky.EARTH_AZIMUTH_DEG, alt: sky.EARTH_ELEVATION_DEG },
+    skyMatrix: gameSkyMatrix(turn), // J2000 equatorial → game world, for stars and the telescope
   };
 }
 

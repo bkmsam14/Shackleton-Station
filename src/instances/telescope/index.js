@@ -6,7 +6,7 @@ import '../electrolysis/style.css';
 import '../waterWalls/style.css';
 import './style.css';
 import { TELESCOPE } from '../../config/gameplay.js';
-import { horizontalFromEcliptic, separationDeg, eclipticFromEquatorial, colourWord } from '../../systems/skyMath.js';
+import { placeOnSky, separationDeg, colourWord } from '../../systems/skyMath.js';
 import { sfx } from '../../ui/sfx.js';
 import { IC, starIcon, medalIcon, voltBot } from '../electrolysis/icons.js';
 import { TARGETS, SOURCES, MOON_SKY_FACTS } from '../../data/constellations.js';
@@ -23,17 +23,14 @@ export const SCOPE_ICON = `<svg class="ez-ic" viewBox="0 0 32 32" aria-hidden="t
 let factTurn = 0;
 
 /** Centre of a target on today's sky (az/alt). */
-function targetCentre(target, catalog, turn) {
-  if (target.cloud) {
-    const e = eclipticFromEquatorial(target.cloud.ra, target.cloud.dec);
-    return horizontalFromEcliptic(e.lon, e.lat, turn);
-  }
+function targetCentre(target, catalog, matrix) {
+  if (target.cloud) return placeOnSky(matrix, target.cloud.ra, target.cloud.dec);
   const pts = target.paths.flat().map((hr) => catalog.byHr.get(hr)).filter(Boolean);
   let x = 0;
   let y = 0;
   let z = 0;
   for (const s of pts) {
-    const h = horizontalFromEcliptic(s.lon, s.lat, turn);
+    const h = placeOnSky(matrix, s.ra, s.dec);
     const a = (h.az * Math.PI) / 180;
     const e = (h.alt * Math.PI) / 180;
     x += Math.sin(a) * Math.cos(e);
@@ -44,7 +41,7 @@ function targetCentre(target, catalog, turn) {
   return { az: ((Math.atan2(x / l, -z / l) * 180) / Math.PI + 360) % 360, alt: (Math.asin(y / l) * 180) / Math.PI };
 }
 
-/** ctx: { catalog, sky: {sunAz, sunAlt, turn, earthAz, earthAlt}, album: {has(id), add(id)}, mastery, voice } */
+/** ctx: { catalog, sky: {sunAz, sunAlt, matrix, earthAz, earthAlt, live, dateMs}, album: {has(id), add(id)}, mastery, voice } */
 export function createTelescopeInstance({ root, ctx, done }) {
   const { catalog, sky, album, mastery } = ctx;
   const speak = (html) => ctx.voice?.speak(String(html).replace(/<[^>]+>/g, ''));
@@ -103,7 +100,7 @@ export function createTelescopeInstance({ root, ctx, done }) {
   // ---------------------------------------------------------------- which targets are safe now
   const sun = { az: sky.sunAz, alt: sky.sunAlt };
   const options = TARGETS.map((t) => {
-    const c = targetCentre(t, catalog, sky.turn);
+    const c = targetCentre(t, catalog, sky.matrix);
     const sep = separationDeg(c, sun);
     return { target: t, centre: c, sep, safe: sep > TELESCOPE.SUN_GLARE_DEG + 6, found: album.has(t.id) };
   });
@@ -140,7 +137,8 @@ export function createTelescopeInstance({ root, ctx, done }) {
         </button>`,
       )
       .join('');
-    const line = 'Pick a target to find! Ones you found before are in your album — find them again for more stars.';
+    const liveTag = sky.live ? ` <span class="ts-live">LIVE SKY · ${new Date(sky.dateMs).toISOString().slice(0, 16).replace('T', ' ')} UTC</span>` : '';
+    const line = `Pick a target to find! Ones you found before are in your album — find them again for more stars.${liveTag}`;
     speak(`What shall we find? ${line}`);
     body.innerHTML = `
       ${say('happy', `<h3 class="ez-h3">What shall we find?</h3><p>${line}</p>`)}

@@ -6,7 +6,7 @@
 //         'draw' (tap the stars in order to draw the constellation) → done.
 // Sun safety: pointing within TELESCOPE.SUN_GLARE_DEG of the Sun closes the shutter.
 import { TELESCOPE, SKY } from '../../config/gameplay.js';
-import { horizontalFromEcliptic, separationDeg, bvToTemperatureK, temperatureToRgb, wrap360, eclipticFromEquatorial } from '../../systems/skyMath.js';
+import { placeOnSky, separationDeg, bvToTemperatureK, temperatureToRgb, wrap360 } from '../../systems/skyMath.js';
 import { sfx } from '../../ui/sfx.js';
 
 const W = 880;
@@ -34,7 +34,7 @@ const norm = (p) => {
 /**
  * @param p.canvas
  * @param p.catalog   { stars, byHr } (data/stars.js)
- * @param p.sky       { sunAz, sunAlt, turn, earthAz, earthAlt }
+ * @param p.sky       { sunAz, sunAlt, matrix (getSun().skyMatrix), earthAz, earthAlt }
  * @param p.target    a TARGETS entry (data/constellations.js)
  * @param p.announce  (msg) => void
  * @param p.onPhase   (phase, info) => void — 'locked' | 'shutter' | 'done'
@@ -47,7 +47,7 @@ export function createScope({ canvas, catalog, sky, target, announce, onPhase })
 
   // every catalog star as sky az/alt (the sky is frozen while you look: the world is paused)
   const stars = catalog.stars
-    .map((s) => ({ ...s, ...horizontalFromEcliptic(s.lon, s.lat, sky.turn) }))
+    .map((s) => ({ ...s, ...placeOnSky(sky.matrix, s.ra, s.dec) }))
     .filter((s) => s.alt > -2);
   for (const s of stars) {
     s.v = vec(s.az, s.alt);
@@ -61,8 +61,7 @@ export function createScope({ canvas, catalog, sky, target, announce, onPhase })
   // the target: its stars (in tap order) and its centre
   let cloud = null;
   if (target.cloud) {
-    const e = eclipticFromEquatorial(target.cloud.ra, target.cloud.dec);
-    const h = horizontalFromEcliptic(e.lon, e.lat, sky.turn);
+    const h = placeOnSky(sky.matrix, target.cloud.ra, target.cloud.dec);
     cloud = { ...h, v: vec(h.az, h.alt), r: target.cloud.radiusDeg };
   }
   const order = target.paths.map((path) => path.map((hr) => byHr.get(hr)).filter(Boolean));
@@ -380,8 +379,7 @@ export function createScope({ canvas, catalog, sky, target, announce, onPhase })
     ctx.fillText(`Zoom: ${['wide', 'normal', 'close'][s.zoom]}`, W - 16, H - 16);
   }
   const lmcDefault = (() => {
-    const e = eclipticFromEquatorial(80.894, -69.756);
-    const h = horizontalFromEcliptic(e.lon, e.lat, sky.turn);
+    const h = placeOnSky(sky.matrix, 80.894, -69.756);
     return { ...h, v: vec(h.az, h.alt), r: 4 };
   })();
 

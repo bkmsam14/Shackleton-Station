@@ -86,7 +86,7 @@ function sunRow() {
 const SUN_NOTES = {
   calm: 'Replay of real NASA data from December 2019, when the Sun was quiet.',
   stormy: 'Replay of real NASA data from May 2024: big solar flares and particle storms.',
-  live: 'Real NASA space weather from the last 7 days, fetched now (needs internet).',
+  live: 'The sky right now: the real Sun, Earth and stars over the Moon’s south pole, plus real NASA space weather from the last 7 days (needs internet).'
 };
 
 export function createMenus(root, { onStart, onResume, onQuality, getQuality, volt = null, sun = null, starNames = null }) {

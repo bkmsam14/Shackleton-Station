@@ -10,11 +10,10 @@ import './ui/hud.css';
 
 import * as THREE from 'three';
 import { UI, RECOVERY, TIME, POWER, ASSISTANT, RADIATION, SKY } from './config/gameplay.js';
-import { eclipticFromEquatorial } from './systems/skyMath.js';
 import { createWorld, QUALITY } from './world/World.js';
 import { createPostFX } from './world/postfx.js';
 import { LAYOUT } from './world/layout.js';
-import { createDayCycle, stepDayCycle, getSun, getClock } from './systems/daycycle.js';
+import { createDayCycle, stepDayCycle, getSun, getClock, setLiveSky } from './systems/daycycle.js';
 import { createGauges, stepGauges, applyRecovery } from './systems/gauges.js';
 import { loadSettings, saveSettings } from './systems/save.js';
 import { createInput } from './player/input.js';
@@ -108,10 +107,7 @@ const starAlbum = new Set(Array.isArray(loadSettings().starAlbum) ? loadSettings
 let starNamesOn = loadSettings().starNames !== false;
 let starCatalog = null;
 function figureFor(target, catalog) {
-  if (target.cloud) {
-    const e = eclipticFromEquatorial(target.cloud.ra, target.cloud.dec);
-    return { id: target.id, name: target.name, segments: [], centre: { lon: e.lon, lat: e.lat } };
-  }
+  if (target.cloud) return { id: target.id, name: target.name, segments: [], centre: { ra: target.cloud.ra, dec: target.cloud.dec } };
   const segments = [];
   const pts = [];
   for (const path of target.paths) {
@@ -121,7 +117,7 @@ function figureFor(target, catalog) {
   }
   // label above the figure's brightest star
   const top = pts.reduce((a, b) => (b.mag < a.mag ? b : a), pts[0]);
-  return { id: target.id, name: target.name, segments, centre: { lon: top.lon, lat: top.lat } };
+  return { id: target.id, name: target.name, segments, centre: { ra: top.ra, dec: top.dec } };
 }
 const starsReady = loadStars().then((catalog) => {
   if (!catalog) return null;
@@ -164,6 +160,10 @@ function useSun(loaded) {
 function pickSun(mode) {
   sunMode = mode;
   saveSettings({ sun: mode });
+  // LIVE: the Sun, Earth and stars follow the real date and time (ephemeris.js) — the sky over
+  // the Moon's south pole right now. Works offline too (it is computed, not downloaded).
+  setLiveSky(day, mode === 'live');
+  world.solarArray.resetTracking(); // the Sun may now be somewhere else: face it straight away
   return loadSun(mode).then((loaded) => {
     if (loaded.mode === sunMode || loaded.fellBack) useSun(loaded);
     return loaded;
@@ -189,6 +189,7 @@ feedback.setClock(() => {
   const c = getClock(day);
   return 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute);
 });
+let earthHiddenSaid = false;
 let lastHudState = null; // latest gauge snapshot (used by the PDA)
 
 // ---------------------------------------------------------------- game state
@@ -559,7 +560,7 @@ function useStation(action) {
     const open = (catalog) =>
       instances.open('telescope', createTelescopeInstance, {
         catalog,
-        sky: { sunAz: s.azimuthDeg, sunAlt: s.elevationDeg, turn: s.skyTurnDeg, earthAz: SKY.EARTH_AZIMUTH_DEG, earthAlt: SKY.EARTH_ELEVATION_DEG },
+        sky: { sunAz: s.azimuthDeg, sunAlt: s.elevationDeg, matrix: s.skyMatrix, earthAz: s.earth.az, earthAlt: s.earth.alt, live: s.live, dateMs: s.dateMs },
         album,
         mastery,
         voice: voltVoice,
@@ -909,6 +910,11 @@ renderer.setAnimationLoop(() => {
     extraLoadKw: coldTrapLoadKw(coldTrap), // suit heaters + lamp, recharged by the base
   });
   if (running) reactToGauges(report, sun);
+  // live sky: Earth really dips below the horizon here for part of each month (libration)
+  if (running && sun.live && !earthHiddenSaid && sun.earth.alt < 0 && zoneId === 'outside') {
+    earthHiddenSaid = true;
+    voltEvent('earth-hidden', 'Earth is below the horizon right now', 'Right now Earth is below the horizon at the south pole. It bobs up and down every month (libration), so radio links need it above the horizon — or a relay satellite.');
+  }
   farming.update(frameDt, dt, { lit: report.hasPower });
   supply.update(frameDt, dt, zoneId);
   if (mode === 'playing' && (report.oxygenEmpty || report.foodEmpty)) {

@@ -14,6 +14,20 @@ function minutes(sec) {
 const perMin = (ratePerSec) => `${(Math.abs(ratePerSec) * 60).toFixed(1)} % per min`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
+/** Live sky: the real Sun and Earth over the south pole right now (only in Live mode). */
+function liveSkyStat(s) {
+  const sun = s.sun;
+  if (!sun?.live) return '';
+  const when = new Date(sun.dateMs).toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+  const earthUp = sun.earth.alt >= 0;
+  return `
+    <div class="pda-stat">
+      <div class="pda-stat-top"><b>Live sky</b><span>${when}</span></div>
+      <div class="pda-stat-line">Sun ${sun.elevationDeg.toFixed(1)}° above the horizon · Earth ${earthUp ? sun.earth.alt.toFixed(1) + '° up' : 'below the horizon'} · Earth ${Math.round((sun.earth.lit ?? 0) * 100)}% lit</div>
+      <p>This is the real sky over the Moon’s south pole right now: Sun, Earth and stars are computed from the date with NASA JPL / IAU models and checked against NASA JPL Horizons. ${earthUp ? '' : 'Earth bobs up and down each month (libration), so right now it is hidden. '}The Sun stays within about 1.5° of the horizon all year.</p>
+    </div>`;
+}
+
 /** Radiation: storms (real data), dose, water walls. s.radiation from main.js radiationHud(). */
 function radiationStat(s) {
   const r = s.radiation;
@@ -77,6 +91,7 @@ export function createPda(root) {
               <div class="pda-stat-line">Enough for about ${(s.station.tankKg / ELECTROLYSIS.WATER_PER_KG_O2).toFixed(1)} kg of oxygen · ${batchCost('small').waterKg.toFixed(2)} kg per Small batch</div>
               <p>Every 1 kg of oxygen uses ${ELECTROLYSIS.WATER_PER_KG_O2} kg of water (2 H₂O → 2 H₂ + O₂). Refill it with water from Moon ice (Ice Oven) or a delivery from Earth (supply terminal).</p>
             </div>
+            ${liveSkyStat(s)}
             ${radiationStat(s)}
             <div class="pda-stat">
               <div class="pda-stat-top"><b>Food</b><span>${Math.ceil(g.food)}%</span></div>

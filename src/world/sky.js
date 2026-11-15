@@ -4,12 +4,11 @@ import * as THREE from 'three';
 import { SKY } from '../config/gameplay.js';
 import { skyDirection } from '../systems/daycycle.js';
 import { mulberry32 } from './heightfield.js';
-import { bvToTemperatureK, temperatureToRgb } from '../systems/skyMath.js';
+import { bvToTemperatureK, temperatureToRgb, eqVector } from '../systems/skyMath.js';
 
 const SUN_DIST = 2000;
 const EARTH_DIST = 1900;
 const STAR_DIST = 2400;
-const UP = new THREE.Vector3(0, 1, 0);
 
 function discRadius(angularDiameterDeg, dist) {
   return Math.tan(((angularDiameterDeg * SKY.SKY_DISC_SCALE) / 2) * (Math.PI / 180)) * dist;
@@ -77,9 +76,11 @@ export function createSky({ starCount = 2600 } = {}) {
   group.name = 'sky';
 
   // --- stars: the REAL sky (Yale Bright Star Catalog via NASA HEASARC) -----------------
-  // Filled in by setStars() once the catalog has loaded. Positions are built for sky turn 0;
-  // the whole star group then rotates about "up" as the sky turns (systems/skyMath.js).
+  // Filled in by setStars() once the catalog has loaded. Positions are J2000 equatorial
+  // vectors; each frame the whole star group gets the sky matrix (systems/skyMath.js), so the
+  // same code shows the sped-up game sky and the real "Live sky".
   const starGroup = new THREE.Group();
+  starGroup.matrixAutoUpdate = false;
   starGroup.name = 'realStars';
   group.add(starGroup);
   const starMat = new THREE.ShaderMaterial({
@@ -118,9 +119,9 @@ export function createSky({ starCount = 2600 } = {}) {
   const tmpDir = new THREE.Vector3();
   const viewDir = new THREE.Vector3();
 
-  function starPos(lon, lat, dist = STAR_DIST) {
-    const d = skyDirection(lon, -lat); // altitude = −ecliptic latitude (turn 0)
-    return new THREE.Vector3(d.x, d.y, d.z).multiplyScalar(dist);
+  function starPos(ra, dec, dist = STAR_DIST) {
+    const v = eqVector(ra, dec);
+    return new THREE.Vector3(v[0], v[1], v[2]).multiplyScalar(dist);
   }
 
   function nameSprite(text) {
@@ -215,7 +216,7 @@ export function createSky({ starCount = 2600 } = {}) {
   earthPivot.add(earth);
   group.add(earthPivot);
 
-  const earthDir = skyDirection(SKY.EARTH_AZIMUTH_DEG, SKY.EARTH_ELEVATION_DEG);
+  const earthDir = { ...skyDirection(SKY.EARTH_AZIMUTH_DEG, SKY.EARTH_ELEVATION_DEG) };
   const tmp = new THREE.Vector3();
 
   return {
@@ -225,14 +226,26 @@ export function createSky({ starCount = 2600 } = {}) {
      * @param sunDir  {x,y,z} unit vector to the Sun
      * @param earthSpin  radians — Earth's rotation from the game clock
      */
-    update(camera, sunDirVec, earthSpin, skyTurnDeg = 0) {
+    update(camera, sunDirVec, earthSpin, skyMatrix = null, earthAzAlt = null) {
       group.position.copy(camera.position);
-      // the sky's turn: azimuth = λ + θ  →  rotate the star group by −θ about "up"
-      starGroup.rotation.y = (-skyTurnDeg * Math.PI) / 180;
+      if (skyMatrix) {
+        const m = skyMatrix;
+        starGroup.matrix.set(m[0], m[1], m[2], 0, m[3], m[4], m[5], 0, m[6], m[7], m[8], 0, 0, 0, 0, 1);
+        starGroup.matrixWorldNeedsUpdate = true;
+      }
+      if (earthAzAlt) {
+        const e = skyDirection(earthAzAlt.az, earthAzAlt.alt);
+        earthDir.x = e.x;
+        earthDir.y = e.y;
+        earthDir.z = e.z;
+      }
       if (figures.size) {
         camera.getWorldDirection(viewDir);
         for (const f of figures.values()) {
-          tmpDir.copy(f.dir).applyAxisAngle(UP, starGroup.rotation.y);
+          tmpDir.copy(f.dir).applyMatrix4(starGroup.matrix);
+          // the name sits just above the figure in WORLD space (so it is never upside down)
+          f.label.position.copy(tmpDir).multiplyScalar(STAR_DIST * 0.98);
+          f.label.position.y += f.label.userData.lift;
           const target = labelsOn && tmpDir.dot(viewDir) > 0.9 ? 1 : 0; // within ~25° of your view
           f.fade += (target - f.fade) * 0.06;
           f.line.material.opacity = f.fade * 0.55;
@@ -259,7 +272,7 @@ export function createSky({ starCount = 2600 } = {}) {
       const size = new Float32Array(n);
       const mag = new Float32Array(n);
       catalog.stars.forEach((s, i) => {
-        const p = starPos(s.lon, s.lat);
+        const p = starPos(s.ra, s.dec);
         pos.set([p.x, p.y, p.z], i * 3);
         const rgb = temperatureToRgb(bvToTemperatureK(s.bv));
         // keep colours gentle (stars look mostly white to the eye, tinted blue or orange)
@@ -280,12 +293,12 @@ export function createSky({ starCount = 2600 } = {}) {
     },
     /**
      * Show the lines + name of a constellation you found. figure: { id, name, segments:
-     * [[{lon,lat},{lon,lat}], …], centre: {lon,lat} }
+     * [[{ra,dec},{ra,dec}], …], centre: {ra,dec} } (J2000 degrees)
      */
     addFigure(figure) {
       if (figures.has(figure.id)) return;
       const pts = [];
-      for (const [p, q] of figure.segments) pts.push(starPos(p.lon, p.lat, STAR_DIST * 0.99), starPos(q.lon, q.lat, STAR_DIST * 0.99));
+      for (const [p, q] of figure.segments) pts.push(starPos(p.ra, p.dec, STAR_DIST * 0.99), starPos(q.ra, q.dec, STAR_DIST * 0.99));
       const line = new THREE.LineSegments(
         new THREE.BufferGeometry().setFromPoints(pts),
         new THREE.LineBasicMaterial({ color: 0x7fd8ff, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }),
@@ -293,10 +306,11 @@ export function createSky({ starCount = 2600 } = {}) {
       line.frustumCulled = false;
       line.renderOrder = -9;
       const label = nameSprite(figure.name);
-      const c = starPos(figure.centre.lon, figure.centre.lat, STAR_DIST * 0.98);
-      label.position.copy(c).add(new THREE.Vector3(0, STAR_DIST * 0.07, 0));
+      const c = starPos(figure.centre.ra, figure.centre.dec, STAR_DIST * 0.98);
+      label.userData.lift = STAR_DIST * 0.07;
       label.renderOrder = -8;
-      starGroup.add(line, label);
+      starGroup.add(line);
+      group.add(label); // positioned each frame in update()
       figures.set(figure.id, { line, label, dir: c.clone().normalize(), fade: 0 });
     },
     setLabels(on) {
