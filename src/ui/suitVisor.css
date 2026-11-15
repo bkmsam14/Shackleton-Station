@@ -15,10 +15,58 @@
   height: 100%;
 }
 
-/* In the suit, every readout moves inside the glass. The inset is the same on top and
-   bottom (and left and right), so the crosshair stays exactly in the middle. */
+/* In the airlock: the helmet comes down over your eyes and locks with a little bounce
+   (going out), or lifts off (coming in). */
+.suit-visor {
+  transform-origin: 50% 0;
+}
+.suit-visor.anim-on {
+  animation: sv-on 1s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+.suit-visor.anim-off {
+  animation: sv-off 0.9s cubic-bezier(0.5, 0, 0.75, 0.4) both;
+}
+@keyframes sv-on {
+  0% {
+    transform: translateY(-105%) scale(1.25);
+    opacity: 1;
+  }
+  72% {
+    transform: translateY(1.5%) scale(1);
+  }
+  86% {
+    transform: translateY(-0.6%) scale(1);
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes sv-off {
+  0% {
+    transform: none;
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-105%) scale(1.25);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .suit-visor.anim-on,
+  .suit-visor.anim-off {
+    animation: none;
+  }
+  .suit-visor.anim-off {
+    opacity: 0;
+  }
+}
+
+/* In the suit, every readout moves inside the glass. Left and right are equal; the bottom
+   is a little smaller than the top (the glass reaches low). The crosshair is not part of
+   .hud, so it stays exactly in the middle of the screen. */
 .ui-root.in-suit .hud {
-  inset: 9vh 7.5vw;
+  inset: 9vh 7.5vw 6.5vh;
 }
 .ui-root.in-suit .training-badge {
   top: calc(9vh + 46px);
@@ -26,5 +74,5 @@
 }
 .ui-root.in-suit .inv-panel {
   right: calc(7.5vw + 18px);
-  bottom: calc(9vh + 18px);
+  bottom: calc(6.5vh + 18px);
 }

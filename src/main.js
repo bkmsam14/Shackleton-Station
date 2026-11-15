@@ -1188,7 +1188,12 @@ renderer.setAnimationLoop(() => {
   voltBubble.update(frameDt, camera, volt.headPosition(voltHead), mode === 'playing' && !instances.isOpen);
   // the Sun is off indoors, so skip re-rendering its shadow map there
   const outdoors = zoneId === 'outside';
-  suitVisor.set(outdoors && mode !== 'start'); // outside you see through your helmet visor
+  // Outside you see through your helmet visor. In the airlock it goes on before the air is
+  // pumped out (going out) and comes off once the air is back (coming in).
+  if (airlockRun) {
+    const c = airlockRun.cycle;
+    suitVisor.set(c.direction === 'out' ? c.t > 0.15 : c.pressure < 0.999, { animate: true });
+  } else suitVisor.set(outdoors && mode !== 'start');
   if (outdoors && !renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = true;
   renderer.shadowMap.autoUpdate = outdoors;
   lastHudState = {
