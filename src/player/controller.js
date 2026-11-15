@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { PLAYER } from '../config/gameplay.js';
-import { heightAt } from '../world/heightfield.js';
+import { groundHeight } from '../world/ground.js';
 import { resolveCircle, clampInsideRect, clampInsideCircle } from './collision.js';
 
 const MAP_RADIUS = 240; // metres from the base you can walk before an invisible edge
@@ -47,7 +47,7 @@ export function createPlayerController(camera, domElement, world, input) {
   const wish = new THREE.Vector3();
 
   function groundY(x, z) {
-    return zoneId === 'outside' ? heightAt(x, z) : world.zones[zoneId].floorY;
+    return zoneId === 'outside' ? groundHeight(x, z) : world.zones[zoneId].floorY;
   }
 
   function syncCamera() {

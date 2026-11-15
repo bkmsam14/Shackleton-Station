@@ -22,6 +22,8 @@ export const LAYOUT = {
     bulkheadDoorHalf: 1.0, // half-width of its doorway
     // starts at the hull (z 3.5) so it never pokes into the interior
     airlock: { x: 6.5, zStart: 3.5, zEnd: 6.0, width: 2.8, height: 2.9 },
+    // steps from the outer hatch down to the ground (+Z); walkable (world/ground.js)
+    stairs: { steps: 6, run: 0.33, width: 1.8 },
     spawn: { x: -3.2, z: 0.4, yawDeg: 90 }, // lounge, facing +X toward the work bay + airlock
     innerDoor: { x: 6.5, z: 2.95 },
     insideArrive: { x: 6.5, z: 1.7, yawDeg: 0 }, // after entering: facing −Z, into the bay

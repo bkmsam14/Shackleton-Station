@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { MAT, FABRIC } from './materials.js';
 import { LAYOUT } from './layout.js';
+import { airlockColliders } from './ground.js';
 import { createSign } from './signs.js';
 import { planarUV } from './textures.js';
 import {
@@ -117,13 +118,13 @@ function buildExterior(group) {
   const stripe = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.12), hazardStripeMaterial());
   stripe.position.set(A.x, FY - 0.03, A.zEnd + 0.13);
   group.add(stripe);
-  const steps = 6;
+  const steps = H.stairs.steps;
   const rise = alBottom / steps;
-  const run = 0.33;
+  const run = H.stairs.run;
   for (let i = 0; i < steps; i++) {
     const top = (i + 1) * rise;
     const z = A.zEnd + run * (steps - i - 0.5);
-    group.add(mesh(planarUV(new THREE.BoxGeometry(1.8, top, run), 'xz', 1), MAT.floor(), A.x, top / 2, z));
+    group.add(mesh(planarUV(new THREE.BoxGeometry(H.stairs.width, top, run), 'xz', 1), MAT.floor(), A.x, top / 2, z));
   }
   for (const sx of [-1, 1]) {
     const x = A.x + sx * 0.98;
@@ -513,8 +514,8 @@ export function createHabitat() {
     },
     outdoorColliders: [
       { type: 'box', minX: H.x - L / 2 - 0.9, maxX: H.x + L / 2 + 0.9, minZ: H.z - R, maxZ: H.z + R },
-      // airlock + stairs
-      { type: 'box', minX: H.x + A.x - 1.45, maxX: H.x + A.x + 1.45, minZ: H.z + A.zStart, maxZ: H.z + A.zEnd + 1.95 },
+      // airlock module + the handrails (the stairs themselves can be climbed: world/ground.js)
+      ...airlockColliders(),
     ],
     zone: {
       id: 'habitat',

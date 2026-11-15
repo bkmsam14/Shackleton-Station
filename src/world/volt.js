@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rbox } from './details.js';
-import { heightAt } from './heightfield.js';
+import { groundHeight } from './ground.js';
 import { resolveCircle, clampInsideRect } from '../player/collision.js';
 import { ASSISTANT, GUIDE } from '../config/gameplay.js';
 import { findPath, isWalkable, nearestWalkable, pathLength, pointAlong } from '../systems/navigation.js';
@@ -208,7 +208,7 @@ export function createVolt(world, walkable = null) {
   let replanIn = 0;
 
   function groundY(zone, x, z) {
-    return zone === 'outside' ? heightAt(x, z) : world.zones[zone].floorY;
+    return zone === 'outside' ? groundHeight(x, z) : world.zones[zone].floorY;
   }
 
   function collide(zone, x, z) {

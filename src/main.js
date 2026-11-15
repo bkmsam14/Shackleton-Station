@@ -34,6 +34,7 @@ import { createVoltBubble } from './ui/voltBubble.js';
 import { createSuitVisor } from './ui/suitVisor.js';
 import { createVoltVoice } from './ui/voltVoice.js';
 import { heightAt } from './world/heightfield.js';
+import { groundHeight } from './world/ground.js';
 import { createMastery } from './systems/mastery.js';
 import { createInstanceManager } from './instances/InstanceManager.js';
 import { createElectrolysisInstance } from './instances/electrolysis/index.js';
@@ -209,7 +210,7 @@ const walkable = createWalkable(world);
 const volt = createVolt(world, walkable);
 const guide = createGuide({
   walkable,
-  groundAt: (zone, x, z) => (zone === 'outside' ? heightAt(x, z) : world.zones[zone].floorY),
+  groundAt: (zone, x, z) => (zone === 'outside' ? groundHeight(x, z) : world.zones[zone].floorY),
 });
 world.scene.add(volt.object, guide.object);
 const voltBubble = createVoltBubble(uiRoot, { onNext: () => nextTourStep() });
