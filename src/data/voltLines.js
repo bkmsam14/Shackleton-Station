@@ -7,69 +7,8 @@
 // ---------------------------------------------------------------- first-day tour
 // done: how the step is completed — { walk: metres } | { event } | { flag } (see systems/assistant.js)
 // target: where the 3D marker goes (resolved to a position in main.js)
-export const TOUR = [
-  {
-    id: 'move',
-    text: "Hi, I'm Volt! Walk with W A S D. Look with the mouse.",
-    long: "Hi, I'm Volt, your helper robot! Walk with W A S D (or the arrow keys) and look around with the mouse.",
-    mood: 'wow',
-    done: { walk: true },
-  },
-  {
-    id: 'gauges',
-    text: 'Great! These three rings keep you alive. Watch them!',
-    long: 'These rings are your gauges: blue Oxygen, green Food, and the Base Power battery at the top. If one runs low, we fix it.',
-    mood: 'happy',
-    action: 'show-gauges',
-    done: { event: 'gauges-shown' },
-  },
-  {
-    id: 'pda',
-    text: 'Press Tab to open your PDA. It explains everything!',
-    long: 'Press Tab to open your PDA. It shows how fast each gauge drops and why, plus a Databank of real NASA science.',
-    mood: 'happy',
-    done: { event: 'pda-opened' },
-  },
-  {
-    id: 'oxygen',
-    text: 'Our oxygen is at 60%. Let’s make more at Electrolysis!',
-    long: 'Our oxygen supply is at 60%. Walk to the Electrolysis unit in the work bay (follow the arrow) and press E to make more.',
-    mood: 'wow',
-    target: 'electrolysis',
-    done: { event: 'oxygen-made' },
-  },
-  {
-    id: 'outside',
-    text: 'Nice work! Now go out through the orange hatch.',
-    long: 'Nice work! Now let’s go outside: walk to the orange hatch and press E. Your suit uses the same oxygen supply.',
-    mood: 'cheer',
-    target: 'airlock',
-    done: { event: 'zone:outside' },
-  },
-  {
-    id: 'array',
-    text: 'Outside, oxygen drains about 2× faster! Follow the lamps to the solar array.',
-    long: 'Working outside in a suit is hard work, so you use oxygen about 2× faster (NASA BVAD). Follow the lamps to the tall solar array.',
-    mood: 'wow',
-    target: 'array',
-    done: { flag: 'nearArray' },
-  },
-  {
-    id: 'greenhouse',
-    text: 'The array turns to follow the low Sun. Last stop: the greenhouse!',
-    long: 'The solar array turns to follow the low Sun and charges our battery. When the Sun hides behind the ridge, we run on the battery. Last stop: the greenhouse!',
-    mood: 'happy',
-    target: 'greenhouse',
-    done: { event: 'zone:greenhouse' },
-  },
-];
-
-export const TOUR_DONE = {
-  id: 'tour-done',
-  text: 'Tour done! Press E on me any time for a tip.',
-  long: 'Tour done! Plants grow here under red and blue lights. Press E on me any time for a tip. You can replay the tour from the pause menu (Esc).',
-  mood: 'cheer',
-};
+// The first-day tour is the guided Training Day (src/data/trainingDay.js).
+export { TRAINING_DAY as TOUR, TRAINING_DONE as TOUR_DONE } from './trainingDay.js';
 export const TOUR_SKIPPED = {
   id: 'tour-skipped',
   text: 'Okay! Press E on me any time for a tip.',

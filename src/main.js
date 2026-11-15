@@ -46,6 +46,10 @@ import { createHelmetLamp } from './world/iceSite.js';
 import { createIceDrillInstance } from './instances/iceDrill/index.js';
 import { createIceOvenInstance } from './instances/iceOven/index.js';
 import { createIceState, stepOven, spillBag, spotReady, coldTrapLoadKw, DIG_SPOTS } from './systems/iceMining.js';
+import { createTraining } from './training/index.js';
+import { drillStorm } from './training/script.js';
+import { createTrainingReportInstance } from './instances/trainingReport/index.js';
+import { PAD } from './supply/landingPad.js';
 
 // ---------------------------------------------------------------- setup
 let quality = loadSettings().quality === 'low' ? 'low' : 'high';
@@ -108,12 +112,14 @@ let sun = null; // { mode, label, live, fellBack, schedule }
 let radiation = createRadiationState([]);
 let ringLinger = 0; // seconds the dose ring stays up after a storm
 let pendingReport = null; // a finished storm waiting for its "What just happened?" card
+let trainingOn = false; // Training Day running: no real-schedule storms (the drill replays one)
+let drillSource = null; // { label, live } of the data the storm drill came from
 const gameHourNow = () => (day.gameSeconds - TIME.START_HOUR * 3600) / 3600;
 function useSun(loaded) {
   sun = loaded;
   // only storms that are still ahead (enough warning time left) are kept
   const now = gameHourNow();
-  radiation = createRadiationState(loaded.schedule.filter((s) => s.warnGameHour > now));
+  radiation = createRadiationState(trainingOn ? [] : loaded.schedule.filter((s) => s.warnGameHour > now));
 }
 function pickSun(mode) {
   sunMode = mode;
@@ -312,21 +318,59 @@ function voltSnapshot(moved = 0) {
     inShelter: playerPlace() === 'shelter',
     bagKg: ice.bagKg,
     inColdTrap: inColdTrap(),
+    wallsFilled: station.wallKg > 0.5,
   };
 }
 
-/** Where the tour marker goes for a tour target, from the player's current zone. */
-function tourTargetPosition(target, zoneId) {
+/** A Training Day target → the spot it means (zone + position). */
+function trainingSpot(target) {
   const find = (id) => world.interactables.find((i) => i.id === id);
   const at = (it) => it && { zone: it.zone, x: it.x, z: it.z, y: it.zone === 'outside' ? heightAt(it.x, it.z) : world.zones[it.zone].floorY };
+  const outside = (x, z) => ({ zone: 'outside', x, z, y: heightAt(x, z) });
   const A = LAYOUT.SOLAR_ARRAY;
-  if (!target) return null;
-  if (target === 'electrolysis') return at(find('electrolysis'));
-  if (zoneId === 'habitat') return at(find('hab-inner-door')); // everything else is outside first
-  if (zoneId === 'greenhouse') return target === 'greenhouse' ? null : at(find('gh-inner-door'));
-  if (target === 'array') return { zone: 'outside', x: A.x + 3, z: A.z - 3, y: heightAt(A.x + 3, A.z - 3) };
-  if (target === 'greenhouse') return at(find('gh-outer-door'));
-  return null; // 'airlock' while already outside
+  switch (target) {
+    case 'electrolysis':
+      return at(find('electrolysis'));
+    case 'terminal':
+      return at(find('supply-terminal'));
+    case 'oven':
+      return at(find('ice-oven'));
+    case 'water-walls':
+      return at(find('water-walls'));
+    case 'shelter': {
+      const sp = world.habitat.shelterSpawn;
+      return { zone: 'habitat', x: sp.x, z: sp.z, y: world.zones.habitat.floorY };
+    }
+    case 'airlock':
+      return at(find('hab-outer-door'));
+    case 'greenhouse':
+      return at(find('gh-inner-door'));
+    case 'pots':
+      return at(world.interactables.find((i) => i.action?.type === 'farm'));
+    case 'array':
+      return outside(A.x + 3, A.z - 3);
+    case 'pad':
+      return outside(PAD.x - PAD.radius - 0.8, PAD.z);
+    case 'ice':
+      return at(find(DIG_SPOTS.find((id) => spotReady(ice, id, gameHourNow())) ?? DIG_SPOTS[0]));
+    default:
+      return null;
+  }
+}
+
+/** Where the marker goes from the player's zone: the spot itself, or the door to its zone. */
+function tourTargetPosition(target, zoneId) {
+  const spot = trainingSpot(target);
+  if (!spot) return null;
+  const find = (id) => world.interactables.find((i) => i.id === id);
+  const at = (it) => it && { zone: it.zone, x: it.x, z: it.z, y: it.zone === 'outside' ? heightAt(it.x, it.z) : world.zones[it.zone].floorY };
+  if (target === 'airlock' && zoneId === 'outside') return null; // already out
+  if (spot.zone === zoneId) return spot;
+  if (zoneId === 'habitat') return at(find('hab-inner-door'));
+  if (zoneId === 'greenhouse') return at(find('gh-inner-door'));
+  if (spot.zone === 'habitat') return at(find('hab-outer-door'));
+  if (spot.zone === 'greenhouse') return at(find('gh-outer-door'));
+  return spot;
 }
 
 player.controls.addEventListener('lock', enterPlay);
@@ -360,14 +404,17 @@ const instances = createInstanceManager(uiRoot, {
       assistant.notify('oxygen-made'); // supply already full (e.g. tour replayed late): don't get stuck
     }
     if (id === 'ice-drill' && result.completed) {
+      assistant.notify('ice-dug');
       saveIce();
       if (result.bestStreak > (loadSettings().iceBestStreak ?? 0)) saveSettings({ iceBestStreak: result.bestStreak });
       stormLog(`Drilled ${result.soilKg.toFixed(0)} kg of icy soil (about ${result.waterKg.toFixed(1)} kg of water in it). Bag: ${result.bagKg.toFixed(0)} kg — bake it in the Ice Oven.`);
     }
     if (id === 'ice-oven' && result.completed) {
+      assistant.notify('ice-oven-started');
       saveIce();
       stormLog(`Ice Oven started: ${result.soilKg.toFixed(0)} kg of icy soil, ${result.kwh.toFixed(1)} kWh of power, about ${result.waterKg.toFixed(1)} kg of water on the way to the tank.`);
     }
+    if (id === 'storm-report') assistant.notify('storm-report-closed');
     // Back to the 3D world. Re-locking the mouse needs a click; the "Back to base" button is
     // one. If the browser refuses (e.g. closed with Esc), show the pause menu to click on.
     mode = 'paused';
@@ -388,6 +435,7 @@ const farming = createFarming({
   feedback,
   gauges,
   getMode: () => mode,
+  onEvent: (id) => assistant.notify(id), // potato planted / watered / harvested / eaten
   hooks: {
     onEnter() {
       voltVoice.stop(); // the world is paused while you tend a pot
@@ -424,6 +472,7 @@ const supply = createSupply({
   notify: voltEvent,
   instances, // the Solar Fix repair lesson opens like the Electrolysis one
   voice: voltVoice,
+  onEvent: (id) => assistant.notify(id), // order sent / with a kit, kit collected
   hooks: {
     onEnter() {
       voltVoice.stop();
@@ -627,7 +676,11 @@ function handleInteraction() {
   if (input.consumeInteract() && target) {
     if (target.action.type === 'door') useDoor(target.action);
     else if (target.action.type === 'station') useStation(target.action);
-    else if (target.action.type === 'volt') sayLine(assistant.talk(voltSnapshot()));
+    else if (target.action.type === 'volt') {
+      const line = assistant.talk(voltSnapshot());
+      sayLine(line);
+      training.onLine(line); // talking to Volt during a step can fire its scripted event too
+    }
     else if (target.action.type === 'farm') farming.interact(target.action.potId);
     else if (target.action.type === 'supply') supply.interact(target);
   }
@@ -689,7 +742,8 @@ function handleRadiationEvent(e, { quiet = false } = {}) {
 function showStormReport() {
   const r = pendingReport;
   pendingReport = null;
-  instances.open('storm-report', createStormReportInstance, { ...r, sunLabel: sun?.label ?? '', live: Boolean(sun?.live), voice: voltVoice });
+  const src = r.storm?.drill && drillSource ? drillSource : { label: sun?.label ?? '', live: Boolean(sun?.live) };
+  instances.open('storm-report', createStormReportInstance, { ...r, sunLabel: src.label, live: src.live, voice: voltVoice });
 }
 
 /** HUD state for the dose ring + storm chip. */
@@ -699,7 +753,7 @@ function radiationHud() {
   let chip = '';
   let chipMode = '';
   if (phase === 'warning') {
-    const secs = Math.ceil(((hoursToArrival(radiation, gameHourNow()) ?? 0) * 3600) / TIME.SCALE);
+    const secs = Math.ceil(((hoursToArrival(radiation, gameHourNow()) ?? 0) * 3600) / (TIME.SCALE * training.pace()));
     chip = inShelter ? `Particles in ${secs} s — you’re in the shelter` : `Particles in ${secs} s → storm shelter`;
     chipMode = inShelter ? 'safe' : 'warning';
   } else if (phase === 'storm') {
@@ -779,6 +833,43 @@ function watchFrameTime(frameDt) {
   if (watchTime > 4 && frameEma > 0.0175) postfx.disableAO();
 }
 
+// ---------------------------------------------------------------- Training Day (Day 1, guided by Volt)
+// The script (data/trainingDay.js) runs as Volt's tour. Here: what its scripted events do.
+let trainingReportDue = false;
+async function startStormDrill() {
+  let storms = sun?.schedule ?? [];
+  let source = { label: sun?.label ?? '', live: Boolean(sun?.live) };
+  if (!storms.length) {
+    // the Sun you picked has no storms (e.g. Calm): the drill replays one from the Stormy data
+    const stormy = await loadSun('stormy');
+    storms = stormy.schedule;
+    source = { label: stormy.label, live: false };
+  }
+  const drill = drillStorm(storms, gameHourNow());
+  if (!drill) return feedback.notify('No storm data for the drill');
+  drillSource = source;
+  radiation = createRadiationState([drill]);
+}
+const training = createTraining({
+  root: uiRoot,
+  assistant,
+  actions: {
+    micrometeorite: () => supply.forceSolarHit(),
+    'rush-delivery': () => supply.rushDeliveries(),
+    'storm-drill': () => startStormDrill(),
+    ripen: () => farming.ripenAll(),
+    start() {
+      trainingOn = true;
+      if (radiation.phase === 'calm') radiation = createRadiationState([]); // real storms wait until training is over
+    },
+    end(how) {
+      trainingOn = false;
+      if (sun && radiation.phase === 'calm') useSun(sun); // the real storms ahead come back
+      if (how === 'done') trainingReportDue = true;
+    },
+  },
+});
+
 // ---------------------------------------------------------------- loop
 const timer = new THREE.Timer();
 timer.connect(document);
@@ -791,10 +882,14 @@ renderer.setAnimationLoop(() => {
   const frameDt = Math.min(timer.getDelta(), 0.1);
   const running = mode === 'playing' || mode === 'busy';
   const dt = running ? frameDt : 0;
+  // Base clock (gauges, Sun, oven, plants, storms) - slower on the Training Day.
+  // Walking, Volt and animations always use real time (dt).
+  const pace = training.pace();
+  const simDt = dt * pace;
   elapsed += dt;
 
   if (running) {
-    stepDayCycle(day, dt);
+    stepDayCycle(day, simDt);
     player.update(dt);
   }
   if (mode === 'playing') {
@@ -822,22 +917,22 @@ renderer.setAnimationLoop(() => {
   const nowHour = gameHourNow();
   for (const id of DIG_SPOTS) world.iceSite.setSpotReady(id, spotReady(ice, id, nowHour));
   world.iceSite.update(frameDt);
-  if (running) stepIceOven((dt * TIME.SCALE) / 3600);
+  if (running) stepIceOven((simDt * TIME.SCALE) / 3600);
   world.iceOven.update(frameDt, Boolean(ice.oven));
   if (ice.oven && running && (iceSaveIn -= frameDt) <= 0) {
     iceSaveIn = 5;
     saveIce(); // keep the oven's progress if the tab is closed
   }
 
-  const report = stepGauges(gauges, dt, {
+  const report = stepGauges(gauges, simDt, {
     pressurized: zoneId !== 'outside',
     sunVisibility: sun.visibility,
     alignment: alignment * supply.solarOutputFactor, // 1 when healthy; less after a micrometeorite hit
     extraLoadKw: coldTrapLoadKw(coldTrap), // suit heaters + lamp, recharged by the base
   });
   if (running) reactToGauges(report, sun);
-  farming.update(frameDt, dt, { lit: report.hasPower });
-  supply.update(frameDt, dt, zoneId);
+  farming.update(frameDt, simDt, { lit: report.hasPower });
+  supply.update(frameDt, dt, zoneId, { pace, training: training.active });
   if (mode === 'playing' && (report.oxygenEmpty || report.foodEmpty)) {
     gentleFailure(report.oxygenEmpty ? 'oxygen' : 'food');
   }
@@ -850,12 +945,19 @@ renderer.setAnimationLoop(() => {
   voltTarget.zone = volt.zoneId ?? zoneId;
   voltTarget.x = volt.position.x;
   voltTarget.z = volt.position.z;
-  sayLine(assistant.step(frameDt, voltSnapshot(moved)));
+  const voltLine = assistant.step(frameDt, voltSnapshot(moved));
+  sayLine(voltLine);
+  training.onLine(voltLine); // a Training Day step fires its scripted event as Volt says it
+  training.update(frameDt, { mode });
   // ---- particle storms
   if (running) {
-    for (const e of stepRadiation(radiation, gameHourNow(), (dt * TIME.SCALE) / 3600, { place: playerPlace(), wallKg: station.wallKg })) handleRadiationEvent(e);
+    for (const e of stepRadiation(radiation, gameHourNow(), (simDt * TIME.SCALE) / 3600, { place: playerPlace(), wallKg: station.wallKg })) handleRadiationEvent(e);
   }
   if (mode === 'playing' && pendingReport && !instances.isOpen) showStormReport();
+  else if (mode === 'playing' && trainingReportDue && !instances.isOpen) {
+    trainingReportDue = false;
+    instances.open('training-report', createTrainingReportInstance, { voice: voltVoice });
+  }
   ringLinger = Math.max(0, ringLinger - frameDt);
   // camera "snow" + dosimeter ticks follow the live dose rate (quiet in the shelter)
   stormFx.update(frameDt, running ? exposureLevel(radiation, playerPlace(), station.wallKg) : 0);

@@ -24,7 +24,7 @@ const itemsSummary = (items) =>
     .map(([id, n]) => `${n}× ${CATALOG[id]?.name ?? id}`)
     .join(', ');
 
-export function createTerminalUI({ root, state, getTargets, onConfirm, onClose }) {
+export function createTerminalUI({ root, state, getTargets, onConfirm, onClose, getPace = () => 1 }) {
   const el = document.createElement('div');
   el.className = 'supply-overlay';
   el.hidden = true;
@@ -138,12 +138,12 @@ export function createTerminalUI({ root, state, getTargets, onConfirm, onClose }
   // ------------------------------------------------------------------ orders tab
   function detailFor(o) {
     const s = o.stage;
-    const r = fmtSeconds(o.remaining);
+    const r = fmtSeconds(o.stage === 'reviewing' ? o.remaining / getPace() : o.remaining); // real seconds (review follows the base clock)
     if (s === 'transmitting') return `Signal reaches Earth in ${r} (speed of light)`;
     if (s === 'reviewing') return `Mission Control is checking your request · ${r}`;
     if (s === 'replying') return `Approval on its way back to the Moon · ${r}`;
-    if (s === 'preparing') return `Packing the crate onto the lander · arrives in ~${fmtSeconds(secondsUntilArrival(o))}`;
-    if (s === 'in-transit') return `On its way to the Moon · arrives in ~${fmtSeconds(secondsUntilArrival(o))}`;
+    if (s === 'preparing') return `Packing the crate onto the lander · arrives in ~${fmtSeconds(secondsUntilArrival(o, getPace()))}`;
+    if (s === 'in-transit') return `On its way to the Moon · arrives in ~${fmtSeconds(secondsUntilArrival(o, getPace()))}`;
     if (s === 'holding') return 'The landing pad is full. Collect a crate to make room.';
     if (s === 'landing') return `Coming down onto the cargo pad · ${r}`;
     if (s === 'arrived') return 'On the cargo pad outside. Go out and press E at the crate.';

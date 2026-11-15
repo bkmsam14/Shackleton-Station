@@ -7,8 +7,8 @@
 // they continue correctly after a reload.
 import './supply.css';
 import { loadSettings, saveSettings } from '../systems/save.js';
-import { SOLAR_DAMAGE } from '../config/gameplay.js';
-import { createSupplyState, serializeSupply, placeOrder, stepOrders, secondsUntilArrival, isActive } from './orders.js';
+import { SOLAR_DAMAGE, TRAINING } from '../config/gameplay.js';
+import { createSupplyState, serializeSupply, placeOrder, stepOrders, secondsUntilArrival, isActive, rushOrder } from './orders.js';
 import { collectFromCrate } from './delivery.js';
 import { createSolarDamageState, stepSolarDamage, solarOutputFactor, repairSolar, kitsInInventory } from './solarDamage.js';
 import { createLandingPad, slotPosition } from './landingPad.js';
@@ -30,7 +30,8 @@ const summary = (items) =>
  * hooks.onEnter / onExit(reason): freeing and re-locking the mouse around a screen.
  * instances / voice: the game's lesson overlay manager and Volt's voice (for the repair lesson).
  */
-export function createSupply({ world, root, gauges, station, inventory, saveInventory, notify, hooks, instances, voice }) {
+export function createSupply({ world, root, gauges, station, inventory, saveInventory, notify, hooks, instances, voice, onEvent = () => {} }) {
+  let pace = 1; // base-clock speed (slower on the Training Day)
   const saved = loadSettings();
   const state = createSupplyState(saved.supply ?? null);
   const damage = createSolarDamageState(saved.solarDamage ?? null);
@@ -96,9 +97,12 @@ export function createSupply({ world, root, gauges, station, inventory, saveInve
     root,
     state,
     getTargets: () => targets,
+    getPace: () => pace,
     onConfirm(items) {
       const order = placeOrder(state, items);
       if (!order) return null;
+      onEvent('order-sent');
+      if (order.items['solar-repair-kit']) onEvent('order-kit');
       sfx.transmit();
       save();
       return order;
@@ -111,6 +115,7 @@ export function createSupply({ world, root, gauges, station, inventory, saveInve
     getTargets: () => targets,
     onCollect(order, selection) {
       const { moved, kept } = collectFromCrate(state, order, selection, targets);
+      if (moved['solar-repair-kit']) onEvent('kit-collected');
       const got = Object.entries(moved).map(([id, n]) => {
         const c = CATALOG[id];
         if (c.to === 'tank') return `+${n * c.perUnit} kg water`;
@@ -155,6 +160,18 @@ export function createSupply({ world, root, gauges, station, inventory, saveInve
       action: { type: 'supply', kind: 'repair' },
     };
   }
+  function announceHit() {
+    sfx.alarm();
+    notify(
+      'solar-damaged',
+      'Solar array hit!',
+      `A micrometeorite hit the solar array. It now makes only ${Math.round(SOLAR_DAMAGE.DAMAGED_OUTPUT * 100)} % of its power. ` +
+        'Order a Solar Panel Repair Kit at the Supply terminal in the habitat, then press E at the array to fix it.',
+      'critical',
+    );
+    save();
+  }
+
   /** E at the damaged array: with a kit, open the Solar Fix lesson; the kit is used when the cells are swapped. */
   function tryRepair() {
     if (!damage.damaged) return;
@@ -188,7 +205,7 @@ export function createSupply({ world, root, gauges, station, inventory, saveInve
   function onOrderEvent({ type, order: o }) {
     if (type === 'approved') {
       sfx.confirmed();
-      notify('supply-approved', `Request ${o.id} approved`, `Earth approved supply request ${o.id} (${summary(o.items)}). It arrives in about ${fmtSeconds(secondsUntilArrival(o))} of play.`);
+      notify('supply-approved', `Request ${o.id} approved`, `Earth approved supply request ${o.id} (${summary(o.items)}). It arrives in about ${fmtSeconds(secondsUntilArrival(o, pace))} of play.`);
     } else if (type === 'dispatched') {
       notify('supply-dispatched', `Cargo ${o.id} on its way`, `Cargo ${o.id} was launched toward the Moon.`);
     } else if (type === 'holding') {
@@ -234,22 +251,36 @@ export function createSupply({ world, root, gauges, station, inventory, saveInve
      * frameDt: real frame time. dt: game step (0 while the world is paused).
      * Orders keep moving while the terminal is open, so you can watch the signal travel.
      */
-    update(frameDt, dt, zoneId) {
+    /** Training Day: a micrometeorite hits the array now (scripted, not random). */
+    forceSolarHit() {
+      if (damage.damaged) return false;
+      damage.damaged = true;
+      announceHit();
+      return true;
+    },
+    /** Training Day: orders on their way land within a few seconds (the light delay stays real). */
+    rushDeliveries() {
+      let any = false;
+      // remaining time is counted on the base clock, so at a slow pace it must be shorter
+      for (const o of state.orders) any = rushOrder(o, TRAINING.RUSH_SECONDS * pace) || any;
+      return any;
+    },
+    get solarDamaged() {
+      return damage.damaged;
+    },
+    /**
+     * dt: real seconds while the world runs. opts.pace: base-clock speed (Training Day < 1).
+     * opts.training: no random micrometeorite hits (the script decides).
+     */
+    update(frameDt, dt, zoneId, { pace: p = 1, training = false } = {}) {
+      pace = p;
       const step = dt > 0 ? dt : openScreen ? frameDt : 0;
-      const events = stepOrders(state, step);
+      const events = stepOrders(state, step, { pace });
       events.forEach(onOrderEvent);
       if (events.some((e) => e.type === 'arrived')) syncCrates();
 
-      if (stepSolarDamage(damage, dt, Math.random, { everySeconds: SOLAR_DAMAGE.TEST_HIT_EVERY_REAL_SECONDS }) === 'hit') {
-        sfx.alarm();
-        notify(
-          'solar-damaged',
-          'Solar array hit!',
-          `A micrometeorite hit the solar array. It now makes only ${Math.round(SOLAR_DAMAGE.DAMAGED_OUTPUT * 100)} % of its power. ` +
-            'Order a Solar Panel Repair Kit at the Supply terminal in the habitat, then press E at the array to fix it.',
-          'critical',
-        );
-        save();
+      if (!training && stepSolarDamage(damage, dt * pace, Math.random, { everySeconds: SOLAR_DAMAGE.TEST_HIT_EVERY_REAL_SECONDS }) === 'hit') {
+        announceHit();
       }
 
       const touched = pad.update(frameDt, state.orders, { visible: zoneId === 'outside' });

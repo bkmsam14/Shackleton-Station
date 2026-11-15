@@ -375,6 +375,18 @@ export const ICE = {
   FAIL_KEEP_FRACTION: 0.5, // GAME BALANCE (not real data) — gentle failure spills half the bag
 };
 
+// ---------------------------------------------------------------------------
+// TRAINING DAY — Day 1 guided by Volt (src/data/trainingDay.js, src/training/)
+// ---------------------------------------------------------------------------
+export const TRAINING = {
+  // While the training script runs, the base clock (gauges, Sun, plants, oven, deliveries)
+  // runs at this fraction of its normal speed so there is time to learn. Movement is
+  // unchanged. The HUD says so. 0.05 → 1 game day = 80 real minutes instead of 4.
+  PACE: 0.05, // GAME BALANCE (not real data)
+  // Steps can set their own pace (the storm drill runs at normal speed, 1).
+  RUSH_SECONDS: 1.5, // the scripted delivery skips to landing within this many seconds — GAME BALANCE
+};
+
 // Feature flags (later demos).
 export const FEATURES = {
   ENABLE_WATER_GAUGE: false,

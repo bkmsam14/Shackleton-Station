@@ -198,3 +198,31 @@ test('test switch: a hit exactly every N seconds while healthy, counting again a
   assert.equal(stepSolarDamage(d, 30, () => 1, every), null);
   assert.equal(stepSolarDamage(d, 30, () => 1, every), 'hit'); // 60 s after the repair
 });
+
+import { rushOrder } from '../src/supply/orders.js';
+
+test('training pace slows review/packing/flight but never the light delay', () => {
+  const s = createSupplyState();
+  const o = placeOrder(s, { water: 1 });
+  stepOrders(s, oneWayDelaySeconds() + 0.01, { pace: 0.05 });
+  assert.equal(o.stage, 'reviewing'); // the signal still took the real 1.28 s
+  const review = gameHoursToPlaySeconds(SUPPLY.REVIEW_GAME_HOURS);
+  stepOrders(s, review, { pace: 0.05 });
+  assert.equal(o.stage, 'reviewing'); // 20× slower now
+  stepOrders(s, review * 19.1, { pace: 0.05 });
+  assert.notEqual(o.stage, 'reviewing');
+  assert.ok(secondsUntilArrival(o, 0.05) > secondsUntilArrival(o, 1));
+});
+
+test('a rushed order lands within a few seconds, light delay still real', () => {
+  const s = createSupplyState();
+  const o = placeOrder(s, { water: 1 });
+  rushOrder(o, 1.5);
+  assert.ok(Math.abs(o.remaining - oneWayDelaySeconds()) < 1e-9); // transmitting: not shortened
+  stepOrders(s, oneWayDelaySeconds() + 0.01);
+  for (let i = 0; i < 40 && o.stage !== 'arrived'; i++) { // the 7 s landing is never shortened
+    rushOrder(o, 1.5);
+    stepOrders(s, 0.5);
+  }
+  assert.equal(o.stage, 'arrived');
+});

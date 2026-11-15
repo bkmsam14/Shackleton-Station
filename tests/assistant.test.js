@@ -39,28 +39,52 @@ test('a step cannot complete before Volt has said it', () => {
   assert.equal(a.tourStep.id, 'move');
 });
 
-test('full tour: events in order → tour done and saved', () => {
+/** Do what a step asks (walk, event, flag or just wait) so the tour moves on. */
+function completeStep(a, step) {
+  const d = step.done;
+  if (d.walk) a.step(0.1, play({ moved: ASSISTANT.TOUR_WALK_M + 0.1 }));
+  else if (d.event) assert.equal(a.notify(d.event), true, `event ${d.event}`);
+  else if (d.flag) a.step(0.1, play({ [d.flag]: true }));
+  else if (d.after !== undefined) for (let t = 0; t <= d.after + 0.5; t += 0.5) a.step(0.5, play());
+}
+
+test('full Training Day: every step in order → tour done, saved, reported once', () => {
+  const store = memoryStore();
+  const a = createAssistant({ store });
+  a.startIfNeeded();
+  for (const step of LINES.TOUR) {
+    assert.equal(runUntilLine(a).id, step.id);
+    completeStep(a, step);
+  }
+  assert.equal(runUntilLine(a).id, 'tour-done');
+  assert.equal(a.tourActive, false);
+  assert.equal(store.load().volt.tourDone, true);
+  assert.equal(a.consumeTourEnd(), 'done');
+  assert.equal(a.consumeTourEnd(), null);
+});
+
+test('a "watch" step completes on its own after a few seconds', () => {
+  const i = LINES.TOUR.findIndex((s) => s.done.after !== undefined);
+  assert.ok(i >= 0);
+  const a = createAssistant({ store: memoryStore({ volt: { tourIndex: i } }) });
+  a.startIfNeeded();
+  assert.equal(runUntilLine(a).id, LINES.TOUR[i].id);
+  for (let t = 0; t < LINES.TOUR[i].done.after - 1; t += 0.5) a.step(0.5, play());
+  assert.equal(a.tourStep.id, LINES.TOUR[i].id); // not yet
+  for (let t = 0; t < 2; t += 0.5) a.step(0.5, play());
+  assert.equal(a.tourStep.id, LINES.TOUR[i + 1].id);
+});
+
+test('a reload carries on from the saved step (no restart of a long day)', () => {
   const store = memoryStore();
   const a = createAssistant({ store });
   a.startIfNeeded();
   runUntilLine(a);
-  a.step(0.1, play({ moved: 5 }));
-  for (const [id, ev] of [
-    ['gauges', 'gauges-shown'],
-    ['pda', 'pda-opened'],
-    ['oxygen', 'oxygen-made'],
-    ['outside', 'zone:outside'],
-  ]) {
-    assert.equal(runUntilLine(a).id, id);
-    assert.equal(a.notify(ev), true);
-  }
-  assert.equal(runUntilLine(a).id, 'array');
-  a.step(0.1, play({ nearArray: true }));
-  assert.equal(runUntilLine(a).id, 'greenhouse');
-  a.notify('zone:greenhouse');
-  assert.equal(runUntilLine(a).id, 'tour-done');
-  assert.equal(a.tourActive, false);
-  assert.equal(store.load().volt.tourDone, true);
+  a.step(0.1, play({ moved: 5 })); // step 1 done → step 2
+  const b = createAssistant({ store });
+  b.startIfNeeded();
+  assert.equal(b.tourStep.id, LINES.TOUR[1].id);
+  assert.equal(runUntilLine(b).id, LINES.TOUR[1].id);
 });
 
 test('skip and replay', () => {
@@ -71,6 +95,7 @@ test('skip and replay', () => {
   assert.equal(a.tourActive, false);
   assert.equal(runUntilLine(a).id, 'tour-skipped');
   assert.equal(createAssistant({ store }).tourDone, true);
+  assert.equal(a.consumeTourEnd(), 'skipped');
   a.replayTour();
   assert.equal(a.tourActive, true);
   assert.equal(runUntilLine(a).id, 'move');
@@ -169,4 +194,59 @@ test('every fact and visit fact points at a real Databank entry (which has the s
     if (l.databank) assert.ok(ids.has(l.databank), `missing databank entry: ${l.databank}`);
   }
   for (const f of LINES.FACTS) assert.ok(f.databank, f.id);
+});
+
+// ---------------------------------------------------------------- Training Day script checks
+import { TRAINING_CHAPTERS } from '../src/data/trainingDay.js';
+import { TRIGGERS, TARGETS } from '../src/training/script.js';
+
+test('Training Day script: every step is well formed', () => {
+  const chapters = new Set(TRAINING_CHAPTERS.map((c) => c.id));
+  const ids = new Set();
+  for (const s of LINES.TOUR) {
+    assert.ok(!ids.has(s.id), `duplicate step id ${s.id}`);
+    ids.add(s.id);
+    assert.ok(chapters.has(s.chapter), `${s.id}: unknown chapter ${s.chapter}`);
+    const kinds = ['walk', 'event', 'flag', 'after'].filter((k) => s.done[k] !== undefined);
+    assert.equal(kinds.length, 1, `${s.id}: needs exactly one way to finish`);
+    if (s.trigger) assert.ok(TRIGGERS.includes(s.trigger), `${s.id}: unknown trigger ${s.trigger}`);
+    if (s.target) assert.ok(TARGETS.includes(s.target), `${s.id}: unknown target ${s.target}`);
+    if (s.pace !== undefined) assert.ok(s.pace > 0 && s.pace <= 1, `${s.id}: pace`);
+    assert.ok(s.long, `${s.id}: needs a long line for the PDA log`);
+  }
+  // every chapter is used
+  for (const c of chapters) assert.ok(LINES.TOUR.some((s) => s.chapter === c), `chapter ${c} unused`);
+});
+
+import { drillStorm, trainingPace } from '../src/training/script.js';
+import { TRAINING } from '../src/config/gameplay.js';
+
+test('training pace: slow while training, a step can override, normal after', () => {
+  assert.equal(trainingPace({ id: 'x' }, true), TRAINING.PACE);
+  assert.equal(trainingPace({ id: 'storm', pace: 1 }, true), 1);
+  assert.equal(trainingPace({ id: 'x' }, false), 1);
+});
+
+test('storm drill: the gentlest real storm, moved to now, real warning time kept', () => {
+  const storms = [
+    { id: 'a', intensity: 0.8, warnGameHour: 30, arriveGameHour: 36 },
+    { id: 'b', intensity: 0.2, warnGameHour: 50, arriveGameHour: 54 },
+  ];
+  const d = drillStorm(storms, 10);
+  assert.equal(d.id, 'b');
+  assert.ok(d.warnGameHour > 10 && d.warnGameHour < 10.1);
+  assert.equal(d.arriveGameHour - d.warnGameHour, 4);
+  assert.equal(d.intensity, 0.2);
+  assert.equal(drillStorm([], 10), null);
+});
+
+test('doing a step a moment before Volt says it still counts (no getting stuck)', () => {
+  const i = LINES.TOUR.findIndex((s) => s.done.event === 'eat-tried');
+  const a = createAssistant({ store: memoryStore({ volt: { tourIndex: i } }) });
+  a.startIfNeeded();
+  assert.equal(a.notify('eat-tried'), true); // pressed F before the line
+  assert.equal(a.tourStep.id, 'eat'); // the kid still hears the step…
+  assert.equal(runUntilLine(a).id, 'eat');
+  a.step(0.1, play()); // …and it completes right after
+  assert.equal(a.tourStep.id, LINES.TOUR[i + 1].id);
 });

@@ -130,6 +130,10 @@ function durationOf(stage, order) {
   }
 }
 
+// Stages timed by real physics or a real animation: never slowed by a training pace.
+const REAL_TIME = new Set(['transmitting', 'replying', 'landing']);
+const rateOf = (stage, pace) => (REAL_TIME.has(stage) ? 1 : pace);
+
 function enter(order, stage) {
   order.stage = stage;
   order.duration = durationOf(stage, order);
@@ -159,9 +163,11 @@ function tryLand(state, order, events) {
 
 /**
  * Advance every active order by dt play seconds. Several stages can pass in one big step.
+ * pace: speed of the base clock (1 normally; slower on the Training Day). The light delay
+ * and the landing always run in real time.
  * Returns events: { type: 'sent' | 'approved' | 'dispatched' | 'holding' | 'landing' | 'arrived', order }.
  */
-export function stepOrders(state, dt) {
+export function stepOrders(state, dt, { pace = 1 } = {}) {
   const events = [];
   for (const order of state.orders) {
     if (!ACTIVE.has(order.stage)) continue;
@@ -169,13 +175,15 @@ export function stepOrders(state, dt) {
       tryLand(state, order, events);
       continue;
     }
-    let left = dt;
+    let left = dt; // real seconds to spend
     while (left > 0 && ACTIVE.has(order.stage) && order.stage !== 'holding') {
-      if (order.remaining > left) {
-        order.remaining -= left;
+      const rate = rateOf(order.stage, pace);
+      if (rate <= 0) break;
+      if (order.remaining > left * rate) {
+        order.remaining -= left * rate;
         break;
       }
-      left -= order.remaining;
+      left -= order.remaining / rate;
       order.remaining = 0;
       const s = order.stage;
       if (s === 'transmitting') {
@@ -202,16 +210,23 @@ export function stepOrders(state, dt) {
   return events;
 }
 
-/** Play seconds until this order is on the pad (0 once it has arrived). */
-export function secondsUntilArrival(order) {
+/** Real seconds until this order is on the pad (0 once it has arrived), at base-clock pace. */
+export function secondsUntilArrival(order, pace = 1) {
   if (!ACTIVE.has(order.stage)) return 0;
   if (order.stage === 'holding') return SUPPLY.LANDING_SECONDS;
-  let t = order.remaining;
+  let t = order.remaining / rateOf(order.stage, pace);
   for (let i = ORDER.indexOf(order.stage) + 1; i < ORDER.indexOf('arrived'); i++) {
     const s = ORDER[i];
-    if (s !== 'holding') t += durationOf(s, order);
+    if (s !== 'holding') t += durationOf(s, order) / rateOf(s, pace);
   }
   return t;
+}
+
+/** Training Day: an order still on its way skips ahead to land within `seconds`. */
+export function rushOrder(order, seconds) {
+  if (!ACTIVE.has(order.stage) || order.stage === 'holding') return false;
+  if (!REAL_TIME.has(order.stage)) order.remaining = Math.min(order.remaining, seconds);
+  return true;
 }
 
 /** Take n units of one supply out of an arrived crate. Marks the order collected when empty. */
