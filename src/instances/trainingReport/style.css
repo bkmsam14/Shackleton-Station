@@ -1,0 +1,37 @@
+/* style.css — the Training Day report card: always fits the screen (the list scrolls
+   inside the card on short screens; the button stays reachable). */
+.ez.tr .ez-card {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+}
+.ez.tr .ez-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+.ez.tr .ez-say {
+  margin: 6px 0 4px;
+}
+.ez.tr .tr-list {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px;
+  margin: 6px 0;
+}
+.ez.tr .tr-list .ez-res {
+  padding: 6px 12px 6px 8px;
+  border-radius: 14px;
+  font-size: 16px;
+}
+.ez.tr .tr-list .ez-res b {
+  font-size: 18px;
+}
+.ez.tr .tr-list .ez-ic,
+.ez.tr .tr-list svg {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+.ez.tr .ez-p {
+  margin: 6px 0;
+}
