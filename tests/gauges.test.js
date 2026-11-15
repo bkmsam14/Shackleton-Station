@@ -59,8 +59,10 @@ test('reports crossing below 25% once', () => {
   assert.equal(r2.crossedLow.food, false);
 });
 
-test('ridge hides the Sun only inside its sector', () => {
-  assert.equal(sunVisibility(200), 1);
-  assert.equal(sunVisibility(322.5), 0);
-  assert.ok(sunVisibility(300) > 0 && sunVisibility(300) < 1);
+test('the real LOLA horizon hides the low Sun only behind real ridges', () => {
+  // game azimuth = lunar longitude + 150° (lon 205° is behind the high ridge next to the base)
+  assert.equal(sunVisibility(205 + 150, 1.5), 0);
+  assert.equal(sunVisibility(100 + 150, 1.5), 1);
+  // a Sun right on the skyline is half hidden
+  assert.ok(sunVisibility(205 + 150, 9) > 0.99);
 });

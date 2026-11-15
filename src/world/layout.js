@@ -92,6 +92,6 @@ export const LAYOUT = {
   ICE_OVEN: { x: 9.2, z: -1.55, use: { x: 8.25, z: -1.55 } },
 
   // Far hills ring (also hides the Sun during the ridge period).
-  HORIZON: { innerRadius: 300, outerRadius: 460, segments: 180 },
-  TERRAIN_SIZE: 640,
+  // Real LOLA terrain disc you can walk on (the 5 m map covers ±400 m around the site)
+  TERRAIN_RADIUS: 400,
 };

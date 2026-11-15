@@ -8,6 +8,7 @@
 import { TIME, SKY } from '../config/gameplay.js';
 import { skyTurnDeg, sunEclipticLon, gameSkyMatrix, liveSkyMatrix } from './skyMath.js';
 import { liveSky, toGameAz } from './ephemeris.js';
+import { horizonDeg } from '../world/lola.js';
 
 export function wrapDeg(a) {
   return ((a % 360) + 360) % 360;
@@ -26,15 +27,13 @@ function smoothstep(e0, e1, x) {
 }
 
 /**
- * How much of the Sun is visible (0 = hidden behind the ridge, 1 = fully visible).
- * The ridge covers [RIDGE_START, RIDGE_END] with a soft edge of RIDGE_FADE degrees.
+ * How much of the Sun is visible (0 = hidden behind the terrain, 1 = fully visible), from the
+ * REAL horizon around the base (NASA LOLA, world/lola.js): the Sun's disc (~0.53° wide) slides
+ * behind the real ridges and mountains.
  */
-export function sunVisibility(azimuthDeg, sky = SKY) {
-  const width = wrapDeg(sky.RIDGE_END_AZIMUTH_DEG - sky.RIDGE_START_AZIMUTH_DEG);
-  const centre = sky.RIDGE_START_AZIMUTH_DEG + width / 2;
-  const d = Math.abs(deltaDeg(azimuthDeg, centre)); // degrees from the ridge centre
-  const half = width / 2;
-  return smoothstep(half - sky.RIDGE_FADE_DEG, half + sky.RIDGE_FADE_DEG, d);
+export function sunVisibility(azimuthDeg, elevationDeg = SKY.SUN_ELEVATION_DEG) {
+  const clearance = elevationDeg - horizonDeg(azimuthDeg); // degrees above the skyline
+  return smoothstep(-0.27, 0.27, clearance);
 }
 
 export function createDayCycle({ startHour = TIME.START_HOUR } = {}) {
@@ -83,12 +82,10 @@ export function getSun(state, sky = SKY) {
   if (live !== null) {
     const real = liveSky(live);
     const azimuth = toGameAz(real.sun.az);
-    // the real Sun can dip below the horizon too (it moves ±1.5° up and down here)
-    const aboveHorizon = Math.min(1, Math.max(0, (real.sun.alt + 0.27) / 0.54)); // Sun's disc ≈ 0.53°
     return {
       azimuthDeg: azimuth,
       elevationDeg: real.sun.alt,
-      visibility: sunVisibility(azimuth, sky) * aboveHorizon,
+      visibility: sunVisibility(azimuth, real.sun.alt),
       live: true,
       dateMs: live,
       earth: { az: toGameAz(real.earth.az), alt: real.earth.alt, lit: real.earthLit },
@@ -100,7 +97,7 @@ export function getSun(state, sky = SKY) {
   return {
     azimuthDeg: azimuth,
     elevationDeg: sky.SUN_ELEVATION_DEG,
-    visibility: sunVisibility(azimuth, sky),
+    visibility: sunVisibility(azimuth, sky.SUN_ELEVATION_DEG),
     // how far the starry sky has turned (azimuth of anything on the sky = λ + skyTurnDeg)
     skyTurnDeg: turn,
     live: false,

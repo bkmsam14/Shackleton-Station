@@ -92,11 +92,8 @@ export const SKY = {
   // In the game the Sun circles once in this many REAL seconds (shown on screen).
   GAME_SUN_LOOP_REAL_SECONDS: 1200, // GAME BALANCE (not real data)
   SUN_START_AZIMUTH_DEG: 200, // GAME BALANCE (not real data) — where the Sun starts
-  // Azimuth range where a distant ridge hides the low Sun (dark period).
-  // Simplification of real terrain shadowing — "Needs verification" in SCIENCE.md.
-  RIDGE_START_AZIMUTH_DEG: 300, // GAME BALANCE (not real data)
-  RIDGE_END_AZIMUTH_DEG: 345, // GAME BALANCE (not real data)
-  RIDGE_FADE_DEG: 3, // GAME BALANCE (not real data) — soft sunrise/sunset edge
+  // Dark periods come from the REAL horizon around the base (NASA LOLA terrain, world/lola.js):
+  // the low Sun hides behind real ridges and mountains (daycycle.sunVisibility).
   // Angular sizes as seen from the Moon.
   SUN_ANGULAR_DIAMETER_DEG: 0.53, // NASA Sun Fact Sheet (~1.39e6 km at ~1 AU)
   EARTH_ANGULAR_DIAMETER_DEG: 1.9, // derived: 12,742 km ÷ 384,400 km (NASA fact sheets)

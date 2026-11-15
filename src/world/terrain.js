@@ -1,135 +1,154 @@
 // terrain.js — low-poly regolith ground, far hills ring, rocks.
 import * as THREE from 'three';
-import { heightAt, baseMask, mulberry32 } from './heightfield.js';
+import { heightAt, realHeight, baseMask, mulberry32 } from './heightfield.js';
+import { farHorizonDeg, MID_MAX_M } from './lola.js';
 import { LAYOUT } from './layout.js';
-import { SKY } from '../config/gameplay.js';
 import { MAT } from './materials.js';
 import { pbrSet } from './textures.js';
 
 const REGOLITH_TILE_M = 5; // one regolith texture tile = 5 m
 
-function smoothstep(e0, e1, x) {
-  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
-  return t * t * (3 - 2 * t);
-}
 
-/** Grid denser near the base: u in [−1,1] → metres. */
-function warp(u, half) {
-  return half * (0.32 * u + 0.68 * u * u * u);
-}
 
 export function createTerrain({ segments = 220 } = {}) {
-  const half = LAYOUT.TERRAIN_SIZE / 2;
-  const geo = new THREE.PlaneGeometry(2, 2, segments, segments);
-  geo.rotateX(-Math.PI / 2);
-  const pos = geo.attributes.position;
-  const colors = new Float32Array(pos.count * 3);
+  // A disc of the REAL ground (LOLA) around the base: rings get wider further out.
+  const R = LAYOUT.TERRAIN_RADIUS;
+  const rings = Math.round(segments * 0.55);
+  const az = rings * 2;
+  const pos = [];
+  const colors = [];
+  const uvs = [];
+  const idx = [];
   const c = new THREE.Color();
-  for (let i = 0; i < pos.count; i++) {
-    const x = warp(pos.getX(i), half);
-    const z = warp(pos.getZ(i), half);
+  const push = (x, z) => {
     const y = heightAt(x, z);
-    pos.setXYZ(i, x, y, z);
-    // subtle grey variation; bulldozed pad is a touch darker
+    pos.push(x, y, z);
     const n = (Math.sin(x * 0.37 + z * 0.11) + Math.sin(z * 0.29 - x * 0.07)) * 0.025;
     const pad = baseMask(x, z) * -0.05;
-    // the regolith texture carries the albedo; vertex colour only adds gentle variation
-    const g = 1.0 + (n + pad + Math.max(-0.06, Math.min(0.06, y * 0.012))) * 1.8;
+    const g = 1.0 + (n + pad) * 1.8;
     c.setRGB(g, g * 0.985, g * 0.96, THREE.SRGBColorSpace);
-    colors[i * 3] = c.r;
-    colors[i * 3 + 1] = c.g;
-    colors[i * 3 + 2] = c.b;
+    colors.push(c.r, c.g, c.b);
+    uvs.push(x / REGOLITH_TILE_M, z / REGOLITH_TILE_M);
+  };
+  push(0, 0);
+  for (let k = 1; k <= rings; k++) {
+    const r = R * Math.pow(k / rings, 1.7);
+    for (let a = 0; a < az; a++) {
+      const t = (a / az) * Math.PI * 2;
+      push(Math.sin(t) * r, -Math.cos(t) * r);
+    }
   }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  // world-space UVs so the regolith texture tiles evenly despite the warped grid
-  const uvs = new Float32Array(pos.count * 2);
-  for (let i = 0; i < pos.count; i++) {
-    uvs[i * 2] = pos.getX(i) / REGOLITH_TILE_M;
-    uvs[i * 2 + 1] = pos.getZ(i) / REGOLITH_TILE_M;
+  const ring = (k, a) => 1 + (k - 1) * az + (a % az);
+  for (let a = 0; a < az; a++) idx.push(0, ring(1, a + 1), ring(1, a));
+  for (let k = 1; k < rings; k++) {
+    for (let a = 0; a < az; a++) {
+      const p = ring(k, a);
+      const q = ring(k, a + 1);
+      const rr = ring(k + 1, a);
+      const s = ring(k + 1, a + 1);
+      idx.push(p, q, rr, q, s, rr);
+    }
   }
-  geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(idx);
   geo.computeVertexNormals();
   geo.computeBoundingSphere();
-
   const mat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     vertexColors: true,
     roughness: 1,
     metalness: 0,
-    flatShading: false,
     ...pbrSet('regolith', { parts: ['map', 'normal', 'orm'] }),
   });
-  mat.normalScale.set(1.2, 1.2); // fine regolith detail on top of the low-poly shape
+  mat.normalScale.set(1.2, 1.2); // fine regolith detail on top of the real shape
   const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
-  mesh.castShadow = true; // crater rims cast long shadows at a low Sun
+  mesh.castShadow = true; // real ridges cast long shadows at a low Sun
   mesh.name = 'terrain';
   return mesh;
 }
 
-/** Height of the far hills (above local ground) for a given azimuth. */
-export function horizonHillHeight(azDeg) {
-  const a = (azDeg * Math.PI) / 180;
-  const rolling =
-    2.4 + 1.1 * Math.sin(a * 3 + 0.7) + 0.7 * Math.sin(a * 7 + 2.1) + 0.4 * Math.sin(a * 13 + 4.2);
-  // The ridge that hides the low Sun for part of its loop (see daycycle.sunVisibility).
-  const start = SKY.RIDGE_START_AZIMUTH_DEG;
-  const end = SKY.RIDGE_END_AZIMUTH_DEG;
-  const width = (end - start + 360) % 360;
-  const centre = start + width / 2;
-  let d = Math.abs((((azDeg - centre) % 360) + 540) % 360 - 180);
-  const ridge = 1 - smoothstep(width / 2 - 2, width / 2 + 5, d);
-  const peaks = 0.85 + 0.15 * Math.sin(a * 23);
-  return rolling + ridge * 34 * peaks;
-}
+// Distant terrain is squeezed toward you so it fits inside the camera's view distance and in
+// front of the Sun and Earth sprites — keeping every point's TRUE direction and elevation angle
+// (height scaled by the same factor). You can only walk ~240 m, so the tiny parallax is invisible.
+const SQUEEZE_START = 1000;
+const SQUEEZE_SPAN = 700; // everything ends up closer than 1,700 m
+const squeeze = (r) => (r <= SQUEEZE_START ? r : SQUEEZE_START + SQUEEZE_SPAN * (1 - Math.exp(-(r - SQUEEZE_START) / 12000)));
 
+/**
+ * The REAL landscape around the base out to 45 km (LOLA 80 m map, Moon's curvature included):
+ * Shackleton crater's bowl right next to the base, the ridges, and the far skyline beyond 45 km.
+ */
 export function createHorizon() {
-  const { innerRadius, outerRadius, segments } = LAYOUT.HORIZON;
-  const rows = 7;
-  const verts = [];
+  const group = new THREE.Group();
+  group.name = 'horizon';
+  const R0 = LAYOUT.TERRAIN_RADIUS;
+  const az = 360;
+  const radii = [];
+  for (let k = 0; k <= 70; k++) radii.push(R0 * Math.pow(MID_MAX_M / R0, k / 70));
+  const pos = [];
   const colors = [];
   const idx = [];
-  for (let s = 0; s <= segments; s++) {
-    const az = (s / segments) * 360;
-    const a = (az * Math.PI) / 180;
-    const dx = Math.sin(a);
-    const dz = -Math.cos(a);
-    const hill = horizonHillHeight(az);
-    for (let r = 0; r <= rows; r++) {
-      const t = r / rows;
-      const radius = innerRadius + (outerRadius - innerRadius) * t;
-      const x = dx * radius;
-      const z = dz * radius;
-      const ground = heightAt(dx * innerRadius, dz * innerRadius);
-      // rise from below the terrain edge up to the crest, then fall off behind
-      const profile = smoothstep(0.05, 0.45, t) * (1 - 0.35 * smoothstep(0.6, 1, t));
-      const y = ground - 0.8 + profile * (hill + 0.8) + (r === rows ? -30 : 0);
-      verts.push(x, y, z);
-      const g = 0.42 + 0.08 * profile;
+  for (const r of radii) {
+    const f = squeeze(r) / r;
+    for (let a = 0; a < az; a++) {
+      const t = (a / az) * Math.PI * 2;
+      const x = Math.sin(t) * r;
+      const z = -Math.cos(t) * r;
+      const y = r <= R0 + 1 ? heightAt(x, z) - 0.05 : realHeight(x, z);
+      pos.push(x * f, y * f, z * f);
+      const g = 0.5 - 0.12 * Math.min(1, r / 20000);
       colors.push(g, g * 0.985, g * 0.96);
     }
   }
-  for (let s = 0; s < segments; s++) {
-    for (let r = 0; r < rows; r++) {
-      const a = s * (rows + 1) + r;
-      const b = (s + 1) * (rows + 1) + r;
-      idx.push(a, a + 1, b, b, a + 1, b + 1);
+  for (let k = 0; k < radii.length - 1; k++) {
+    for (let a = 0; a < az; a++) {
+      const p = k * az + a;
+      const q = k * az + ((a + 1) % az);
+      const rr = (k + 1) * az + a;
+      const s = (k + 1) * az + ((a + 1) % az);
+      idx.push(p, rr, q, q, rr, s);
     }
   }
   const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   geo.setIndex(idx);
   geo.computeVertexNormals();
-  const mat = new THREE.MeshStandardMaterial({
-    vertexColors: true,
-    roughness: 1,
-    flatShading: true,
-    side: THREE.DoubleSide,
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.name = 'horizon';
-  return mesh;
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
+  const land = new THREE.Mesh(geo, mat);
+  land.receiveShadow = true;
+  land.frustumCulled = false;
+  group.add(land);
+
+  // far skyline: mountains beyond 45 km, as seen from the base (real elevation angles)
+  const RS = SQUEEZE_START + SQUEEZE_SPAN + 40;
+  const n = 720;
+  const sp = [];
+  const si = [];
+  const sc = [];
+  for (let a = 0; a <= n; a++) {
+    const azDeg = (a / n) * 360;
+    const t = (azDeg * Math.PI) / 180;
+    const top = Math.max(-3, farHorizonDeg(azDeg));
+    const x = Math.sin(t) * RS;
+    const z = -Math.cos(t) * RS;
+    sp.push(x, Math.tan((top * Math.PI) / 180) * RS, z, x, Math.tan((-4 * Math.PI) / 180) * RS, z);
+    sc.push(0.42, 0.415, 0.405, 0.3, 0.297, 0.29);
+  }
+  for (let a = 0; a < n; a++) si.push(a * 2, a * 2 + 1, a * 2 + 2, a * 2 + 2, a * 2 + 1, a * 2 + 3);
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3));
+  sg.setAttribute('color', new THREE.Float32BufferAttribute(sc, 3));
+  sg.setIndex(si);
+  sg.computeVertexNormals();
+  const skyline = new THREE.Mesh(sg, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide }));
+  skyline.frustumCulled = false;
+  group.add(skyline);
+  return group;
 }
 
 /**
