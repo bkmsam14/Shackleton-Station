@@ -5,7 +5,9 @@
 // It reuses the real systems (gauges, day cycle, electrolysis, ice oven, solar damage, radiation),
 // so the numbers here can't drift away from what the game does. Simplifications (said honestly):
 //  - mini-games, pot tending and repairs pause the world in the game, so here they take no time;
-//  - the solar array always faces the Sun (it tracks it); micrometeorite hits are random (seeded);
+//  - the solar array always faces the Sun (it tracks it); micrometeoroid hits are random (seeded):
+//    each one cracks the array OR opens a habitat air leak (never both at once), like the game;
+//  - a bot that repairs patches a leak the next time it is inside (the repair's hour is not simulated);
 //  - storms are checked separately with stormTable() (dose per storm, per place).
 //
 // Balance targets (docs/SCIENCE.md "Game balance"), for one 20-min lunar day:
@@ -18,7 +20,8 @@ import { createDayCycle, stepDayCycle, skipGameHours, getSun } from './daycycle.
 import { createElectrolysisState, checkAfford, applyBatch } from './electrolysis.js';
 import { createIceState, loadOven, stepOven, checkOven } from './iceMining.js';
 import { expectedStormDose } from './radiation.js';
-import { createSolarDamageState, stepSolarDamage, solarOutputFactor } from '../supply/solarDamage.js';
+import { createSolarDamageState, damageSolar, solarOutputFactor } from '../supply/solarDamage.js';
+import { createImpactState, stepImpacts, createLeakState, startLeak, fixLeak, leakO2KgPerGameHour } from './micrometeoroids.js';
 
 const realSecondsForGameHours = (h) => (h * 3600) / TIME.SCALE;
 const orderSeconds = (item) =>
@@ -55,7 +58,7 @@ const CROP = {
  *  mineIceAt     fetch a bag of icy soil when the tank is below this (kg)
  *  wallKg        water kept in the shelter walls (taken from the tank at the start)
  *  spareKit      reorder a repair kit right after using one (else only when it's needed)
- *  repairs       repairs the array at all
+ *  repairs       repairs the array and patches habitat leaks at all
  */
 export const BOTS = {
   idle: { outsideShare: 0, makeO2At: -1, eatAt: -1, pots: [], lightsOffAtNight: false, seedsAt: -1, mineIceAt: -1, wallKg: 0, spareKit: false, repairs: false },
@@ -95,6 +98,8 @@ export function simulate(bot, { seconds = SKY.GAME_SUN_LOOP_REAL_SECONDS, blockS
   const station = createElectrolysisState();
   const ice = createIceState();
   const solar = createSolarDamageState();
+  const impacts = createImpactState();
+  const leak = createLeakState();
 
   const wallKg = Math.min(bot.wallKg, station.tankKg);
   station.tankKg -= wallKg;
@@ -115,6 +120,8 @@ export function simulate(bot, { seconds = SKY.GAME_SUN_LOOP_REAL_SECONDS, blockS
   let blackoutSeconds = 0;
   let damagedSeconds = 0;
   let hits = 0;
+  let leakHits = 0;
+  let leakSeconds = 0;
   let o2Made = 0;
   let iceBags = 0;
   let eaten = { potato: 0, lettuce: 0, radish: 0 };
@@ -139,13 +146,19 @@ export function simulate(bot, { seconds = SKY.GAME_SUN_LOOP_REAL_SECONDS, blockS
     const sunUp = sun.visibility > 0.5;
     const lightsOn = !(bot.lightsOffAtNight && !sunUp);
     const outside = t % blockSeconds < bot.outsideShare * blockSeconds;
-    if (damage && stepSolarDamage(solar, 1, rand) === 'hit') hits++;
+    const hit = damage ? stepImpacts(impacts, 1, { busy: solar.damaged || leak.leaking, rand }) : null;
+    if (hit === 'solar') damageSolar(solar);
+    else if (hit === 'habitat') startLeak(leak);
+    if (hit) hits++;
+    if (hit === 'habitat') leakHits++;
     if (solar.damaged) damagedSeconds++;
+    if (leak.leaking) leakSeconds++;
     const r = stepGauges(g, 1, {
       pressurized: !outside,
       sunVisibility: sun.visibility,
       alignment: solarOutputFactor(solar),
       growLightsOn: lightsOn,
+      extraOxygenKgPerGameHour: leakO2KgPerGameHour(leak),
     });
     stepDayCycle(day, 1);
     if (!r.hasPower) blackoutSeconds++;
@@ -182,6 +195,7 @@ export function simulate(bot, { seconds = SKY.GAME_SUN_LOOP_REAL_SECONDS, blockS
         if (bot.spareKit && !ordered('solar-repair-kit')) orders.push({ at: t + orderSeconds('solar-repair-kit'), item: 'solar-repair-kit' });
       }
     } else {
+      if (bot.repairs && leak.leaking) fixLeak(leak); // patch the hole at the life-support rack
       while (g.oxygen < bot.makeO2At && checkAfford(g, station, bot.batch).ok) {
         applyBatch(g, station, bot.batch);
         o2Made += 1;
@@ -238,6 +252,8 @@ export function simulate(bot, { seconds = SKY.GAME_SUN_LOOP_REAL_SECONDS, blockS
     blackoutSeconds,
     damagedSeconds,
     hits,
+    leakHits,
+    leakSeconds,
     o2Made,
     iceBags,
     eaten,

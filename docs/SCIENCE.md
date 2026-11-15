@@ -67,12 +67,27 @@ How the game uses them (ratios stay real, amounts are scaled):
 - NASA is developing tall **vertical solar arrays** (VSAT project) that can follow the low Sun. *Source: NASA VSAT annual review, 2023 — https://ntrs.nasa.gov/api/citations/20230012849/downloads/GCD%20Annual%20Review%20VSAT%20September%202023%20Final.pdf*
 - During dark periods, a base needs stored energy (batteries or regenerative fuel cells).
 
-### Solar cells (used by the Solar Fix repair lesson)
+### Solar cells (used by the Solar Fix repair lesson: Cell Swap, Hot Spot Hunt, Wire Fix)
 - **Photons free electrons:** sunlight is made of photons; only photons the cell absorbs make electricity; absorbed energy knocks electrons loose from the material's atoms. → This is the **photovoltaic effect**. *Source: U.S. EIA — https://www.eia.gov/energyexplained/solar/photovoltaics-and-electricity.php*
 - **Like a battery:** the freed electrons collect on one side, making a voltage "similar to the negative and positive terminals of a battery"; when the cell is connected to an outside circuit, electricity flows. PV cells make **direct current (DC)**, which can charge batteries. *Source: U.S. EIA (same page)*
 - **One-way gate:** the cell is processed to form a **diode**, which lets current flow in only one direction; metal contacts (the grid lines) carry the current out. Most cells are **silicon**. *Source: U.S. DOE, PV Cells 101 — https://www.energy.gov/eere/solar/articles/pv-cells-101-primer-solar-photovoltaic-cell*
 - **Chains of cells:** cells are connected **in series** in a module to raise the voltage; "shading one cell causes the current in the string of cells to fall to the level of the shaded cell". Real modules add **bypass diodes** to isolate a bad cell. *Source: PVEducation (Honsberg & Bowden), Shading — https://www.pveducation.org/pvcdrom/modules-and-arrays/shading*
 - **Game simplifications (details left out):** no p–n junction, band gap or bypass diodes on screen; a "cracked" cell in the lesson makes no electricity, so its whole row goes dark (in a real module a bypass diode would limit the loss to its group). The array's 5 rows with 3 dark match the game's damaged output (40 %, game balance). Micrometeorite damage to the array, how often it happens and how much power it costs are **game balance**; the real basis is only that micrometeoroids strike the Moon.
+
+- **Hot spots (Hot Spot Hunt):** a cracked cell in a series chain can't pass the chain's current; the other cells push current into it and the energy turns into heat, making a **hot spot**. Hot spots show up in **infrared (thermal) images**; engineers survey solar farms with aerial infrared thermography. Many cell cracks are too small to see by eye (they are confirmed with other imaging, e.g. electroluminescence). *Sources: NREL (2024), aerial IR thermography of PV — https://nrel.gov/docs/fy24osti/90316.pdf ; IEA PVPS Task 13 (2014), Review of Failures of PV Modules — https://iea-pvps.org/wp-content/uploads/2020/01/IEA-PVPS_T13-01_2014_Review_of_Failures_of_Photovoltaic_Modules_Final.pdf*
+- **Circuits (Wire Fix):** current flows only round a **closed loop**; a break anywhere stops it. The game shows the return wire from the battery back to the cells so the loop is visibly complete. *Source: U.S. DOE, PV Cells 101 (above) — cells connected to an external circuit*
+- **Hot Spot Hunt simplification:** the heat-camera colours are a made-up false-colour scale (no temperatures shown). Real IR surveys also see other causes of hot spots (shading, soldering faults); the game only has cracks.
+
+### Micrometeoroids and air leaks (habitat leak + Leak Fix lesson)
+- **One scheduler, never both at once:** a micrometeoroid hit cracks the solar array OR holes the habitat (`MICROMETEOROIDS.HABITAT_SHARE` 40 %), and no new hit comes while either is broken. How often hits come (one per 3 game days on average), which target, and the grace period are **game balance**; the real basis is only that micrometeoroids strike the Moon all the time.
+- **Why air leaks:** the cabin air presses on every wall (about 101 kPa, sea-level pressure, as on the ISS); the vacuum outside presses back with nothing, so air is pushed out. Space doesn't "suck". → A small hole gives **choked flow**: the air leaves at the speed of sound and the flow depends only on the hole and the cabin air: ṁ = C<sub>d</sub>·A·P·√(γ/(R·T))·(2/(γ+1))^((γ+1)/(2(γ−1))). *Source: NASA Glenn, Mass Flow Choking — https://www.grc.nasa.gov/www/k-12/airplane/mflchk.html*
+- **Game numbers:** hole diameter **0.7 mm** (game balance; the real 2018 Soyuz hole was 2 mm), C<sub>d</sub> 0.6 (typical sharp-edged hole: simplification), 293 K, γ 1.4, R 287.05 J/(kg·K) → **≈ 0.199 kg air/h**. Dry air is 23.2 % oxygen by mass → **≈ 0.046 kg O₂/h** extra, ≈ 1.24× resting breathing (0.0373 kg/h, BVAD) → the oxygen supply drains **≈ 2.2× faster** inside during a leak (close to the 2.3× of a spacewalk). Computed in `config/gameplay.js` (`LEAK`) and tested in `tests/micrometeoroids.test.js`.
+- **The oxygen top-up:** the leak drains the *oxygen supply* because the base keeps the cabin air topped up from it; after the 2018 leak, controllers raised the station's atmosphere with oxygen from a Progress cargo ship. *Source: NASA ISS blog, 30 Aug 2018 — https://www.nasa.gov/blogs/spacestation/2018/08/30/international-space-station-status-3/* (Nitrogen top-up is left out: we have no nitrogen gauge.)
+- **Finding a leak — ultrasound (Leak Hunt):** a tiny leak's hiss is mostly too high-pitched to hear; crews use handheld **ultrasonic leak detectors**. In the game the detector's bars follow the sound getting weaker with distance (∝ 1/d², shown on a log scale). *Sources: NASA ISS blog, 29 Sep 2020 — https://www.nasa.gov/blogs/spacestation/2020/09/29/crew-continues-troubleshooting-as-tests-isolate-small-leak/ ; NASA/TM-2008-215347 (listening for hissing, closing hatches, handheld ultrasonic detectors) — https://ntrs.nasa.gov/api/citations/20080041598/downloads/20080041598.pdf*
+- **Finding a leak — hatches (Hatch Hunt):** closing hatches splits the station; only the part with the hole keeps losing pressure. In Aug 2020 the crew spent a weekend with hatches closed so controllers could watch each module's pressure. *Source: NASA ISS blog, 20 Aug 2020 — https://www.nasa.gov/blogs/spacestation/2020/08/20/crew-spending-weekend-in-stations-russian-segment/* Simplification: our pressure needles move in seconds (time sped up, the game says so); a real 0.7 mm hole drops the pressure of a big module only slowly, which is why real crews watched for hours.
+- **Sealing it (Patch It):** 2018: Kapton tape slowed the leak (ESA, A. Gerst blog — https://blogs.esa.int/alexander-gerst/?p=1604); then epoxy on a gauze wipe plugged the 2 mm hole from inside, and controllers watched the pressure overnight ("cabin pressure is holding steady"). *Source: NASA ISS blog, 30 Aug 2018 (above)* → A patch on the INSIDE is pressed onto the wall by the cabin pressure (physics: the force is outward, toward the hole). Two-part epoxy hardens only once its two parts are mixed.
+- **In the game you can't hear the leak:** no hiss sound plays in 3D on purpose (that's the ultrasound lesson); the alarm and the red beacon tell you there is a leak, not where it is.
+- **Gentle failure:** an open leak keeps draining the oxygen supply; if it runs out, the usual gentle failure happens and the leak is still there to patch (the rack is next to where you wake up).
 
 ### Supply deliveries (supply terminal + cargo pad)
 - **Light delay:** one way = distance ÷ speed of light = 384,400 km ÷ 299,792.458 km/s ≈ **1.28 s** (matches "about 1.3 seconds" in Communication below); round trip ≈ 2.56 s. Shown in real seconds, **not sped up**. *Sources: NASA Moon Fact Sheet (distance); speed of light exact by SI definition.*
@@ -189,7 +204,7 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **Stormy Sun:** May 2024. A period of very strong solar activity, including X-class flares on 14 May 2024 (confirm in the DONKI archive JSON before shipping).
 - **Calm Sun:** late 2019, around solar minimum (December 2019).
 
-## Game balance (how the numbers fit together) — v0.11.0
+## Game balance (how the numbers fit together) — v0.11.0 + micrometeoroid leaks
 
 These are **game-design** calculations, not facts to show kids. The real numbers come from the
 sections above; the sizes (gauge capacity, battery, tank, loads, storm length) are marked
@@ -198,13 +213,13 @@ sections above; the sizes (gauge capacity, battery, tank, loads, storm length) a
 
 **Targets for one lunar day (20 real minutes), checked by three bots** (`src/systems/balanceSim.js`):
 
-Each bot plays **200 runs** with random micrometeorite hits on the solar array (≈ 1.5 hits per run).
+Each bot plays **200 runs** with random micrometeoroid hits on the solar array or the habitat (≈ 1.5 hits per run, ≈ 0.55 of them leaks).
 
-| Bot | What it does | Target | Result (v0.11.0) |
+| Bot | What it does | Target | Result (with habitat leaks, Nov 2026) |
 |---|---|---|---|
-| idle | nothing | first failure after 5–8 min | oxygen runs out at 6:42 in every run |
-| sloppy | reacts at 25 %, 3 pots (potato, lettuce, radish), 40 % outside, grow lights always on, never mines ice, orders a repair kit only when needed | ≥ 18 min in ≥ 90 % of runs, never before 14 min | 94 % reach 18:24 (food runs out); unlucky runs with 2+ hits fail at 14:40–15:30 |
-| skilled | makes O₂ at 60 %, 3 potato + 1 radish pot, lights off at night, mines ice at 3 kg, 2 kg in walls, keeps a spare repair kit | no failure in any run | 0 / 200 fail; food dips to ≈ 23 %, ends O₂ ≥ 76 %, food ≥ 53 % |
+| idle | nothing | first failure after 5–8 min (≥ 4 min with an unpatched leak) | oxygen runs out at 6:42 without a leak; 14 / 200 runs with an early leak fail at 4:06–5:00 |
+| sloppy | reacts at 25 %, 3 pots (potato, lettuce, radish), 40 % outside, grow lights always on, never mines ice, orders a repair kit only when needed | ≥ 18 min in ≥ 90 % of runs, never before 14 min | 96 % reach 18:24 (food runs out); unlucky runs with 2+ hits fail at 14:52–17:18 |
+| skilled | makes O₂ at 60 %, 3 potato + 1 radish pot, lights off at night, mines ice at 3 kg, 2 kg in walls, keeps a spare repair kit | no failure in any run | 0 / 200 fail; food dips to ≈ 24 %, ends O₂ ≥ 71 %, food ≥ 53 % |
 
 **Food (BVAD).** 12.778 MJ/day inside = 0.532 MJ/h; a spacewalk 1.062 MJ/h (≈ 2.0×). Full gauge = 3 days,
 so 1 % = 0.383 MJ ≈ 92 kcal. Inside: 33.3 %/game day = 8.3 %/real min (full → empty in 12 min);
@@ -226,10 +241,17 @@ Greens keep the real 27 : 33 day ratio, grow ≈ 3× faster than potato and fill
 grow, but potato stays the best food per minute. Greens come from seeds (start 4 + 4; packets of 6
 from Earth), potatoes from your own harvest.
 
-**Solar array damage.** A micrometeorite hit drops the array to 40 % (3.6 kW at best, below the 5 kW
-load, so the battery drains even in sunlight). Average one hit per 3 game days (≈ 12 real min), none
-in the first half day; you start with 1 spare repair kit; a new kit takes ≈ 75 real s to arrive.
-Real basis: micrometeoroids hit the Moon all the time; how often one breaks a panel is game balance.
+**Micrometeoroid hits.** Average one hit per 3 game days (≈ 12 real min), none in the first half day;
+60 % crack the solar array, 40 % hole the habitat, never both broken at once.
+*Array:* drops to 40 % (3.6 kW at best, below the 5 kW load, so in sunlight the battery drains ≈ 1.4 kW
+instead of charging ≈ 4 kW; at night nothing changes, since a broken array can't make the dark worse).
+You start with 1 spare repair kit; a new kit takes ≈ 75 real s to arrive.
+*Habitat leak:* the oxygen supply drains ≈ 2.2× faster inside until it's patched (choked flow through a
+0.7 mm hole, see "Micrometeoroids and air leaks"); patching costs 1 game hour and no kit (the base keeps a
+leak-repair kit, as the ISS does), but every minute you wait costs oxygen.
+The idle bot never patches, so an early leak brings its first failure forward to ≥ 4 min (14 of 200 runs);
+the target is now 4–8 min with ≥ 85 % of runs still in 5–8 min.
+Real basis: micrometeoroids hit the Moon all the time; how often one breaks something is game balance.
 
 **Oxygen and water.** 0.895 kg O₂/day = 30 % of the 3 kg supply per game day (full → empty in 13.4 min
 inside, 5.8 min outside). Making 1 kg O₂ costs 1.125 kg water + 4.96 kWh (6 % of the battery). The

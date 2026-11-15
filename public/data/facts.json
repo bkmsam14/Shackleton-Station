@@ -324,6 +324,66 @@
       "text": "Potatoes are full of starch and give lots of food energy; lettuce and radishes are mostly water: few calories, but fresh vitamins.",
       "value": "per 100 g raw: potato 77 kcal (FDC 170026), romaine 17 kcal (FDC 169247), radish 16 kcal (FDC 169276)",
       "source": "https://fdc.nal.usda.gov/"
+    },
+    {
+      "id": "air-leak-why",
+      "text": "Air leaks out of a hole because the air inside presses on every wall and space has no air to press back. Space doesn't suck: the air inside pushes.",
+      "value": "cabin about 101 kPa (sea-level pressure, like the ISS) vs vacuum outside",
+      "source": "https://www.grc.nasa.gov/www/k-12/airplane/mflchk.html"
+    },
+    {
+      "id": "air-leak-choked",
+      "text": "Through a tiny hole, air leaves at the speed of sound (choked flow), so how fast it leaks depends on the hole size and the cabin pressure.",
+      "value": "mdot = Cd·A·P·sqrt(γ/(R·T))·(2/(γ+1))^((γ+1)/(2(γ−1))); game hole 0.7 mm (game balance) → ≈ 0.2 kg air per hour",
+      "source": "https://www.grc.nasa.gov/www/k-12/airplane/mflchk.html"
+    },
+    {
+      "id": "leak-oxygen-topup",
+      "text": "During a leak the base tops the cabin air up from its oxygen supply, so the supply goes down faster. The Space Station did this after its 2018 leak.",
+      "value": "game: ≈ 0.046 kg O₂ per hour extra (23.2 % of the leaking air by mass) ≈ 1.2× resting breathing",
+      "source": "https://www.nasa.gov/blogs/spacestation/2018/08/30/international-space-station-status-3/"
+    },
+    {
+      "id": "leak-ultrasonic",
+      "text": "A tiny leak whistles too high for human ears (ultrasound). Space Station crews use ultrasonic leak detectors to find it.",
+      "value": "crew used an ultrasonic leak detector while closing hatches, Sep 2020",
+      "source": "https://www.nasa.gov/blogs/spacestation/2020/09/29/crew-continues-troubleshooting-as-tests-isolate-small-leak/"
+    },
+    {
+      "id": "leak-hatches",
+      "text": "Closing hatches splits a station into parts; only the part with the hole keeps losing pressure.",
+      "value": "Aug 2020: crew closed hatches for a weekend so controllers could watch each module's pressure",
+      "source": "https://www.nasa.gov/blogs/spacestation/2020/08/20/crew-spending-weekend-in-stations-russian-segment/"
+    },
+    {
+      "id": "leak-soyuz-patch",
+      "text": "In 2018 a cosmonaut sealed a 2 mm hole in a Soyuz spacecraft from the inside with epoxy glue on gauze, and controllers watched the pressure overnight.",
+      "value": "hole about 2 mm; cabin pressure held steady afterwards",
+      "source": "https://www.nasa.gov/blogs/spacestation/2018/08/30/international-space-station-status-3/"
+    },
+    {
+      "id": "leak-tape",
+      "text": "Before the permanent fix in 2018, tape over the hole slowed the leak.",
+      "value": "temporary Kapton tape at the leak site",
+      "source": "https://blogs.esa.int/alexander-gerst/?p=1604"
+    },
+    {
+      "id": "pv-hot-spot",
+      "text": "A cracked solar cell blocks the electricity and gets hot; an infrared (heat) camera shows these hot spots.",
+      "value": "aerial infrared thermography of PV arrays",
+      "source": "https://nrel.gov/docs/fy24osti/90316.pdf"
+    },
+    {
+      "id": "pv-cracks",
+      "text": "Cracks in solar cells are a common panel failure, and many are too small to see with the eye.",
+      "value": "IEA PVPS Task 13 review: cell cracks, thermography and electroluminescence imaging",
+      "source": "https://iea-pvps.org/wp-content/uploads/2020/01/IEA-PVPS_T13-01_2014_Review_of_Failures_of_Photovoltaic_Modules_Final.pdf"
+    },
+    {
+      "id": "circuit-loop",
+      "text": "Electricity only flows round a complete loop (a circuit); one gap anywhere stops it.",
+      "value": "PV cells, wiring and the load/battery form a closed circuit",
+      "source": "https://www.energy.gov/eere/solar/articles/pv-cells-101-primer-solar-photovoltaic-cell"
     }
   ]
 }

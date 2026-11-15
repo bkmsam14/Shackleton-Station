@@ -401,15 +401,57 @@ SUPPLY.ONE_WAY_DELAY_S = SUPPLY.EARTH_MOON_DISTANCE_KM / SUPPLY.SPEED_OF_LIGHT_K
 // Real basis: micrometeoroids constantly strike the Moon (SCIENCE.md). How often one
 // damages a panel, and how much power it costs, are game balance.
 export const SOLAR_DAMAGE = {
-  MEAN_GAME_DAYS_BETWEEN_HITS: 3, // average (≈ 12 real min) — GAME BALANCE (not real data)
+  // (how often hits come is now MICROMETEOROIDS below: one scheduler for array + habitat)
   START_KITS: 1, // a spare kit in storage at the start — GAME BALANCE (not real data)
-  GRACE_GAME_HOURS: 12, // no hits during the first half day — GAME BALANCE (not real data)
   DAMAGED_OUTPUT: 0.4, // a damaged array makes 40 % of its normal power — GAME BALANCE (not real data)
   KITS_PER_REPAIR: 1, // GAME BALANCE (not real data)
-  // TESTING ONLY: a hit every this many real seconds of play (no grace period, no
-  // randomness), counted while the array is healthy. Set to null for normal play.
+};
+
+// ---------------------------------------------------------------------------
+// MICROMETEOROID HITS — one scheduler for the solar array AND the habitat
+// (src/systems/micrometeoroids.js). A hit lands on ONE of them, and no new hit comes
+// while either is still broken, so the two never happen at the same time.
+// Real basis: micrometeoroids strike the Moon all the time (SCIENCE.md). How often one
+// breaks something, and which target it picks, are game balance.
+// ---------------------------------------------------------------------------
+export const MICROMETEOROIDS = {
+  MEAN_GAME_DAYS_BETWEEN_HITS: 3, // average gap between hits (≈ 12 real min) — GAME BALANCE (not real data)
+  GRACE_GAME_HOURS: 12, // no hits during the first half day — GAME BALANCE (not real data)
+  HABITAT_SHARE: 0.4, // 40 % of hits make a habitat leak, 60 % crack the array — GAME BALANCE (not real data)
+  // TESTING ONLY: a hit every this many real seconds (alternating array / habitat), counted
+  // while nothing is broken. Set to null for normal play.
   TEST_HIT_EVERY_REAL_SECONDS: null,
 };
+
+// ---------------------------------------------------------------------------
+// HABITAT AIR LEAK — a micrometeoroid made a tiny hole in the habitat wall
+// ---------------------------------------------------------------------------
+// While the hole is open, cabin air rushes out. The base keeps the air topped up from
+// the oxygen supply (on the ISS, controllers topped the air up with oxygen after the
+// 2018 Soyuz hole: NASA ISS blog, 30 Aug 2018), so the OXYGEN gauge drains faster.
+// Leak rate = choked (sonic) flow through a small hole — real physics (NASA Glenn,
+// "Mass Flow Choking"): mdot = Cd · A · P · sqrt(γ / (R·T)) · (2/(γ+1))^((γ+1)/(2(γ−1)))
+export const LEAK = {
+  HOLE_DIAMETER_MM: 0.7, // GAME BALANCE (not real data): the 2018 Soyuz hole was 2 mm (NASA ISS blog)
+  CABIN_PRESSURE_KPA: 101.3, // sea-level air pressure, as on the ISS (14.7 psi) — NASA ECLSS
+  CABIN_TEMP_K: 293, // about 20 °C — GAME BALANCE (not real data), a comfortable cabin
+  DISCHARGE_COEFF: 0.6, // typical for a sharp-edged hole (engineering textbooks) — simplification
+  GAMMA_AIR: 1.4, // heat-capacity ratio of air (physical constant)
+  R_AIR: 287.05, // J/(kg·K), specific gas constant of dry air (physical constant)
+  O2_MASS_FRACTION: 0.232, // dry air is 23.2 % oxygen by mass (≈ 21 % by volume)
+  REPAIR_GAME_HOURS: 1, // time that passes while you find + patch it — GAME BALANCE (not real data)
+};
+{
+  const L = LEAK;
+  const area = Math.PI * ((L.HOLE_DIAMETER_MM / 1000) / 2) ** 2; // m²
+  const g = L.GAMMA_AIR;
+  const choke = (2 / (g + 1)) ** ((g + 1) / (2 * (g - 1)));
+  const airKgPerS = L.DISCHARGE_COEFF * area * L.CABIN_PRESSURE_KPA * 1000 * Math.sqrt(g / (L.R_AIR * L.CABIN_TEMP_K)) * choke;
+  // Derived: ≈ 0.20 kg of air per hour ≈ 0.046 kg of oxygen per hour, about 1.2× what you
+  // breathe inside (0.037 kg/h), so the oxygen supply drains ≈ 2.2× faster during a leak.
+  L.AIR_KG_PER_HOUR = airKgPerS * 3600;
+  L.O2_KG_PER_GAME_HOUR = L.AIR_KG_PER_HOUR * L.O2_MASS_FRACTION;
+}
 
 // ---------------------------------------------------------------------------
 // ICE MINING — dig icy regolith in a cold trap, bake the water out (src/systems/iceMining.js)

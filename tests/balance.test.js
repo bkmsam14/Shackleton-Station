@@ -1,6 +1,6 @@
 // Game balance targets (docs/SCIENCE.md "Game balance"). If a number in gameplay.js changes
 // and one of these fails, the game got too easy or too hard — re-run `npm run balance`.
-// Every bot runs 200 times with random micrometeorite hits on the solar array.
+// Every bot runs 200 times with random micrometeoroid hits (solar array or habitat air leak).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -13,10 +13,11 @@ const MIN = 60;
 const RUNS = 200;
 const firstFailures = (m) => m.results.map((r) => r.firstFailure?.t ?? Infinity);
 
-test('idle: doing nothing fails after 5–8 real minutes', () => {
-  for (const t of firstFailures(simulateMany(BOTS.idle, RUNS))) {
-    assert.ok(t >= 5 * MIN && t <= 8 * MIN, `first failure at ${t} s`);
-  }
+test('idle: doing nothing fails after 5–8 real minutes (4 at the earliest with an unpatched air leak)', () => {
+  const f = firstFailures(simulateMany(BOTS.idle, RUNS));
+  for (const t of f) assert.ok(t >= 4 * MIN && t <= 8 * MIN, `first failure at ${t} s`);
+  // most runs have no early leak: they still land in the 5–8 min window
+  assert.ok(f.filter((t) => t >= 5 * MIN).length / f.length >= 0.85);
 });
 
 test('sloppy: usually lasts 18 of 20 minutes; bad luck with the array never ends it before 14', () => {
@@ -33,10 +34,13 @@ test('skilled: keeping every loop going never fails, even with unlucky array hit
   assert.ok(m.worstBlackout <= 30, `worst blackout ${m.worstBlackout} s`);
 });
 
-test('micrometeorite hits: about one per 3 game days, none in the first half day', () => {
+test('micrometeoroid hits: about one per 3 game days, array or habitat, never both broken at once', () => {
   const m = simulateMany(BOTS.skilled, RUNS);
   assert.ok(m.meanHits > 1 && m.meanHits < 2.2, `mean hits ${m.meanHits}`);
-  for (const r of m.results) assert.ok(r.hits === 0 || r.damagedSeconds > 0);
+  const leaks = m.results.reduce((a, r) => a + r.leakHits, 0);
+  const share = leaks / m.results.reduce((a, r) => a + r.hits, 0);
+  assert.ok(share > 0.3 && share < 0.5, `habitat share ${share}`);
+  for (const r of m.results) assert.ok(r.hits === 0 || r.damagedSeconds > 0 || r.leakSeconds > 0);
 });
 
 test('crops: potato feeds the most per minute; greens are faster but smaller', () => {

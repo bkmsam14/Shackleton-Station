@@ -1,6 +1,6 @@
 // pda.js — the PDA screen (Tab). Detailed stats with the "why", the Databank, and a log
 // of recent events. The world is paused while it is open.
-import { BVAD, TIME, POWER, ELECTROLYSIS } from '../config/gameplay.js';
+import { BVAD, TIME, POWER, ELECTROLYSIS, SOLAR_DAMAGE } from '../config/gameplay.js';
 import { batchCost } from '../systems/electrolysis.js';
 import { secondsUntilEmpty } from '../systems/gauges.js';
 import { DATABANK } from '../data/databank.js';
@@ -67,12 +67,19 @@ export function createPda(root) {
     const foodWhy = outside
       ? `Hard work outside burns about ${BVAD.EVA_TO_NOMINAL_FOOD_RATIO.toFixed(1)}× more food energy (NASA BVAD).`
       : 'At rest an astronaut eats about 0.8 kg of food a day, not counting water (NASA BVAD).';
+    const hz = s.hazards ?? {};
+    const leakWhy = hz.leaking
+      ? ` <b class="pda-alert">Air leak!</b> A micrometeorite made a tiny hole in the habitat wall. The base tops the cabin air up from this supply, so it drains faster (${(hz.leakO2Kg ?? 0).toFixed(2)} kg lost so far). Patch it at the life-support rack in the work bay.`
+      : '';
     const pp = (g.batteryKwh / POWER.BATTERY_CAPACITY_KWH) * 100;
     const net = r.flow.netKw;
     const powerWhy =
       `Solar array: ${r.flow.solarKw.toFixed(1)} kW${s.sun.visibility > 0.5 ? '' : ' (Sun behind the ridge)'}. ` +
       `Using: habitat ${r.flow.loads.habitat} kW + grow lights ${r.flow.loads.greenhouse} kW. ` +
-      `${net >= 0 ? 'Charging' : 'Draining'} ${Math.abs(net).toFixed(1)} kW.`;
+      `${net >= 0 ? 'Charging' : 'Draining'} ${Math.abs(net).toFixed(1)} kW.` +
+      (hz.solarDamaged
+        ? ` <b class="pda-alert">Array damaged!</b> Cracked cells: it makes only ${Math.round(SOLAR_DAMAGE.DAMAGED_OUTPUT * 100)} % of its power, so in sunlight the battery drains instead of charging. Repair it with a Solar Panel Repair Kit.`
+        : '');
     const powerTime = net < 0 ? `Empty in ${minutes(secondsUntilEmpty(pp, r.rates.power))}` : 'Charging';
 
     el.innerHTML = `
@@ -84,7 +91,7 @@ export function createPda(root) {
             <div class="pda-stat">
               <div class="pda-stat-top"><b>Oxygen supply</b><span>${Math.ceil(g.oxygen)}%</span></div>
               <div class="pda-stat-line">${minutes(secondsUntilEmpty(g.oxygen, r.rates.oxygen))} left · ${perMin(r.rates.oxygen)}</div>
-              <p>${o2Why} Make more at the Electrolysis unit (habitat work bay): it splits water into oxygen and hydrogen, using water and power.</p>
+              <p>${o2Why}${leakWhy} Make more at the Electrolysis unit (habitat work bay): it splits water into oxygen and hydrogen, using water and power.</p>
             </div>
             <div class="pda-stat">
               <div class="pda-stat-top"><b>Electrolysis water tank</b><span>${s.station.tankKg.toFixed(1)} kg</span></div>

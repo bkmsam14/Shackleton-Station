@@ -112,9 +112,9 @@ What exists in the game today, against the plan above. Details are in `CHANGELOG
 | M0–M3 scaffold, world, player, survival | **Done.** Oxygen became one shared supply (team decision), and food drains faster outside. |
 | M4 Electrolysis instance | **Done:** 3 mini-games (Molecule Zapper, Bubble Detective, Atom Match), water + power costs, quiz, mastery. |
 | M4 Greenhouse instance | **Partly.** Farming exists: plant, water and harvest potato, lettuce and radish, eat with F, and the real growth time is shown. Missing: the LED light-level choice and the water cost for watering (watering doesn't use the water tank). |
-| M4 Solar instance | **Different:** *Solar Fix* repairs micrometeorite-damaged cells (photons, circuits, series chains). Aiming the panel, brushing dust and the dark-period forecast are not built. |
+| M4 Solar instance | **Different:** *Solar Fix* repairs micrometeoroid damage with 3 random mini-games (Cell Swap, Hot Spot Hunt, Wire Fix) after a first-time photons + circuit lesson. Aiming the panel, brushing dust and the dark-period forecast are not built. |
 | M5 Solar flare QTE | **Done:** real DONKI + RadLab storms, storm shelter, water walls, storm report card. |
-| M5 Micrometeorite leak QTE | **Not built.** Micrometeorites hit the *solar array* instead (power drop + Solar Fix). |
+| M5 Micrometeorite leak QTE | **Done:** one scheduler hits the array OR the habitat (never both). A leak drains oxygen ≈ 2.2× faster (choked flow, 0.7 mm hole); a red beacon marks the life-support rack, where *Leak Fix* opens 3 random mini-games (Leak Hunt, Hatch Hunt, Patch It). It's not timed: the oxygen drain is the pressure. |
 | M6 Polish | **Done:** title screen, Calm / Stormy / Live picker, sound (suit breathing, habitat hum, airlock, alarms), credits, quality toggle. (The Calm data file is missing; see CLAUDE.md "Known issues".) |
 | Ice mining (after alpha) | **Done:** cold-trap crater, Ice Drill, Ice Oven, LCROSS ice share. |
 | Supply lander (after alpha) | **Partly:** supply terminal with the real light delay and crates landing on the pad. No scheduled food/seed deliveries every few days. |

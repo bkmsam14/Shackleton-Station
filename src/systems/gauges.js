@@ -60,14 +60,16 @@ export function computePowerFlow({ sunVisibility, alignment, extraLoadKw = 0, gr
 
 /**
  * Advance the gauges by dt real seconds.
- * ctx: { pressurized: boolean, sunVisibility, alignment, extraLoadKw?, growLightsOn? }
+ * ctx: { pressurized: boolean, sunVisibility, alignment, extraLoadKw?, growLightsOn?,
+ *        extraOxygenKgPerGameHour? (a habitat air leak: oxygen used to top the cabin air up) }
  * Returns a report the HUD and game can use (rates, flags, events).
  */
 export function stepGauges(g, dt, ctx) {
   const before = { oxygen: g.oxygen, food: g.food, power: powerPercent(g) };
 
   // --- oxygen: the astronaut breathes from the shared supply
-  const oxygenRate = -(ctx.pressurized ? RATES.oxygenInside : RATES.oxygenOutside); // % per real s
+  const leakRate = percentPerRealSecond(Math.max(0, ctx.extraOxygenKgPerGameHour ?? 0), OXYGEN.CAPACITY_KG);
+  const oxygenRate = -(ctx.pressurized ? RATES.oxygenInside : RATES.oxygenOutside) - leakRate; // % per real s
   g.oxygen = clamp(g.oxygen + oxygenRate * dt, 0, 100);
 
   // --- food
@@ -91,7 +93,7 @@ export function stepGauges(g, dt, ctx) {
   return {
     hasPower: g.batteryKwh > 0.01 || flow.solarKw >= flow.loadKw,
     flow,
-    rates: { oxygen: oxygenRate, food: foodRate, power: powerRate }, // % per real second
+    rates: { oxygen: oxygenRate, food: foodRate, power: powerRate, oxygenLeak: -leakRate }, // % per real second
     crossedLow,
     oxygenEmpty: g.oxygen <= 0,
     foodEmpty: g.food <= 0,

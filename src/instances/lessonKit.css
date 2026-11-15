@@ -1,0 +1,21 @@
+/* lessonKit.css — the shared repair-lesson frame (Solar Fix, Leak Fix). */
+.rk-concept {
+  font-size: 19px;
+  text-align: center;
+}
+.rk-concept svg {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+}
+.rk-play {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding-top: 4px;
+}
+.ez-learn-real svg {
+  width: 26px;
+  height: 26px;
+}
+

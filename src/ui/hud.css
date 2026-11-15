@@ -621,3 +621,8 @@
     transition: none;
   }
 }
+
+/* PDA: a broken thing (air leak, damaged array) stands out in its "why" line */
+.pda-alert {
+  color: #ff9b85;
+}

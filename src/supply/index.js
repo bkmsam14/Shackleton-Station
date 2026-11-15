@@ -10,7 +10,7 @@ import { loadSettings, saveSettings } from '../systems/save.js';
 import { SOLAR_DAMAGE, TRAINING } from '../config/gameplay.js';
 import { createSupplyState, serializeSupply, placeOrder, stepOrders, secondsUntilArrival, isActive, rushOrder } from './orders.js';
 import { collectFromCrate } from './delivery.js';
-import { createSolarDamageState, stepSolarDamage, solarOutputFactor, repairSolar, kitsInInventory } from './solarDamage.js';
+import { createSolarDamageState, damageSolar, solarOutputFactor, repairSolar, kitsInInventory } from './solarDamage.js';
 import { createLandingPad, slotPosition } from './landingPad.js';
 import { createTerminal, createSolarDamageView, TERMINAL } from './supplyModels.js';
 import { createTerminalUI, fmtSeconds } from './terminalUI.js';
@@ -35,7 +35,7 @@ export function createSupply({ world, root, gauges, station, inventory, saveInve
   const saved = loadSettings();
   const state = createSupplyState(saved.supply ?? null);
   const damage = createSolarDamageState(saved.solarDamage ?? null);
-  const save = () => saveSettings({ supply: serializeSupply(state), solarDamage: { ...damage } });
+  const save = () => saveSettings({ supply: serializeSupply(state), solarDamage: { damaged: damage.damaged, repairs: damage.repairs } });
   const targets = { inventory, station, gauges };
 
   // ---------------------------------------------------------------- world objects
@@ -252,10 +252,12 @@ export function createSupply({ world, root, gauges, station, inventory, saveInve
      * frameDt: real frame time. dt: game step (0 while the world is paused).
      * Orders keep moving while the terminal is open, so you can watch the signal travel.
      */
-    /** Training Day: a micrometeorite hits the array now (scripted, not random). */
+    /**
+     * A micrometeoroid hits the array now: random (main.js → systems/micrometeoroids.js) or
+     * scripted on the Training Day.
+     */
     forceSolarHit() {
-      if (damage.damaged) return false;
-      damage.damaged = true;
+      if (!damageSolar(damage)) return false;
       announceHit();
       return true;
     },
@@ -271,18 +273,13 @@ export function createSupply({ world, root, gauges, station, inventory, saveInve
     },
     /**
      * dt: real seconds while the world runs. opts.pace: base-clock speed (Training Day < 1).
-     * opts.training: no random micrometeorite hits (the script decides).
      */
-    update(frameDt, dt, zoneId, { pace: p = 1, training = false } = {}) {
+    update(frameDt, dt, zoneId, { pace: p = 1 } = {}) {
       pace = p;
       const step = dt > 0 ? dt : openScreen ? frameDt : 0;
       const events = stepOrders(state, step, { pace });
       events.forEach(onOrderEvent);
       if (events.some((e) => e.type === 'arrived')) syncCrates();
-
-      if (!training && stepSolarDamage(damage, dt * pace, Math.random, { everySeconds: SOLAR_DAMAGE.TEST_HIT_EVERY_REAL_SECONDS }) === 'hit') {
-        announceHit();
-      }
 
       const touched = pad.update(frameDt, state.orders, { visible: zoneId === 'outside' });
       if (touched.length) sfx.landed();

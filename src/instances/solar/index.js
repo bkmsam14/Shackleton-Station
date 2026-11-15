@@ -1,131 +1,73 @@
-// index.js — Solar Fix instance: intro → catch the light → close the circuit → swap the
-// cracked cells → quiz → result. Opened from the damaged solar array when you have a
-// Solar Panel Repair Kit. Reuses the Electrolysis lesson's console look (ez-* classes)
-// and adds its own pictures (sf-*). The kit is used at the moment the cracked cells are
-// swapped (ctx.onRepaired); leaving before that keeps the kit and leaves the array broken.
+// index.js — Solar Fix instance. Opened at the damaged solar array when you have a Solar
+// Panel Repair Kit. Flow (same pattern as the Electrolysis lesson):
+//   first repair ever: how a solar cell works (catch the light → close the circuit), then
+//   today's mini-game — Cell Swap, Hot Spot Hunt or Wire Fix (minigames.js; random, never
+//   twice in a row; a "How to play" card the first time) → What really happened → quiz → result.
+// The kit is used the moment the mini-game ends (ctx.onRepaired); leaving before that keeps
+// the kit and leaves the array broken.
 import './style.css';
+import './games.css';
 import { SOLAR_DAMAGE } from '../../config/gameplay.js';
 import { sfx } from '../../ui/sfx.js';
+import { loadSettings, saveSettings } from '../../systems/save.js';
+import { tutorialSeen } from '../../ui/tutorial.js';
 import { IC, voltBot } from '../electrolysis/icons.js';
-import { TEXT, QUIZ, DEEPER, SOURCES } from './content.js';
+import { createShell, learnScreen, quizScreen, playFrame, svgEl, svgPoint, capture } from '../lessonKit.js';
+import { gameById, nextGame } from './minigames.js';
+import { createCellGame, createHotSpotGame, createWireGame } from './games.js';
+import { ART } from './tutorialArt.js';
+import { TEXT, QUIZ, DEEPER, SOURCES, TUTORIALS, CONCEPT, TIPS, LEARN, LEARN_SHOWS } from './content.js';
 
-const STEPS = [
-  { id: 'light', label: 'Light' },
-  { id: 'circuit', label: 'Circuit' },
-  { id: 'fix', label: 'Fix' },
-  { id: 'quiz', label: 'Quiz' },
-  { id: 'result', label: 'Done' },
-];
 const ELECTRONS_NEEDED = 5;
-const ROWS = 5;
-const COLS = 6;
-// broken chains match the in-game damage: 40 % output left = 3 of 5 rows dark
-const BROKEN_ROWS = Math.round((1 - SOLAR_DAMAGE.DAMAGED_OUTPUT) * ROWS);
-const NS = 'http://www.w3.org/2000/svg';
-const plain = (html) => html.replace(/<[^>]+>/g, '');
-/** Keep receiving moves while dragging; some browsers refuse capture (never break the drag). */
-function capture(el, e) {
-  try {
-    el.setPointerCapture?.(e.pointerId);
-  } catch {
-    // dragging still works while the pointer stays over the element
-  }
-}
-
-function svgEl(tag, attrs = {}, parent = null) {
-  const e = document.createElementNS(NS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  if (parent) parent.appendChild(e);
-  return e;
-}
-function svgPoint(svg, e) {
-  const p = svg.createSVGPoint();
-  p.x = e.clientX;
-  p.y = e.clientY;
-  return p.matrixTransform(svg.getScreenCTM().inverse());
-}
+const FACTORY = { cells: createCellGame, hotspot: createHotSpotGame, wires: createWireGame };
 const SUN_ICON = `<svg class="ez-ic" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="7" fill="#ffc94a" stroke="#10182c" stroke-width="2.5"/><g stroke="#ffc94a" stroke-width="3" stroke-linecap="round"><path d="M16 2v4M16 26v4M2 16h4M26 16h4M6 6l3 3M23 23l3 3M6 26l3-3M23 9l3-3"/></g></svg>`;
 // same sun in the button's ink colour (a yellow sun on a yellow button would vanish)
 const SUN_BTN = `<svg class="ez-ic" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="6.5" fill="none" stroke="currentColor" stroke-width="3"/><g stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M16 2v4M16 26v4M2 16h4M26 16h4M6 6l3 3M23 23l3 3M6 26l3-3M23 9l3-3"/></g></svg>`;
 
 /** ctx: { voice?, repairs (how many repairs so far), kitsLeft(), onRepaired() → { kitsLeft } } */
 export function createSolarRepairInstance({ root, ctx, done }) {
-  const speak = (text) => ctx.voice?.speak(plain(text));
-  const quiz = QUIZ[(ctx.repairs ?? 0) % QUIZ.length];
+  const shell = createShell({ root, ctx, cls: 'sf', titleIcon: SUN_ICON, title: TEXT.title, labelId: 'sf-title' });
+  const { body, say, speak, announce, focusFirst } = shell;
+  const saved = loadSettings();
+  const firstEver = !saved.solarLessonSeen;
+  const gameId = saved.solarNext && gameById(saved.solarNext).id === saved.solarNext ? saved.solarNext : nextGame(saved.solarLast);
+  saveSettings({ solarNext: gameId });
+  const g = gameById(gameId);
+  const quiz = QUIZ[gameId][(ctx.repairs ?? 0) % QUIZ[gameId].length];
+  const tutKey = `solar-${gameId}`;
+  shell.steps = [
+    ...(firstEver ? [{ id: 'light', label: 'Light' }, { id: 'circuit', label: 'Circuit' }] : []),
+    { id: 'fix', label: 'Fix' },
+    { id: 'learn', label: 'Learn' },
+    { id: 'quiz', label: 'Quiz' },
+    { id: 'result', label: 'Done' },
+  ];
 
-  const el = document.createElement('div');
-  el.className = 'ez sf';
-  el.setAttribute('role', 'dialog');
-  el.setAttribute('aria-modal', 'true');
-  el.setAttribute('aria-labelledby', 'sf-title');
-  el.innerHTML = `
-    <div class="ez-card">
-      <header class="ez-head">
-        <span class="ez-rivets" aria-hidden="true"><i></i><i></i></span>
-        <h2 id="sf-title" class="ez-title">${SUN_ICON}<span>${TEXT.title}</span></h2>
-        <ol class="ez-steps" aria-label="Steps"></ol>
-        <span class="ez-rivets" aria-hidden="true"><i></i><i></i></span>
-      </header>
-      <div class="ez-body"></div>
-      <p class="ez-status" aria-live="polite"></p>
-    </div>`;
-  root.appendChild(el);
-  const body = el.querySelector('.ez-body');
-  const status = el.querySelector('.ez-status');
-  const stepsEl = el.querySelector('.ez-steps');
-  const announce = (msg) => (status.textContent = plain(msg));
-  const say = (mood, html, extra = '') => `<div class="ez-say ${extra}">${voltBot(mood)}<div class="ez-bubble">${html}</div></div>`;
-
-  let screen = 'intro';
-  let raf = 0;
-  let tick = null; // per-screen animation, called with dt
+  // the lesson steps keep their own per-frame animation (`tick`)
+  let tick = null;
+  const setScreen = (id) => {
+    shell.setScreen(id);
+    tick = null;
+    shell.setTick((dt, t) => tick?.(dt, t));
+  };
+  const nextButton = (label, fn) => shell.nextButton(label, fn);
   let repaired = false;
   let kitsLeft = ctx.kitsLeft?.() ?? 0;
-  let last = performance.now();
-  let tickFailed = false;
-  function loop(now) {
-    const dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
-    raf = requestAnimationFrame(loop); // schedule first: one bad frame must never freeze the lesson
-    try {
-      tick?.(dt, now / 1000);
-    } catch (err) {
-      if (!tickFailed) console.error('[instance:solar-repair] animation step failed', err);
-      tickFailed = true;
-    }
-  }
-  raf = requestAnimationFrame(loop);
-
-  function setScreen(id) {
-    screen = id;
-    tick = null;
-    el.dataset.screen = id;
-    const at = STEPS.findIndex((s) => s.id === id);
-    stepsEl.innerHTML = STEPS.map(
-      (s, i) =>
-        `<li class="${i < at ? 'is-done' : ''} ${i === at ? 'is-now' : ''}" ${i === at ? 'aria-current="step"' : ''}><span>${i + 1}</span>${s.label}</li>`,
-    ).join('');
-    body.classList.remove('ez-enter');
-    void body.offsetWidth;
-    body.classList.add('ez-enter');
-  }
-  const focusFirst = () => body.querySelector('button:not([disabled]), [tabindex="0"]')?.focus();
+  let game = null;
+  let fromLesson = false;
   function leaveRow() {
     return `<div class="ez-row sf-leave-row"><button class="ez-btn sf-leave" data-leave>${IC.back}<span>${TEXT.leave}</span></button></div>`;
   }
   function wireLeave() {
     body.querySelector('[data-leave]')?.addEventListener('click', () => done({ completed: false }));
   }
-  function nextButton(label, onClick) {
-    const row = body.querySelector('[data-next-slot]');
-    row.innerHTML = `<button class="ez-btn ez-btn-go" data-next><span>${label}</span></button>`;
-    const b = row.querySelector('[data-next]');
-    b.addEventListener('click', () => {
-      sfx.click();
-      onClick();
-    });
-    b.focus();
-  }
+  const tutorial = () => ({
+    id: tutKey,
+    title: TUTORIALS[gameId].title,
+    lead: `${voltBot('wow')}<p>${CONCEPT[gameId]}</p>`,
+    leadSay: CONCEPT[gameId],
+    panels: TUTORIALS[gameId].panels.map((p) => ({ art: ART[p.art] ?? '', caption: p.caption, say: p.say })),
+  });
 
   // ---------------------------------------------------------------- intro
   function showIntro() {
@@ -395,295 +337,87 @@ export function createSolarRepairInstance({ root, ctx, done }) {
         announce(TEXT.circuitDone);
         speak(TEXT.circuitDone);
         body.querySelector('.sf-do').innerHTML = `<b>${TEXT.circuitDone}</b>`;
-        nextButton(TEXT.next, showFix);
+        nextButton(TEXT.next, afterLesson);
       }
     };
     announce(TEXT.circuitDo);
     plug.focus();
   }
 
-  // ---------------------------------------------------------------- step 3: swap the cracked cells
-  function showFix() {
+  // ---------------------------------------------------------------- today's job (later visits)
+  function showJob() {
     setScreen('fix');
-    speak(`${TEXT.fixTitle}. ${TEXT.fix}`);
+    speak(`${TEXT.jobTitle} ${TEXT.job} Today's job: ${g.name}.`);
     body.innerHTML = `
-      ${say('wow', `<h3 class="ez-h3">${TEXT.fixTitle}</h3><p>${TEXT.fix}</p>`)}
-      <div class="sf-stage"><svg class="sf-svg" viewBox="0 0 640 340" role="img" aria-label="The solar array: 5 rows of 6 cells, some cracked, and new cells in the repair kit"></svg></div>
-      <p class="ez-p ez-center sf-do">${TEXT.fixDo}</p>
-      <div class="ez-row ez-row-center" data-next-slot></div>
-      ${leaveRow()}`;
+      ${say('think', `<h3 class="ez-h3">${TEXT.jobTitle}</h3><p>${TEXT.job}</p>`)}
+      <p class="ez-today">${SUN_ICON}<span>Today’s job: <b>${g.name}</b>${tutorialSeen(tutKey) ? '' : ' <span class="ez-game-new">New!</span>'}</span></p>
+      <div class="ez-row ez-row-center"><button class="ez-btn ez-btn-go ez-btn-xl" data-go>${SUN_BTN}<span>Start</span></button></div>
+      <div class="ez-row">
+        <button class="ez-btn ez-btn-ghost" data-lesson>${IC.book}<span>${TEXT.lesson}</span></button>
+        <button class="ez-btn ez-btn-ghost" data-leave>${IC.back}<span>${TEXT.leave}</span></button>
+      </div>`;
+    body.querySelector('[data-go]').addEventListener('click', () => {
+      sfx.click();
+      showPlay();
+    });
+    body.querySelector('[data-lesson]').addEventListener('click', () => {
+      sfx.click();
+      fromLesson = true;
+      showLight();
+    });
     wireLeave();
-    const svg = body.querySelector('.sf-svg');
-    const CW = 66;
-    const CH = 38;
-    const GAP = 6;
-    const X0 = 40;
-    const Y0 = 16;
-    // which cells are cracked: one in each of BROKEN_ROWS random rows
-    const rowsShuffled = [...Array(ROWS).keys()].sort(() => Math.random() - 0.5);
-    const cracked = new Map(rowsShuffled.slice(0, BROKEN_ROWS).map((r) => [r, Math.floor(Math.random() * COLS)]));
-    const rowGroups = [];
-    const crackedEls = new Map(); // row → { g, x, y }
-    for (let r = 0; r < ROWS; r++) {
-      const rg = svgEl('g', { class: 'sf-row' }, svg);
-      rowGroups.push(rg);
-      const y = Y0 + r * (CH + GAP);
-      for (let c = 0; c < COLS; c++) {
-        const x = X0 + c * (CW + GAP);
-        const cell = svgEl('g', {}, rg);
-        svgEl('rect', { x, y, width: CW, height: CH, rx: 5, class: 'sf-pv' }, cell);
-        svgEl('line', { x1: x + 4, y1: y + CH / 2, x2: x + CW - 4, y2: y + CH / 2, class: 'sf-busbar' }, cell);
-        if (cracked.get(r) === c) {
-          cell.classList.add('sf-cracked');
-          cell.setAttribute('tabindex', 0);
-          cell.setAttribute('role', 'button');
-          cell.setAttribute('aria-label', `Cracked cell in row ${r + 1}`);
-          svgEl('polyline', { points: `${x + 14},${y + 4} ${x + 28},${y + 18} ${x + 22},${y + 24} ${x + 40},${y + 34}`, class: 'sf-crack' }, cell);
-          svgEl('polyline', { points: `${x + 28},${y + 18} ${x + 50},${y + 10} ${x + 60},${y + 16}`, class: 'sf-crack' }, cell);
-          crackedEls.set(r, { g: cell, x, y });
-        }
-      }
-      // the chain's wire into the bus on the right
-      svgEl('line', { x1: X0 + COLS * (CW + GAP) - GAP, y1: y + CH / 2, x2: 500, y2: y + CH / 2, class: 'sf-chainwire' }, rg);
-    }
-    svgEl('line', { x1: 500, y1: Y0 + CH / 2, x2: 500, y2: Y0 + (ROWS - 1) * (CH + GAP) + CH / 2, class: 'sf-chainwire' }, svg);
-    // power meter
-    const M = { x: 540, y: Y0, w: 56, h: ROWS * (CH + GAP) - GAP };
-    svgEl('rect', { x: M.x, y: M.y, width: M.w, height: M.h, rx: 10, fill: '#0d1531', stroke: '#10182c', 'stroke-width': 4 }, svg);
-    const meter = svgEl('rect', { x: M.x + 7, width: M.w - 14, rx: 6, fill: '#ffc94a' }, svg);
-    const meterTxt = svgEl('text', { x: M.x + M.w / 2, y: M.y + M.h + 26, class: 'sf-label', 'text-anchor': 'middle' }, svg);
-    // the repair kit tray
-    const TRAY_Y = Y0 + ROWS * (CH + GAP) + 14;
-    svgEl('rect', { x: X0 - 8, y: TRAY_Y - 8, width: 3 * (CW + 14) + 120, height: CH + 16, rx: 12, class: 'sf-tray' }, svg);
-    svgEl('text', { x: X0 + 3 * (CW + 14) + 10, y: TRAY_Y + CH / 2 + 6, class: 'sf-label sf-tray-label' }, svg).textContent = 'Repair kit';
-    const spares = [];
-    for (let i = 0; i < BROKEN_ROWS; i++) {
-      const home = { x: X0 + i * (CW + 14), y: TRAY_Y };
-      const g = svgEl('g', { class: 'sf-spare', tabindex: 0, role: 'button', 'aria-label': 'New solar cell from the repair kit' }, svg);
-      svgEl('rect', { x: 0, y: 0, width: CW, height: CH, rx: 5, class: 'sf-pv sf-pv-new' }, g);
-      svgEl('line', { x1: 4, y1: CH / 2, x2: CW - 4, y2: CH / 2, class: 'sf-busbar' }, g);
-      const s = { g, home, pos: { ...home }, used: false };
-      g.setAttribute('transform', `translate(${home.x} ${home.y})`);
-      spares.push(s);
-    }
-    const flows = []; // moving dots on working chains
-    let selected = null;
-    let finished = false;
-
-    function rowWorks(r) {
-      return !crackedEls.has(r);
-    }
-    function refresh() {
-      const working = [...Array(ROWS).keys()].filter(rowWorks).length;
-      const frac = working / ROWS;
-      const h = (M.h - 14) * frac;
-      meter.setAttribute('y', M.y + M.h - 7 - h);
-      meter.setAttribute('height', h);
-      meterTxt.textContent = `Power ${Math.round(frac * 100)}%`;
-      rowGroups.forEach((rg, r) => rg.classList.toggle('is-dark', !rowWorks(r)));
-    }
-    for (let r = 0; r < ROWS; r++) {
-      const y = Y0 + r * (CH + GAP) + CH / 2;
-      for (let i = 0; i < 3; i++) {
-        const dot = svgEl('circle', { r: 4.5, class: 'sf-flowdot' }, rowGroups[r]);
-        flows.push({ dot, r, y, s: i / 3 + Math.random() * 0.1 });
-      }
-    }
-    refresh();
-
-    function place(spare, row) {
-      const cr = crackedEls.get(row);
-      if (!cr || spare.used) return false;
-      spare.used = true;
-      spare.pos = { x: cr.x, y: cr.y };
-      spare.g.setAttribute('transform', `translate(${cr.x} ${cr.y})`);
-      spare.g.classList.add('is-placed');
-      spare.g.removeAttribute('tabindex');
-      cr.g.remove();
-      crackedEls.delete(row);
-      sfx.bubble();
-      refresh();
-      announce(`Row ${row + 1} fixed! ${crackedEls.size} left.`);
-      if (!crackedEls.size && !finished) finish();
-      return true;
-    }
-    function rowAt(p) {
-      for (const [row, cr] of crackedEls) if (p.x >= cr.x - 12 && p.x <= cr.x + CW + 12 && p.y >= cr.y - 12 && p.y <= cr.y + CH + 12) return row;
-      return null;
-    }
-    function finish() {
-      finished = true;
-      const r = ctx.onRepaired?.(); // uses the kit, array back to full power
-      repaired = true;
-      kitsLeft = r?.kitsLeft ?? kitsLeft;
-      sfx.success();
-      announce(TEXT.fixDone);
-      speak(TEXT.fixDone);
-      body.querySelector('.sf-do').innerHTML = `<b>${TEXT.fixDone}</b>`;
-      body.querySelector('.sf-leave-row')?.remove();
-      nextButton('Quick question!', showQuiz);
-    }
-    for (const s of spares) {
-      let drag = null;
-      s.g.addEventListener('pointerdown', (e) => {
-        if (s.used) return;
-        e.preventDefault();
-        const p = svgPoint(svg, e);
-        drag = { dx: p.x - s.pos.x, dy: p.y - s.pos.y, moved: false };
-        capture(s.g, e);
-        s.g.classList.add('is-drag');
-      });
-      s.g.addEventListener('pointermove', (e) => {
-        if (!drag) return;
-        const p = svgPoint(svg, e);
-        s.pos = { x: p.x - drag.dx, y: p.y - drag.dy };
-        drag.moved = drag.moved || Math.hypot(s.pos.x - s.home.x, s.pos.y - s.home.y) > 6;
-        s.g.setAttribute('transform', `translate(${s.pos.x} ${s.pos.y})`);
-      });
-      s.g.addEventListener('pointerup', () => {
-        if (!drag) return;
-        s.g.classList.remove('is-drag');
-        const moved = drag.moved;
-        drag = null;
-        if (!moved) {
-          // a click: select this cell, then click a cracked one
-          spares.forEach((o) => o.g.classList.remove('is-picked'));
-          selected = s;
-          s.g.classList.add('is-picked');
-          s.pos = { ...s.home };
-          s.g.setAttribute('transform', `translate(${s.home.x} ${s.home.y})`);
-          return;
-        }
-        const row = rowAt({ x: s.pos.x + CW / 2, y: s.pos.y + CH / 2 });
-        if (row === null || !place(s, row)) {
-          s.pos = { ...s.home };
-          s.g.setAttribute('transform', `translate(${s.home.x} ${s.home.y})`);
-          sfx.miss();
-        }
-      });
-      s.g.addEventListener('keydown', (e) => {
-        if (e.code !== 'Enter' && e.code !== 'Space') return;
-        e.preventDefault();
-        spares.forEach((o) => o.g.classList.remove('is-picked'));
-        selected = s;
-        s.g.classList.add('is-picked');
-        crackedEls.values().next().value?.g.focus();
-      });
-    }
-    for (const [row, cr] of crackedEls) {
-      const use = () => {
-        if (selected && !selected.used) {
-          selected.g.classList.remove('is-picked');
-          place(selected, row);
-          selected = spares.find((o) => !o.used) ?? null;
-          if (selected) selected.g.classList.add('is-picked');
-        } else {
-          announce('Pick a new cell from the repair kit first.');
-        }
-      };
-      cr.g.addEventListener('click', use);
-      cr.g.addEventListener('keydown', (e) => {
-        if (e.code === 'Enter' || e.code === 'Space') {
-          e.preventDefault();
-          use();
-        }
-      });
-    }
-
-    tick = (dt) => {
-      const x0 = X0;
-      const x1 = 500;
-      for (const f of flows) {
-        if (!rowWorks(f.r)) {
-          f.dot.setAttribute('cx', -50);
-          continue;
-        }
-        f.s = (f.s + dt * 0.35) % 1;
-        f.dot.setAttribute('cx', x0 + (x1 - x0) * f.s);
-        f.dot.setAttribute('cy', f.y);
-      }
-    };
-    announce(TEXT.fixDo);
-    spares[0].g.focus();
-  }
-
-  // ---------------------------------------------------------------- quiz
-  let tries = 0;
-  function showQuiz() {
-    setScreen('quiz');
-    speak(`Quick question! ${quiz.q}`);
-    const order = quiz.options.map((_, i) => i).sort(() => Math.random() - 0.5);
-    const letters = ['A', 'B', 'C', 'D'];
-    body.innerHTML = `
-      ${say('think', `<h3 class="ez-h3">Quick question!</h3><p class="ez-q">${quiz.q}</p>`)}
-      <div class="ez-answers" style="--n:${order.length}">
-        ${order
-          .map(
-            (oi, pos) => `<button class="ez-answer" data-i="${oi}" style="--i:${pos}" aria-label="${letters[pos]}: ${quiz.options[oi]}">
-              <span class="ez-letter">${letters[pos]}</span>
-              <span class="ez-answer-pic"><span class="ez-num sf-answer-txt">${quiz.options[oi]}</span></span>
-              <span class="ez-answer-mark"></span>
-            </button>`,
-          )
-          .join('')}
-      </div>
-      <div class="ez-explain" hidden></div>`;
-    body.querySelectorAll('.ez-answer').forEach((btn) => btn.addEventListener('click', () => answer(Number(btn.dataset.i), btn)));
     focusFirst();
   }
-  function answer(i, btn) {
-    tries++;
-    const ex = body.querySelector('.ez-explain');
-    if (i !== quiz.answer) {
-      sfx.miss();
-      btn.disabled = true;
-      btn.classList.add('is-wrong');
-      btn.querySelector('.ez-answer-mark').innerHTML = IC.cross;
-      const left = [...body.querySelectorAll('.ez-answer:not([disabled])')];
-      if (left.length > 1) {
-        ex.hidden = false;
-        ex.innerHTML = say('happy', `<p><b class="ez-try">Not quite, try again!</b> ${quiz.hint}</p>`, 'ez-say-small');
-        left[0].focus();
-        announce(`Not quite. Hint: ${quiz.hint}`);
-        speak(`Not quite. Try again! ${quiz.hint}`);
-        return;
-      }
-    } else sfx.success();
-    const right = i === quiz.answer;
-    body.querySelectorAll('.ez-answer').forEach((b) => {
-      b.disabled = true;
-      if (Number(b.dataset.i) === quiz.answer) {
-        b.classList.add('is-right');
-        b.querySelector('.ez-answer-mark').innerHTML = IC.check;
-      }
-    });
-    const head = right && tries === 1 ? 'Yes! First try!' : right ? 'You got it!' : 'Here’s the answer!';
-    ex.hidden = false;
-    ex.innerHTML = `
-      ${say(
-        right ? 'cheer' : 'happy',
-        `<p><b class="${right ? 'ez-yes' : 'ez-try'}">${head}</b> ${quiz.explain}</p>
-         <p class="ez-source">${IC.link}<span>Source: <a href="${quiz.source.url}" target="_blank" rel="noopener">${quiz.source.label}</a></span></p>`,
-        'ez-say-small',
-      )}
-      <div class="ez-row ez-row-end"><button class="ez-btn ez-btn-go" data-next><span>Finish</span></button></div>`;
-    ex.querySelector('[data-next]').addEventListener('click', () => {
-      sfx.click();
-      showResult();
-    });
-    ex.querySelector('[data-next]').focus();
-    announce(`${head} ${quiz.explain}`);
-    speak(`${head} ${quiz.explain}`);
+
+  /** After "catch the light" + "close the circuit": on to today's game. */
+  function afterLesson() {
+    saveSettings({ solarLessonSeen: true });
+    if (fromLesson) showJob();
+    else showPlay();
   }
+
+  // ---------------------------------------------------------------- the mini-game
+  function showPlay() {
+    setScreen('fix');
+    const mount = playFrame(shell, { concept: CONCEPT[gameId], leaveLabel: TEXT.leave, helpLabel: `How to play ${g.name}`, goal: `${SUN_ICON}<b>${g.name}</b>` });
+    wireLeave();
+    body.querySelector('[data-help]').addEventListener('click', () => {
+      sfx.click();
+      shell.tutorial(tutorial());
+    });
+    const begin = () => {
+      if (shell.screen !== 'fix' || game) return;
+      game = FACTORY[gameId]({ mount, announce, onComplete: finish, onTip: (key) => shell.tip(TIPS[gameId]?.[key]) });
+      announce(`${g.name}: ${CONCEPT[gameId]}`);
+    };
+    if (tutorialSeen(tutKey)) begin();
+    else shell.tutorial(tutorial()).then(begin);
+  }
+
+  function finish() {
+    game?.destroy();
+    game = null;
+    const r = ctx.onRepaired?.(); // uses the kit, array back to full power
+    repaired = true;
+    kitsLeft = r?.kitsLeft ?? kitsLeft;
+    saveSettings({ solarLast: gameId, solarNext: nextGame(gameId), solarLessonSeen: true });
+    const shown = loadSettings().learnShown ?? {};
+    const key = `solar-${gameId}`;
+    if ((shown[key] ?? 0) < LEARN_SHOWS) {
+      saveSettings({ learnShown: { ...shown, [key]: (shown[key] ?? 0) + 1 } });
+      learnScreen(shell, LEARN[gameId], ART[LEARN[gameId].art], showQuiz);
+    } else showQuiz();
+  }
+  const showQuiz = () => quizScreen(shell, quiz, showResult);
 
   // ---------------------------------------------------------------- result
   function showResult() {
     setScreen('result');
     speak('Solar array repaired! The base has full solar power again.');
     body.innerHTML = `
-      ${say('cheer', `<h3 class="ez-h3">Solar array repaired!</h3><p>New cells in, every chain flowing. The base has full solar power again.</p>`)}
+      ${say('cheer', `<h3 class="ez-h3">Solar array repaired!</h3><p>Every chain is flowing again. The base has full solar power.</p>`)}
       <ul class="ez-results">
-        <li class="ez-res ez-tone-power">${IC.power}<span><b>Power: 100%</b> was ${Math.round(SOLAR_DAMAGE.DAMAGED_OUTPUT * 100)}% with cracked cells</span></li>
+        <li class="ez-res ez-tone-power">${IC.power}<span><b>Power: 100%</b> was ${Math.round(SOLAR_DAMAGE.DAMAGED_OUTPUT * 100)}% with the damage</span></li>
         <li class="ez-res ez-tone-time">${SUN_ICON}<span><b>1 Solar Panel Repair Kit used</b> ${kitsLeft} left in your inventory</span></li>
       </ul>
       <div class="sf-deeper">
@@ -700,19 +434,31 @@ export function createSolarRepairInstance({ root, ctx, done }) {
   }
 
   function onKey(e) {
+    if (shell.tutorialOpen()) {
+      if (e.code === 'Enter' || e.code === 'Space' || e.code === 'Escape') {
+        e.preventDefault();
+        shell.el.querySelector('.tut-go')?.click();
+      }
+      return;
+    }
+    if (shell.screen === 'fix' && game?.onKey?.(e)) return;
     if (e.code !== 'Escape') return;
     e.preventDefault();
-    if (repaired && screen !== 'result') showResult();
-    else done({ completed: false, repaired });
+    if (!repaired) done({ completed: false });
+    else if (shell.screen === 'learn') showQuiz();
+    else if (shell.screen === 'quiz') showResult();
+    else done({ completed: false, repaired: true });
   }
 
-  showIntro();
+  if (firstEver) showIntro();
+  else showJob();
 
   return {
     onKey,
     destroy() {
-      cancelAnimationFrame(raf);
-      ctx.voice?.stop?.();
+      game?.destroy();
+      game = null;
+      shell.destroy();
     },
   };
 }

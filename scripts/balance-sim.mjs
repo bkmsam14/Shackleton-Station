@@ -8,13 +8,14 @@ import { buildStorms } from '../src/systems/spaceWeather.js';
 const min = (s) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}` : 'never');
 const pct = (v) => `${Math.round(v)}%`;
 
-console.log('\n=== Bots over one lunar day (20 real min), 200 runs each (random micrometeorite hits) ===');
+console.log('\n=== Bots over one lunar day (20 real min), 200 runs each (random micrometeoroid hits: array or habitat) ===');
 for (const [name, bot] of Object.entries(BOTS)) {
   const m = simulateMany(bot, 200);
   const r = simulate(bot, { seed: 1 });
   console.log(`\n${name.toUpperCase()}`);
   console.log(`  runs with a failure: ${m.failedRuns}/${m.runs}   earliest failure: ${min(m.earliestFailure)}`);
-  console.log(`  array hits: ${m.meanHits.toFixed(1)} avg, ${m.maxHits} max   worst blackout: ${m.worstBlackout} s`);
+  const leaks = m.results.reduce((a, r) => a + r.leakHits, 0) / m.runs;
+  console.log(`  micrometeoroid hits: ${m.meanHits.toFixed(1)} avg (${(m.meanHits - leaks).toFixed(1)} array, ${leaks.toFixed(1)} habitat leak), ${m.maxHits} max   worst blackout: ${m.worstBlackout} s`);
   console.log(`  run #1: failures ${r.failures.map((f) => `${f.cause} @ ${min(f.t)}`).join(', ') || 'none'}; hits ${r.hits}; O₂ batches ${r.o2Made}; ice bags ${r.iceBags}`);
   console.log(`          ate ${r.eaten.potato} potatoes, ${r.eaten.lettuce} lettuce, ${r.eaten.radish} radishes`);
   console.log(`          lowest O₂ ${pct(r.lowest.oxygen)} food ${pct(r.lowest.food)} power ${pct(r.lowest.power)} tank ${r.lowest.tankKg.toFixed(1)} kg`);

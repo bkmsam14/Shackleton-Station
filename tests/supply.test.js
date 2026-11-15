@@ -15,7 +15,7 @@ import {
   crates,
 } from '../src/supply/orders.js';
 import { collectFromCrate, unitsThatFit } from '../src/supply/delivery.js';
-import { createSolarDamageState, stepSolarDamage, solarOutputFactor, repairSolar } from '../src/supply/solarDamage.js';
+import { createSolarDamageState, damageSolar, solarOutputFactor, repairSolar } from '../src/supply/solarDamage.js';
 import { CATALOG } from '../src/supply/catalog.js';
 import { createInventory, countOf } from '../src/farming/inventory.js';
 
@@ -160,16 +160,12 @@ test('save → load keeps orders, timers and crates without duplicating them', (
   assert.equal(placeOrder(loaded, { water: 1 }).id, 'SR-003'); // ids stay unique
 });
 
-test('solar damage: no hits during the grace period, then random hits; healthy array unchanged', () => {
+test('solar damage: a hit cracks the array once; healthy array unchanged', () => {
   const d = createSolarDamageState();
   assert.equal(solarOutputFactor(d), 1);
-  const grace = (SOLAR_DAMAGE.GRACE_GAME_HOURS * 3600) / TIME.SCALE;
-  assert.equal(stepSolarDamage(d, grace * 0.9, () => 0), null); // rand 0 would always hit
-  stepSolarDamage(d, grace * 0.2, () => 1); // past grace, unlucky roll never hits
-  assert.equal(d.damaged, false);
-  assert.equal(stepSolarDamage(d, 1, () => 0), 'hit');
+  assert.equal(damageSolar(d), true);
   assert.equal(solarOutputFactor(d), SOLAR_DAMAGE.DAMAGED_OUTPUT);
-  assert.equal(stepSolarDamage(d, 1, () => 0), null); // already damaged
+  assert.equal(damageSolar(d), false); // already damaged
 });
 
 test('repair needs a kit and only uses it when the repair happens', () => {
@@ -185,18 +181,6 @@ test('repair needs a kit and only uses it when the repair happens', () => {
   assert.deepEqual(repairSolar(d, inv), { ok: true, reason: null });
   assert.equal(countOf(inv, 'solar-repair-kit'), 0);
   assert.equal(solarOutputFactor(d), 1);
-});
-
-test('test switch: a hit exactly every N seconds while healthy, counting again after a repair', () => {
-  const d = createSolarDamageState();
-  const every = { everySeconds: 60 };
-  assert.equal(stepSolarDamage(d, 59, () => 1, every), null); // no randomness, no grace
-  assert.equal(stepSolarDamage(d, 1, () => 1, every), 'hit');
-  assert.equal(stepSolarDamage(d, 120, () => 1, every), null); // already damaged: the timer waits
-  const inv = createInventory({ 'solar-repair-kit': 1 });
-  assert.ok(repairSolar(d, inv).ok);
-  assert.equal(stepSolarDamage(d, 30, () => 1, every), null);
-  assert.equal(stepSolarDamage(d, 30, () => 1, every), 'hit'); // 60 s after the repair
 });
 
 import { rushOrder } from '../src/supply/orders.js';

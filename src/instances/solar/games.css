@@ -1,0 +1,199 @@
+/* games.css — the Solar Fix mini-games (Cell Swap, Hot Spot Hunt, Wire Fix) and their
+   tutorial pictures (ts-*). Same console look as the rest of the lesson. */
+
+.sf-game {
+  display: grid;
+  gap: 6px;
+}
+/* inside the play grid, auto margins would shrink the stage to fit: keep it full width */
+.sf-game .sf-stage {
+  width: 100%;
+  margin: 0 auto;
+}
+.sf-game .sf-svg {
+  max-height: 50vh;
+}
+.sf-small {
+  font-size: 16px;
+}
+
+/* ---------------------------------------------------------------- Hot Spot Hunt */
+.sf-hot-bar {
+  gap: 14px;
+  margin: 2px 0;
+}
+.sf-ir-btn[aria-pressed='true'] {
+  background: #ff7a59;
+}
+.sf-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  color: #c9d4e8;
+}
+.sf-legend b {
+  width: 90px;
+  height: 14px;
+  border-radius: 7px;
+  border: 2px solid var(--ink);
+  background: linear-gradient(90deg, #2b1f66, #6a2fa0, #ff7a3d, #fff3b0);
+}
+.sf-hcell {
+  cursor: pointer;
+  outline: none;
+}
+.sf-hcell-rect {
+  fill: #23458a;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+  transition: fill 0.25s;
+}
+.sf-hcell:hover .sf-hcell-rect,
+.sf-hcell:focus-visible .sf-hcell-rect {
+  stroke: #ffffff;
+  stroke-width: 4;
+}
+.sf-hairline {
+  fill: none;
+  stroke: #3a5aa0; /* barely visible on the blue cell: tiny cracks hide */
+  stroke-width: 1;
+}
+.sf-heat {
+  fill: transparent;
+  pointer-events: none;
+  transition: fill 0.25s;
+}
+.sf-svg.is-ir .sf-hcell-rect {
+  fill: #3b2a7a;
+}
+.sf-svg.is-ir .sf-busbar,
+.sf-svg.is-ir .sf-hairline {
+  opacity: 0;
+}
+.sf-svg.is-ir .sf-hcell.is-hot .sf-hcell-rect {
+  fill: #ff7a3d;
+}
+.sf-svg.is-ir .sf-hcell.is-hot .sf-heat {
+  fill: #fff3b0;
+  animation: sf-glow 1.2s ease-in-out infinite;
+}
+.sf-hcell.is-fixed .sf-hcell-rect {
+  fill: #2f5fc0;
+}
+.sf-svg.is-ir .sf-hcell.is-fixed .sf-hcell-rect {
+  fill: #2b1f66;
+}
+.sf-hcell.is-fixed {
+  pointer-events: none;
+}
+@keyframes sf-glow {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ---------------------------------------------------------------- Wire Fix */
+.sf-tile {
+  cursor: pointer;
+  outline: none;
+}
+.sf-tile-bg {
+  fill: #24365f;
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+.sf-tile:hover .sf-tile-bg,
+.sf-tile:focus-visible .sf-tile-bg {
+  stroke: #ffffff;
+  stroke-width: 4;
+}
+.sf-tile.is-gap .sf-tile-bg {
+  stroke: #ff9b85;
+  stroke-width: 4;
+}
+.sf-tile g {
+  transition: transform 0.18s ease-out;
+}
+.sf-return {
+  stroke-width: 6;
+}
+.sf-wire-off {
+  stroke: #5a6684;
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+.sf-wire-lit {
+  stroke: #ffe27a;
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 14 8;
+  animation: sf-dash 0.6s linear infinite;
+}
+
+/* ---------------------------------------------------------------- tutorial art (ts-*) */
+.ts-flow {
+  animation: ts-flow 2.4s linear infinite;
+}
+.ts-late {
+  animation-delay: -1.2s;
+}
+.ts-drag {
+  animation: ts-drag 3.2s ease-in-out infinite;
+}
+.ts-fade-out {
+  animation: ts-fade-out 3.2s ease-in-out infinite;
+}
+.ts-fade-in {
+  opacity: 0;
+  animation: ts-fade-in 3.2s ease-in-out infinite;
+}
+.ts-shake {
+  animation: ts-shake 1.6s ease-in-out infinite;
+}
+.ts-spin > g {
+  animation: ts-spin 3.2s ease-in-out infinite;
+}
+.ts-charge {
+  transform-origin: center bottom;
+  animation: ts-charge 3.2s ease-out infinite;
+}
+.ts-loop {
+  animation: sf-dash 0.6s linear infinite;
+}
+@keyframes ts-flow {
+  from { transform: translateX(0); }
+  to { transform: translateX(176px); }
+}
+@keyframes ts-drag {
+  0%, 15% { transform: translate(0, 0); }
+  60%, 100% { transform: translate(0, -60px); }
+}
+@keyframes ts-fade-out {
+  0%, 30% { opacity: 1; }
+  45%, 100% { opacity: 0; }
+}
+@keyframes ts-fade-in {
+  0%, 30% { opacity: 0; }
+  45%, 100% { opacity: 1; }
+}
+@keyframes ts-shake {
+  25% { transform: rotate(-6deg); }
+  75% { transform: rotate(6deg); }
+}
+@keyframes ts-spin {
+  0%, 35% { transform: rotate(0deg); }
+  55%, 100% { transform: rotate(90deg); }
+}
+@keyframes ts-charge {
+  0%, 20% { transform: scaleY(0.1); }
+  80%, 100% { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ts-flow, .ts-drag, .ts-fade-out, .ts-fade-in, .ts-shake, .ts-spin > g, .ts-charge, .ts-loop,
+  .sf-wire-lit, .sf-svg.is-ir .sf-hcell.is-hot .sf-heat {
+    animation: none;
+  }
+  .ts-fade-out { opacity: 0; }
+  .ts-fade-in { opacity: 1; }
+}

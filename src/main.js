@@ -61,6 +61,7 @@ import { createTraining } from './training/index.js';
 import { drillStorm } from './training/script.js';
 import { createTrainingReportInstance } from './instances/trainingReport/index.js';
 import { PAD } from './supply/landingPad.js';
+import { createHabitatLeak } from './leak/index.js';
 
 // ---------------------------------------------------------------- setup
 let quality = loadSettings().quality === 'low' ? 'low' : 'high';
@@ -543,6 +544,10 @@ const instances = createInstanceManager(uiRoot, {
       stormLog(`Ice Oven started: ${result.soilKg.toFixed(0)} kg of icy soil, ${result.kwh.toFixed(1)} kWh of power, about ${result.waterKg.toFixed(1)} kg of water on the way to the tank.`);
     }
     if (id === 'storm-report') assistant.notify('storm-report-closed');
+    if (id === 'leak-repair' && result.patched) {
+      advanceGameHours(result.gameHours);
+      stormLog('Air leak patched in the habitat. The oxygen supply drains at the normal speed again.');
+    }
     // Back to the 3D world. Re-locking the mouse needs a click; the "Back to base" button is
     // one. If the browser refuses (e.g. closed with Esc), show the pause menu to click on.
     mode = 'paused';
@@ -623,6 +628,22 @@ const supply = createSupply({
     },
   },
 });
+// ---------------------------------------------------------------- micrometeoroid hits
+// One scheduler for the solar array AND the habitat (never both broken at once):
+// a habitat hit opens an air leak that the kid finds + patches at the life-support rack.
+const leak = createHabitatLeak({
+  world,
+  notify: voltEvent,
+  instances, // the Leak Fix lesson opens like the Solar Fix one
+  voice: voltVoice,
+  solar: {
+    get damaged() {
+      return supply.solarDamaged;
+    },
+    hit: () => supply.forceSolarHit(),
+  },
+});
+
 
 // ---------------------------------------------------------------- interactions
 let edgeToastAt = -99;
@@ -748,7 +769,13 @@ function advanceGameHours(hours, place = 'habitat') {
     const step = Math.min(1, seconds - t);
     stepDayCycle(day, step);
     const s = getSun(day);
-    stepGauges(gauges, step, { pressurized: true, sunVisibility: s.visibility, alignment: 1, growLightsOn });
+    stepGauges(gauges, step, {
+      pressurized: true,
+      sunVisibility: s.visibility,
+      alignment: supply.solarOutputFactor, // a cracked array stays cracked while you rest
+      growLightsOn,
+      extraOxygenKgPerGameHour: leak.o2KgPerGameHour, // an open leak keeps leaking
+    });
     stepIceOven((step * TIME.SCALE) / 3600);
     events.push(...stepRadiation(radiation, gameHourNow(), (step * TIME.SCALE) / 3600, { place, wallKg: station.wallKg }));
   }
@@ -879,6 +906,7 @@ function handleInteraction() {
     }
     else if (target.action.type === 'farm') farming.interact(target.action.potId);
     else if (target.action.type === 'supply') supply.interact(target);
+    else if (target.action.type === 'leak') leak.interact();
     else if (target.action.type === 'lights') toggleGrowLights();
   }
 }
@@ -980,7 +1008,9 @@ function reactToGauges(report, sun) {
       'Oxygen supply low',
       outside
         ? 'Oxygen supply low! Working outside uses it up about 2× faster — head back inside.'
-        : 'Oxygen supply low! Make more at the Electrolysis unit in the habitat work bay.',
+        : leak.leaking
+          ? 'Oxygen supply low! The air leak is using it up: patch the hole at the life-support rack (red light), then make more oxygen.'
+          : 'Oxygen supply low! Make more at the Electrolysis unit in the habitat work bay.',
       'low',
     );
   }
@@ -1140,6 +1170,7 @@ renderer.setAnimationLoop(() => {
     alignment: alignment * supply.solarOutputFactor, // 1 when healthy; less after a micrometeorite hit
     extraLoadKw: coldTrapLoadKw(coldTrap), // suit heaters + lamp, recharged by the base
     growLightsOn,
+    extraOxygenKgPerGameHour: leak.o2KgPerGameHour, // habitat air leak: the base tops the air up
   });
   if (running) reactToGauges(report, sun);
   // live sky: Earth really dips below the horizon here for part of each month (libration)
@@ -1148,7 +1179,8 @@ renderer.setAnimationLoop(() => {
     voltEvent('earth-hidden', 'Earth is below the horizon right now', 'Right now Earth is below the horizon at the south pole. It bobs up and down every month (libration), so radio links need it above the horizon — or a relay satellite.');
   }
   farming.update(frameDt, simDt, { lit: report.hasPower && growLightsOn });
-  supply.update(frameDt, dt, zoneId, { pace, training: training.active });
+  supply.update(frameDt, dt, zoneId, { pace });
+  leak.update(frameDt, simDt, zoneId, { training: training.active }); // random hits: array or habitat
   if (mode === 'playing' && (report.oxygenEmpty || report.foodEmpty)) {
     gentleFailure(report.oxygenEmpty ? 'oxygen' : 'food');
   }
@@ -1212,6 +1244,7 @@ renderer.setAnimationLoop(() => {
     sun,
     ice,
     album: [...starAlbum],
+    hazards: { leaking: leak.leaking, leakO2Kg: leak.state.o2LostKg, solarDamaged: supply.solarDamaged },
     carry:ice.bagKg > 0 ? `Icy soil ${Math.round(ice.bagKg)} kg → Ice Oven` : ice.oven ? 'Ice Oven baking…' : '',
   };
   hud.update(lastHudState);

@@ -1,0 +1,416 @@
+/* Leak Fix instance — reuses the Electrolysis console look (ez-* in ../electrolysis/style.css)
+   and the shared lesson frame (rk-*), plus its own pictures (lf-*) and tutorial art (tl-*).
+   Kids first: text ≥ 16px, targets ≥ 44px, contrast ≥ 4.5:1, motion off with reduced motion. */
+
+/* ---------------------------------------------------------------- game frame */
+.lf-game {
+  display: grid;
+  gap: 6px;
+}
+.lf-stage {
+  position: relative;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 760px;
+  border-radius: 20px;
+  border: 3px solid var(--console-edge);
+  background: #0a1230;
+  touch-action: none;
+}
+.lf-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 46vh;
+  user-select: none;
+  outline: none;
+}
+.lf-svg:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 18px;
+}
+.lf-do {
+  margin: 2px 0 0;
+  min-height: 2.4em;
+  text-align: center;
+  font-size: 19px;
+}
+.lf-do b {
+  color: var(--gold);
+}
+.lf-fast {
+  margin: 0;
+  text-align: center;
+  font-size: 16px;
+  color: #c9d4e8;
+}
+.lf-label {
+  fill: #ffffff;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 20px;
+}
+.lf-fast-svg {
+  fill: #c9d4e8;
+  font-family: var(--font-head);
+  font-size: 17px;
+}
+
+/* the hole + escaping air */
+.lf-hole-ring {
+  animation: lf-ring 1.2s ease-in-out infinite;
+}
+.lf-air path {
+  stroke-dasharray: 8 6;
+  animation: lf-air 0.5s linear infinite;
+}
+.lf-hole.is-found {
+  cursor: pointer;
+}
+.lf-hole:focus-visible .lf-hole-ring {
+  stroke: #ffffff;
+}
+.lf-patch-on {
+  fill: #f2f5ff;
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+@keyframes lf-ring {
+  50% {
+    stroke-width: 7;
+  }
+}
+@keyframes lf-air {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+/* ---------------------------------------------------------------- Leak Hunt */
+.lf-hunt .lf-svg {
+  cursor: none;
+}
+.lf-probe {
+  pointer-events: none;
+}
+.lf-probe-zone {
+  fill: rgba(255, 201, 74, 0.12);
+  stroke: #ffc94a;
+  stroke-width: 2.5;
+  stroke-dasharray: 6 5;
+}
+.lf-meter {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 3px solid var(--ink);
+  background: rgba(10, 16, 36, 0.85);
+}
+.lf-meter-ear {
+  font-size: 22px;
+  margin-right: 4px;
+}
+.lf-meter i {
+  display: block;
+  width: 12px;
+  border-radius: 3px;
+  background: #2a3350;
+}
+.lf-meter i:nth-child(2) { height: 12px; }
+.lf-meter i:nth-child(3) { height: 18px; }
+.lf-meter i:nth-child(4) { height: 24px; }
+.lf-meter i:nth-child(5) { height: 30px; }
+.lf-meter i:nth-child(6) { height: 36px; }
+.lf-meter i.is-on {
+  background: #7be0a0;
+}
+
+/* ---------------------------------------------------------------- Hatch Hunt */
+.lf-room-box {
+  fill: #24365f;
+  stroke: var(--ink);
+  stroke-width: 4;
+  transition: fill 0.3s;
+}
+.lf-room-name {
+  fill: #ffffff;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 19px;
+}
+.lf-room.is-falling .lf-room-box {
+  fill: #4a2f52;
+}
+.lf-room.is-leak .lf-room-box {
+  fill: #6a2a3a;
+  stroke: #ff9b85;
+  cursor: pointer;
+}
+.lf-room.is-leak:focus-visible .lf-room-box {
+  stroke: #ffffff;
+}
+.lf-room.is-patched .lf-room-box {
+  fill: #24365f;
+  stroke: #7be0a0;
+}
+.lf-hatchbtn {
+  cursor: pointer;
+  outline: none;
+}
+.lf-hatch-hit {
+  fill: transparent;
+}
+.lf-hatch-door {
+  fill: #4a5468;
+  stroke: var(--ink);
+  stroke-width: 3;
+  transition: fill 0.2s;
+}
+.lf-hatchbtn:hover .lf-hatch-door,
+.lf-hatchbtn:focus-visible .lf-hatch-door {
+  stroke: #ffffff;
+}
+.lf-hatchbtn.is-closed .lf-hatch-door {
+  fill: #ff7a59;
+}
+
+/* ---------------------------------------------------------------- Patch It */
+.lf-chips {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lf-chips li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--console-edge);
+  font-family: var(--font-head);
+  font-size: 17px;
+  color: #c9d4e8;
+}
+.lf-chips li span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--console-edge);
+  color: #ffffff;
+  font-size: 14px;
+}
+.lf-chips li.is-now {
+  border-color: var(--gold);
+  color: #ffffff;
+}
+.lf-chips li.is-done {
+  border-color: #7be0a0;
+  color: #ffffff;
+}
+.lf-chips li.is-done span {
+  background: #7be0a0;
+  color: var(--ink);
+}
+.lf-tray {
+  fill: rgba(255, 201, 74, 0.08);
+  stroke: #ffc94a;
+  stroke-width: 2.5;
+  stroke-dasharray: 8 6;
+}
+.lf-tool {
+  cursor: pointer;
+  outline: none;
+}
+.lf-tool:hover rect,
+.lf-tool:focus-visible rect {
+  stroke: #ffffff;
+  stroke-width: 4;
+}
+.lf-tool.is-used {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.lf-tool-txt {
+  fill: var(--ink);
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 24px;
+}
+.lf-tape-on {
+  fill: #e9c46a;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+  opacity: 0.92;
+}
+.lf-blob {
+  stroke: var(--ink);
+  stroke-width: 3;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.3s, rx 0.2s, ry 0.2s;
+}
+.lf-gauze-rect {
+  fill: #f2f5ff;
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+.lf-gauze-rect.is-set {
+  fill: #b7f0cc;
+}
+.lf-gauze {
+  touch-action: none;
+}
+.lf-gauze.is-held .lf-gauze-rect {
+  fill: #dff7e8;
+  stroke: #7be0a0;
+  stroke-width: 5;
+}
+.lf-gauze.is-set .lf-gauze-rect {
+  fill: #b7f0cc;
+}
+.lf-hold-ring {
+  fill: none;
+  stroke: #7be0a0;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-box: fill-box;
+  transform-origin: center;
+  pointer-events: none;
+}
+.lf-push path {
+  animation: lf-push 0.9s ease-in-out infinite;
+}
+@keyframes lf-push {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ---------------------------------------------------------------- tutorial art (tl-*) */
+.tl-sweep {
+  animation: tl-sweep 3.2s ease-in-out infinite;
+}
+.tl-hidden {
+  opacity: 0.25;
+}
+.tl-beep {
+  animation: tl-beep 0.5s ease-in-out infinite;
+}
+.tl-pop {
+  animation: tl-pop 1.6s ease-in-out infinite;
+}
+.tl-shut rect {
+  animation: tl-shut 3.2s ease-in-out infinite;
+}
+.tl-fall {
+  transform-origin: 50% 100% !important;
+  transform-box: fill-box;
+  animation: tl-fall 3.2s ease-in-out infinite;
+}
+.tl-steady {
+  transform-origin: 50% 100% !important;
+  transform-box: fill-box;
+}
+.tl-air path {
+  stroke-dasharray: 6 5;
+  animation: lf-air 0.5s linear infinite;
+}
+.tl-tape {
+  animation: tl-tape 3.2s ease-in-out infinite;
+}
+.tl-mixed {
+  animation: tl-mixed 3.2s ease-in-out infinite;
+}
+.tl-patch {
+  animation: tl-patch 3.2s ease-in-out infinite;
+}
+.tl-hold {
+  animation: tl-hold 3.2s linear infinite;
+}
+.tl-wave {
+  stroke-dasharray: 10 6;
+  animation: lf-air 0.5s linear infinite;
+}
+.tl-push {
+  animation: lf-push 0.9s ease-in-out infinite;
+}
+.tl-jiggle {
+  animation: tl-jiggle 0.9s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+@keyframes tl-sweep {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(70px, -10px); }
+}
+@keyframes tl-beep {
+  50% { opacity: 0.2; }
+}
+@keyframes tl-pop {
+  50% { transform: scale(1.25); }
+}
+@keyframes tl-shut {
+  0%, 30% { fill: #4a5468; }
+  45%, 100% { fill: #ff7a59; }
+}
+@keyframes tl-fall {
+  0%, 20% { transform: rotate(0deg); }
+  80%, 100% { transform: rotate(-70deg); }
+}
+@keyframes tl-tape {
+  0%, 20% { transform: translate(40px, -36px); opacity: 0; }
+  50%, 100% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes tl-mixed {
+  0%, 30% { fill: #ffd166; }
+  70%, 100% { fill: #7be0a0; }
+}
+@keyframes tl-patch {
+  0%, 15% { transform: translate(50px, -20px); }
+  45%, 100% { transform: translate(0, 0); }
+}
+@keyframes tl-hold {
+  0%, 45% { stroke-dashoffset: 88; }
+  95%, 100% { stroke-dashoffset: 0; }
+}
+@keyframes tl-jiggle {
+  50% { transform: translate(3px, -3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lf-hole-ring,
+  .lf-air path,
+  .lf-push path,
+  .tl-sweep,
+  .tl-beep,
+  .tl-pop,
+  .tl-shut rect,
+  .tl-fall,
+  .tl-air path,
+  .tl-tape,
+  .tl-mixed,
+  .tl-patch,
+  .tl-hold,
+  .tl-wave,
+  .tl-push,
+  .tl-jiggle {
+    animation: none;
+  }
+  .tl-fall {
+    transform: rotate(-60deg);
+  }
+  .tl-hold {
+    stroke-dashoffset: 0;
+  }
+}

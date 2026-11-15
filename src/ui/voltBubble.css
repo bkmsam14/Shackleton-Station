@@ -103,6 +103,10 @@
   cursor: pointer;
   box-shadow: 0 3px 0 var(--ink);
 }
+/* a faded-out bubble must not leave an invisible button over a lesson or menu */
+.volt-say:not(.is-on) .volt-next {
+  pointer-events: none;
+}
 .volt-next:hover {
   background: #ffd76e;
 }

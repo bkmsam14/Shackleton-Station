@@ -9,7 +9,7 @@ on `main`, see `CHANGELOG.md`).
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # pure-logic unit tests (175)
+npm test         # pure-logic unit tests (185)
 npm run balance  # bots play a lunar day on the real rules (balance check)
 npm run build    # production build in dist/ (base path /Shackleton-Station/)
 ```
@@ -51,7 +51,11 @@ Mini-games show their own controls (e.g. click/Space to zap, S for the Ice Drill
   - A **dose ring** appears around particle storms.
   - Drain rates use NASA BVAD (2022) values; see `docs/SCIENCE.md`.
 - **Lessons / mini-games:** Electrolysis (3 games: Molecule Zapper, Bubble Detective, Atom
-  Match), Solar Fix, Ice Drill + Ice Oven, Water Walls, Telescope Star Hunt.
+  Match), Solar Fix (Cell Swap, Hot Spot Hunt, Wire Fix), Leak Fix (Leak Hunt, Hatch Hunt,
+  Patch It), Ice Drill + Ice Oven, Water Walls, Telescope Star Hunt.
+- **Micrometeoroids:** a random hit cracks the solar array (less power) or makes a tiny hole in
+  the habitat (an air leak drains oxygen ≈ 2× faster until you find and patch it at the
+  life-support rack). Never both at once.
 - **Farming:** potato, lettuce and radish in grow pots; F to eat. A grow-lights switch trades
   power for food.
 - **Supply terminal:** order kits, water, seeds and battery packs with the real light delay

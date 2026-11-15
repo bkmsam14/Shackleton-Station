@@ -5,6 +5,44 @@
 Merged after the 0.11.0 balance pass; `package.json` still says 0.11.0.
 
 ### Gameplay
+- **Micrometeoroids hit the array OR the habitat (never both at once).** One scheduler
+  (`systems/micrometeoroids.js`) replaces the array-only hits: about one hit per 3 game days,
+  60 % crack the solar array, 40 % hole the habitat, and no new hit comes while something is
+  still broken. No random hits on the Training Day.
+  - **Array hit (unchanged power penalty):** 40 % output, so in sunlight the battery drains
+    ≈ 1.4 kW instead of charging ≈ 4 kW. At night it changes nothing: a broken array can't make
+    the dark worse (physics check).
+  - **Habitat air leak (new):** a red beacon and "AIR LEAK" sign on the life-support rack, a
+    soft alarm beep in the habitat, and Volt's warning. The base tops the cabin air up from the
+    oxygen supply, so oxygen drains ≈ 2.2× faster until the hole is patched. The rate is real
+    physics: choked flow through a 0.7 mm hole (game balance) ≈ 0.2 kg of air an hour. The PDA
+    explains it, and E at the rack opens the new Leak Fix lesson. Patching costs 1 game hour.
+- **Leak Fix lesson: 3 habitat mini-games**, picked at random like Electrolysis, each with a
+  first-time picture tutorial, Volt's idea line and tips, "What really happened", a quiz and
+  sources. A first-time "Why does air leak?" screen comes first (air pushes out; space doesn't
+  suck).
+  - **Leak Hunt:** follow an ultrasonic leak detector's bars and beeps (the leak whistles too high
+    to hear).
+  - **Hatch Hunt:** close hatches and watch the pressure needles; only the part with the hole
+    keeps falling (the ISS crews' 2020 method).
+  - **Patch It:** tape (slows it), mix two-part epoxy, press the cloth patch on from the inside,
+    then watch the pressure hold (the 2018 Soyuz repair).
+- **Solar Fix: 3 mini-games.** Cell Swap (the old repair step), plus two new ones:
+  - **Hot Spot Hunt:** cracks too small to see; switch on the infrared camera and tap the hot
+    cells.
+  - **Wire Fix:** turn the wire pieces until the loop from the cells to the battery and back is
+    closed.
+
+  The "how a solar cell works" steps (light, circuit) now play only on the first repair (and
+  from a button). Every game has a first-time picture tutorial, a learn screen and its own quiz.
+- **Shared lesson frame** (`instances/lessonKit.js`) for the repair lessons: card, steps,
+  tips, learn screen and quiz.
+- **Fixes:** a faded Volt bubble left its Training Day "Next" button clickable on top of
+  lessons (blocked clicks). Resting or running a machine now keeps a damaged array's lower
+  output and an open leak.
+- **Balance:** the bots get the new hits (`npm run balance` shows array vs leak hits). The idle
+  target is now 4–8 min, since an unpatched leak can end a do-nothing run early; sloppy and
+  skilled still meet their targets. 185 tests.
 - **Three electrolysis mini-games.** The station picks one at random (never the same twice in
   a row, and leaving doesn't re-roll it):
   - **Molecule Zapper**

@@ -210,4 +210,28 @@ export const DATABANK = [
     source: 'NASA Scientific Visualization Studio — SOHO/LASCO view of the January 2005 solar events',
     url: 'https://svs.gsfc.nasa.gov/3159',
   },
+  {
+    id: 'air-leak',
+    title: 'Why does air leak into space?',
+    core: 'Air presses on every wall of the habitat. Space is a vacuum with no air to press back, so air pushes out through any hole. Space doesn’t suck: the air inside pushes.',
+    deeper: 'Through a tiny hole the air leaves at the speed of sound (“choked flow”), so how fast it escapes depends only on the hole’s size and the cabin pressure. Our 0.7 mm hole loses about 0.2 kg of air an hour; the base tops the air up from the oxygen supply, so oxygen drains about 2× faster until it’s patched.',
+    source: 'NASA Glenn Research Center — Mass Flow Choking',
+    url: 'https://www.grc.nasa.gov/www/k-12/airplane/mflchk.html',
+  },
+  {
+    id: 'leak-hunting',
+    title: 'How astronauts find a leak',
+    core: 'Space Station crews close hatches between modules to see which part loses pressure, and listen with ultrasonic leak detectors: a tiny leak whistles too high for human ears.',
+    deeper: 'In 2020 the crew closed hatches one by one and used an ultrasonic leak detector to narrow a small leak down to one part of the Zvezda module. In 2018 a 2 mm hole in a Soyuz was sealed from inside with epoxy glue on gauze, and controllers watched the pressure overnight to check it held.',
+    source: 'NASA Space Station blog (29 Sep 2020)',
+    url: 'https://www.nasa.gov/blogs/spacestation/2020/09/29/crew-continues-troubleshooting-as-tests-isolate-small-leak/',
+  },
+  {
+    id: 'hot-spots',
+    title: 'Hot spots on solar panels',
+    core: 'A cracked solar cell blocks the electricity, and the blocked energy turns into heat. An infrared (heat) camera shows the hot cell, even when the crack is too small to see.',
+    deeper: 'Solar cells are joined in chains (in series), so one bad cell holds back its chain. Engineers fly infrared cameras over solar farms to find hot spots; the cracks themselves often need other tests to see.',
+    source: 'NREL (2024) — aerial infrared thermography of PV arrays',
+    url: 'https://nrel.gov/docs/fy24osti/90316.pdf',
+  },
 ];

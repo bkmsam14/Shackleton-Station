@@ -89,13 +89,16 @@ src/
     iceMining.js         LCROSS ice share, bag, dig spots   airlock.js  cycle steps
     assistant.js         Volt's brain (tour, tips, cooldown) navigation.js  A* walk grids
     ephemeris.js / skyMath.js   live sky (IAU, USNO), star placement
+    micrometeoroids.js   hits on the array OR habitat, air-leak choked flow
     balanceSim.js        bots that play the real rules (npm run balance)
     save.js, speechText.js, tutorials.js
   instances/           # 2D lessons/mini-games (InstanceManager pauses the world)
-    electrolysis/  solar/  iceDrill/  iceOven/  waterWalls/  telescope/
+    lessonKit.js         shared repair-lesson frame (card, tips, learn, quiz)
+    electrolysis/  solar/  leak/  iceDrill/  iceOven/  waterWalls/  telescope/
     stormReport/  trainingReport/
   farming/             # grow pots (potato, lettuce, radish), inventory, eating
   supply/              # supply terminal, light-delay orders, cargo pad, solar damage
+  leak/                # hit scheduler + habitat air leak (beacon, rack panel, Leak Fix)
   training/            # Training Day (Day 1 guided by Volt)
   data/                # databank, Volt lines, Training Day script, stars, constellations,
                        # LOLA terrain, space-weather loader
@@ -108,7 +111,7 @@ public/
     # space-weather-2019-12.json (Calm Sun) is MISSING — see "Known issues"
   textures/  CREDITS.md
 scripts/               # fetch-lola, fetch-space-weather, fetch-stars, balance-sim
-tests/                 # node --test (175 tests)
+tests/                 # node --test (185 tests)
 docs/
   GAME_DESIGN.md  SCIENCE.md  PERFORMANCE.md  screenshots/
 ```
@@ -145,13 +148,15 @@ Demo 0 is long done; see `CHANGELOG.md` for every version. What the game has now
     (`ENABLE_WATER_GAUGE` = false).
 - **Lessons / mini-games:**
   - Electrolysis (3 games, picked at random)
-  - Solar Fix (repair the array after a micrometeorite hit)
+  - Solar Fix (3 games: Cell Swap, Hot Spot Hunt, Wire Fix) after an array hit
+  - Leak Fix (3 games: Leak Hunt, Hatch Hunt, Patch It) after a habitat hit
   - Ice Drill + Ice Oven
   - Water Walls (shielding)
   - Telescope Star Hunt
   - Storm report and Training Day report cards
 - **Events:** particle storms from real DONKI + RadLab data (Calm / Stormy replays or Live) and
-  random micrometeorite hits on the solar array.
+  random micrometeoroid hits on the solar array (power drop) OR the habitat (air leak: oxygen
+  drains ≈ 2.2× faster), never both at once.
 - **Volt:** a helper robot with a voice. He runs a 19-step Training Day on Day 1 (base clock 20×
   slower), with a ground trail and machine markers.
 - **Supply:** orders with the real light delay (1.28 s), a 60 kg lander limit, and crates that
@@ -159,7 +164,7 @@ Demo 0 is long done; see `CHANGELOG.md` for every version. What the game has now
 - **Balance:** `npm run balance` (bot playthroughs); targets are locked in `tests/balance.test.js`.
 
 ### Not built yet (from `docs/GAME_DESIGN.md`)
-- Habitat micrometeorite **leak** QTE (find and patch), **moonquake**, **lander dust** on the
+- **Moonquake**, **lander dust** on the
   panels, and the dark-period "choose machines to turn off" event (only the grow-lights switch
   exists).
 - **Comms dish** instance. **Scheduled supply landers** every few days with food (today you
