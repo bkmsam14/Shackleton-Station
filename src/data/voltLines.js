@@ -246,6 +246,8 @@ export const FACTS = [
   { id: 'fact-snow', text: 'Storm sparkles on screen? Real space cameras show that “snow” too!', databank: 'camera-snow', mood: 'wow' },
   { id: 'fact-ice-share', text: 'Icy Moon soil: 100 kg holds only about 6 kg of water!', databank: 'moon-ice-soil', mood: 'think' },
   { id: 'fact-scan', text: 'Spacecraft find Moon ice by sniffing its hydrogen from orbit!', databank: 'hydrogen-scan', mood: 'wow' },
+  { id: 'fact-real-ground', text: 'This is real Moon ground, mapped by a laser on NASA’s LRO!', databank: 'real-terrain', mood: 'wow' },
+  { id: 'fact-shackleton', text: 'Shackleton crater next to us is about 4 km deep, and always dark inside.', databank: 'real-terrain', mood: 'think' },
   { id: 'fact-twinkle', text: 'Stars don’t twinkle on the Moon. Twinkling comes from Earth’s air!', databank: 'moon-sky', mood: 'wow' },
   { id: 'fact-polaris', text: 'From here you can never see the North Star. It’s always below us!', databank: 'moon-sky', mood: 'think' },
   { id: 'fact-star-colour', text: 'Blue stars are hotter than red ones. Colour tells temperature!', databank: 'star-colours', mood: 'happy' },

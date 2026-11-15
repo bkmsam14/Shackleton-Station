@@ -282,6 +282,18 @@
       "text": "At the Moon's south pole the Sun always stays within about 1.5° of the horizon.",
       "value": "NASA JPL Horizons: Sun elevation between about −1.5° and +1.5°",
       "source": "https://ssd.jpl.nasa.gov/horizons/"
+    },
+    {
+      "id": "pole-on-shackleton-rim",
+      "text": "The Moon's south pole lies on the rim of Shackleton crater.",
+      "value": "NASA LRO LOLA 80 m map: pole 1,290 m above the reference sphere, on the rim",
+      "source": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm"
+    },
+    {
+      "id": "shackleton-depth",
+      "text": "Shackleton crater is about 4 km deep and permanently dark inside.",
+      "value": "LOLA: floor −2,868 m vs rim near the base +1,335 m (reference sphere 1,737.4 km)",
+      "source": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm"
     }
   ]
 }

@@ -135,7 +135,17 @@ How the game uses them (ratios stay real, amounts are scaled):
   - Earth's phase from the Moon = (1 + cos(angle at Earth between Sun and Moon)) / 2.
 - **Checked against NASA JPL Horizons** (DE441, observer at 0°E 90°S on the Moon) for 5 dates 2024–2027: Sun within 0.01°, Earth within ~0.15° (`tests/ephemeris.test.js`). *Source: https://ssd.jpl.nasa.gov/horizons/*
 - **Real facts it shows:** the Sun stays within ~1.5° of the horizon (and can dip just below it); Earth bobs up and down by several degrees each month (libration) and is **below the horizon** for part of the time at the exact pole; full Earth when it is new Moon on Earth.
-- **Simplifications:** UTC is used as TT (~70 s, invisible here); the game's base layout keeps Earth's mean direction at `SKY.EARTH_AZIMUTH_DEG` (a rotation of the whole sky, never a mirror); the Sun-hiding ridge is still the game's simplified ridge, not real terrain.
+- **Simplifications:** UTC is used as TT (~70 s, invisible here); the game's base layout keeps Earth's mean direction at `SKY.EARTH_AZIMUTH_DEG` (a rotation of the whole sky, never a mirror); the Sun hides behind the real LOLA horizon (see "Real terrain").
+
+### Real terrain: Shackleton crater rim (NASA LOLA)
+- **Data:** NASA Lunar Reconnaissance Orbiter, LOLA laser altimeter gridded elevation maps of the south pole (PDS Geosciences Node, LOLA GDR polar): **LDEM_875S_5M** (5 m/px, near the base) and **LDEM_80S_80M** (80 m/px, out to ~300 km). Built by `scripts/fetch-lola.mjs` (HTTP range request for the 5 m rows; ~10 MB of the 1.8 GB file) → `src/data/lolaTerrain.js` (121 KB). *Source: https://pds-geosciences.wustl.edu/missions/lro/lola.htm*
+- **Projection (PDS label):** polar stereographic, sphere 1,737.4 km, centre 90°S; x = (sample − offset)·scale, y = −(line − offset)·scale, lon = atan2(x, y). **Checked:** the Shackleton floor centre comes out at 89.66°S, 127.5°E (published ≈ 89.7°S, 129°E).
+- **The south pole lies on Shackleton's rim.** But the exact pole sits on a ~10° slope and a hill ~200 m away blocks the low Sun: from the pole the Sun at 0.75° is visible from only ~37% of directions (80 m map).
+- **Base site:** we scanned the 80 m map within 4 km of the pole for the most sunlit, flattest point — like landing-site studies do — and put the base on the ridge **~450 m from the pole (lon 225°)**, ground 1,334.9 m above the 1,737.4 km reference sphere, slope ~1°. From there (5 m map + 80 m map, Moon's curvature, eye 1.6 m) the Sun at 1.5° is visible from **82%** of directions (73% at 0.75°). Being 450 m from the pole changes the sky by ~0.015° (the Live sky is computed for 90°S).
+- **Shackleton** is right next to the base: its floor lies ~4.2 km below the rim near the base (LOLA: floor −2,868 m vs base +1,335 m relative to the reference sphere). Its inside is permanently shadowed — in the game it looks like a dark gulf with the far rim lit.
+- **Distant terrain** out to 45 km (80 m map) and the far skyline beyond (horizon angles out to 290 km) are drawn with their true directions and elevation angles; they are moved closer to the camera so they fit in the 3D view (you can only walk ~240 m, so parallax is invisible).
+- **Game additions on the real terrain:** the levelled base pad (a real base would grade a pad), the small cold-trap crater for ice mining, the telescope mound, tiny craters < 6 m and bumps smaller than the 5 m map can show.
+- **Earth stays in view in game mode:** the real horizon toward Earth (lon 0) is ~0.9° high; game Earth sits at 4°.
 
 ### Dust
 - Lunar regolith is sharp, abrasive and sticky. It clings to suits and covers equipment.
@@ -182,14 +192,14 @@ How the game uses them (ratios stay real, amounts are scaled):
 ## Simplifications in Demo 0 (details left out, nothing false)
 - **Two clocks.** Life support runs 360× faster than real life; the Sun's trip around the sky is sped up more (about 20 real minutes instead of 29.5 days). Both real values are shown on the start and pause screens.
 - **One oxygen supply.** Real suits carry their own tank that is refilled before each walk; the game merges suit + base into one supply.
-- **One ridge.** Dark periods come from one simple ridge on the horizon hiding the low Sun.
+- **Real horizon (v0.9.0).** Dark periods come from the real terrain around the base (NASA LOLA): the low Sun hides behind real ridges and mountains. In game mode the Sun is kept at 1.5° (the top of its real ±1.5° range); in Live mode it has its real height.
 - **Shadows are near-black** outside (no atmosphere), lit only by faint earthshine — whose strength follows Earth's phase — and the regolith around you. A **helmet lamp** lights the way in shadow (real spacesuit helmets carry lights; we don't state a brightness).
 - **Earthshine strength** is scaled by Earth's lit fraction as seen from the Moon: (1 − cos(angle between Sun and Earth)) / 2 — geometry, not a measured brightness.
 - **Earth fixed in the sky.** Libration (small wobbles) is left out.
 
 ## Needs verification (do not show until resolved)
 - [x] ~~BVAD per-person oxygen and food values~~ → done, see "Life support numbers" above. (Water values are copied too, for the future water gauge.)
-- Percentage of time the Shackleton rim is sunlit, and a source for terrain-caused dark periods (LRO/LOLA illumination studies).
+- A **published** sunlit-time percentage for our base site (LRO/LOLA illumination studies, e.g. Mazarico et al. 2011). The game only shows what we computed ourselves from the LOLA horizon: "the Sun at 1.5° is visible from 82% of directions".
 - Real spacesuit oxygen duration (xEMU / EMU) if we ever show suit-tank time.
 - BVAD exercise oxygen rates (Tables 3-23 / 3-25) if "sprinting drains oxygen faster" is added.
 - A Moon surface vs ISS dose comparison from a NASA source (for example Artemis I or LRO CRaTER results).

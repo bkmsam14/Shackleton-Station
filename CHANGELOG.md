@@ -1,5 +1,24 @@
 # Changelog — Shackleton Station
 
+## 0.9.0 — Real terrain: the Shackleton crater rim (NASA LOLA)
+
+### Gameplay
+- **You walk on the real Moon.** The ground around the base is the real terrain of the Shackleton
+  crater rim, measured by NASA's LRO laser altimeter (LOLA): 5 m detail near the base, 80 m out to
+  45 km, plus the real far skyline. Shackleton's 4 km-deep, permanently dark bowl lies right next
+  to the base, with its far rim lit by the low Sun.
+- **The base moved to a real well-lit spot**, ~450 m from the south pole on the ridge (the exact pole
+  is on a slope and often shadowed by a nearby hill) — picked by scanning the real terrain, the
+  way landing-site studies do.
+- **Real dark periods:** the Sun now hides behind the real ridges and mountains instead of a made-up
+  ridge (game mode: the Sun is visible from 82% of directions).
+
+### Code
+- `scripts/fetch-lola.mjs` → `src/data/lolaTerrain.js`; `world/lola.js` (map ↔ world, heights,
+  horizon); `heightfield.js` uses real heights; `terrain.js` builds the real disc + distant land +
+  skyline; `sunVisibility(az, elevation)` uses the real horizon. Removed the made-up big craters and
+  the ridge settings. Tests: `tests/terrain.test.js`.
+
 ## 0.8.0 — Live sky: the real sky over Shackleton right now
 
 ### Gameplay

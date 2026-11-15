@@ -123,6 +123,14 @@ export const DATABANK = [
     url: 'https://heasarc.gsfc.nasa.gov/W3Browse/star-catalog/bsc5p.html',
   },
   {
+    id: 'real-terrain',
+    title: 'You are walking on the real Moon',
+    core: 'The ground around the base is the real Shackleton crater rim near the south pole, measured by a laser on NASA’s Lunar Reconnaissance Orbiter.',
+    deeper: 'LOLA (the Lunar Orbiter Laser Altimeter) fired laser pulses at the Moon billions of times to map its height. The base sits about 450 m from the south pole on a ridge picked because it gets lots of sunlight. Shackleton crater, right next to it, is about 4 km deep and permanently dark inside.',
+    source: 'NASA LRO LOLA — PDS Geosciences Node (LDEM_875S_5M, LDEM_80S_80M)',
+    url: 'https://pds-geosciences.wustl.edu/missions/lro/lola.htm',
+  },
+  {
     id: 'live-sky',
     title: 'Live sky: the real sky right now',
     core: 'In Live mode the Sun, Earth and stars are where they really are over the Moon’s south pole at this moment. Earth sometimes dips below the horizon!',

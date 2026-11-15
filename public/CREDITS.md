@@ -30,3 +30,10 @@ See the in-game pause menu and `docs/SCIENCE.md` for every NASA data source
   GNU **GPL-3.0**. https://www.masswerk.at/mespeak/ · https://github.com/espeak-ng/espeak-ng
   Because this GPL code ships inside the game, the game itself must be shared under the GPL-3.0
   (or a compatible licence) when it is published.
+
+## Real terrain
+- Elevation of the lunar south pole: NASA Lunar Reconnaissance Orbiter, LOLA (Lunar Orbiter Laser Altimeter) gridded data LDEM_875S_5M and LDEM_80S_80M, PDS Geosciences Node, Washington University in St. Louis — https://pds-geosciences.wustl.edu/missions/lro/lola.htm (public domain, NASA).
+
+## Real sky
+- Stars: Yale Bright Star Catalog (5th rev. ed.) and Hipparcos (new reduction), via NASA HEASARC.
+- Moon orientation: IAU WGCCRE model, NASA JPL NAIF pck00011.tpc. Checked against NASA JPL Horizons.
