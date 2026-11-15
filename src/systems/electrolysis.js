@@ -8,8 +8,10 @@
 import { ELECTROLYSIS, POWER, TIME, OXYGEN } from '../config/gameplay.js';
 import { addOxygen } from './gauges.js';
 
+/** The base's water: tankKg can make oxygen; wallKg sits in the storm-shelter walls
+ *  (shields radiation, but can't make oxygen until it is pumped back — see radiation.js). */
 export function createElectrolysisState(overrides = {}) {
-  return { tankKg: ELECTROLYSIS.TANK_START_KG, ...overrides };
+  return { tankKg: ELECTROLYSIS.TANK_START_KG, wallKg: 0, ...overrides };
 }
 
 export function findBatch(batchId) {

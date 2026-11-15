@@ -15,34 +15,55 @@
 import { toSpeech } from '../systems/speechText.js';
 import { ASSISTANT as A } from '../config/gameplay.js';
 
-let enginePromise = null;
-/** Load meSpeak + its config + the English voice once (code-split by Vite). */
-function loadEngine() {
-  enginePromise ??= Promise.all([
-    import('mespeak'),
-    import('mespeak/src/mespeak_config.json'),
-    import('mespeak/voices/en/en-us.json'),
-  ]).then(([mod, cfg, voice]) => {
-    const meSpeak = mod.default ?? mod;
-    meSpeak.loadConfig(cfg.default ?? cfg);
-    meSpeak.loadVoice(voice.default ?? voice);
-    return meSpeak;
-  });
-  return enginePromise;
+// The speech engine runs in a Web Worker (voltVoice.worker.js): synthesis is one long
+// synchronous call that would otherwise freeze the game every time Volt speaks.
+const SYNTH_TIMEOUT_MS = 15000;
+let worker = null;
+let reqId = 0;
+const pending = new Map();
+
+function getWorker() {
+  if (worker) return worker;
+  worker = new Worker(new URL('./voltVoice.worker.js', import.meta.url), { type: 'module' });
+  worker.onmessage = (e) => {
+    const p = pending.get(e.data?.id);
+    if (!p) return;
+    pending.delete(e.data.id);
+    clearTimeout(p.timer);
+    if (e.data.ok) p.resolve(e.data.bytes);
+    else p.reject(new Error(e.data.error));
+  };
+  worker.onerror = (e) => {
+    e.preventDefault?.();
+    for (const p of pending.values()) {
+      clearTimeout(p.timer);
+      p.reject(new Error('voice worker failed'));
+    }
+    pending.clear();
+    worker = null;
+  };
+  return worker;
 }
 
-/** Synthesize a line to WAV bytes (Uint8Array). */
-async function synthesize(text) {
-  const meSpeak = await loadEngine();
-  const bytes = meSpeak.speak(toSpeech(text), {
-    rawdata: 'array',
+function ask(id, text = '', options = {}) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      pending.delete(id);
+      reject(new Error('voice synthesis timed out'));
+    }, SYNTH_TIMEOUT_MS);
+    pending.set(id, { resolve, reject, timer });
+    getWorker().postMessage({ id, text, options });
+  });
+}
+
+/** Synthesize a line to WAV bytes (Uint8Array), off the main thread. */
+function synthesize(text) {
+  return ask(++reqId, toSpeech(text), {
     variant: A.VOICE_VARIANT,
     pitch: A.VOICE_ENGINE_PITCH,
     speed: A.VOICE_ENGINE_SPEED,
     amplitude: 100,
   });
-  if (!bytes || !bytes.length) throw new Error('meSpeak returned no audio');
-  return new Uint8Array(bytes);
 }
 
 /**
@@ -201,7 +222,11 @@ export function createVoltVoice({ store } = {}) {
   return {
     /** Start loading the speech engine in the background (call once play begins). */
     prewarm() {
-      if (AudioCtx) loadEngine().catch(() => (engineBroken = true));
+      if (!AudioCtx || typeof Worker === 'undefined') return;
+      ask('warmup').catch((err) => {
+        console.warn('[volt] robot voice engine could not start, using the browser voice', err);
+        engineBroken = true;
+      });
     },
     get supported() {
       return Boolean(AudioCtx || synth);
@@ -231,7 +256,7 @@ export function createVoltVoice({ store } = {}) {
       const token = seq;
       speaking = true; // includes the short synthesis time, so the bubble waits for him
       onDone = done ?? null;
-      if (!AudioCtx || engineBroken) {
+      if (!AudioCtx || engineBroken || typeof Worker === 'undefined') {
         speakBrowser(text, token);
         return true;
       }

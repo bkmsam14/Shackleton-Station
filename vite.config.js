@@ -19,6 +19,8 @@ const mespeakLatin1 = {
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/Shackleton-Station/' : '/',
   plugins: [mespeakLatin1],
+  // Volt's speech engine runs in a module worker (src/ui/voltVoice.worker.js)
+  worker: { format: 'es', plugins: () => [mespeakLatin1] },
   build: {
     target: 'es2020',
     chunkSizeWarningLimit: 1200,

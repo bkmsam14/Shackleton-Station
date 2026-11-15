@@ -9,7 +9,7 @@ import './ui/ui.css';
 import './ui/hud.css';
 
 import * as THREE from 'three';
-import { UI, RECOVERY, TIME, POWER, ASSISTANT } from './config/gameplay.js';
+import { UI, RECOVERY, TIME, POWER, ASSISTANT, RADIATION } from './config/gameplay.js';
 import { createWorld, QUALITY } from './world/World.js';
 import { createPostFX } from './world/postfx.js';
 import { LAYOUT } from './world/layout.js';
@@ -34,6 +34,12 @@ import { heightAt } from './world/heightfield.js';
 import { createMastery } from './systems/mastery.js';
 import { createInstanceManager } from './instances/InstanceManager.js';
 import { createElectrolysisInstance } from './instances/electrolysis/index.js';
+import { sfx } from './ui/sfx.js';
+import { createWaterWallsInstance } from './instances/waterWalls/index.js';
+import { createStormReportInstance } from './instances/stormReport/index.js';
+import { createRadiationState, stepRadiation, hoursToArrival, exposureLevel } from './systems/radiation.js';
+import { createStormFx } from './ui/stormFx.js';
+import { loadSun, SUN_MODES } from './data/spaceWeather.js';
 import { createFarming } from './farming/index.js';
 import { createSupply } from './supply/index.js';
 
@@ -80,12 +86,38 @@ const gauges = createGauges();
 const station = createElectrolysisState(); // the electrolysis unit's own water tank
 const mastery = createMastery({ load: loadSettings, save: saveSettings });
 
+// ---------------------------------------------------------------- space weather + radiation
+// The Sun the player picked (real DONKI + RadLab replays, or live DONKI). Storms are put on
+// the game clock; radiation.js runs warning → storm → calm and the per-storm dose.
+let sunMode = SUN_MODES.includes(loadSettings().sun) ? loadSettings().sun : 'stormy';
+let sun = null; // { mode, label, live, fellBack, schedule }
+let radiation = createRadiationState([]);
+let ringLinger = 0; // seconds the dose ring stays up after a storm
+let pendingReport = null; // a finished storm waiting for its "What just happened?" card
+const gameHourNow = () => (day.gameSeconds - TIME.START_HOUR * 3600) / 3600;
+function useSun(loaded) {
+  sun = loaded;
+  // only storms that are still ahead (enough warning time left) are kept
+  const now = gameHourNow();
+  radiation = createRadiationState(loaded.schedule.filter((s) => s.warnGameHour > now));
+}
+function pickSun(mode) {
+  sunMode = mode;
+  saveSettings({ sun: mode });
+  return loadSun(mode).then((loaded) => {
+    if (loaded.mode === sunMode || loaded.fellBack) useSun(loaded);
+    return loaded;
+  });
+}
+const sunReady = pickSun(sunMode);
+
 // ---------------------------------------------------------------- Volt, the helper robot
 const assistant = createAssistant({ store: { load: loadSettings, save: saveSettings } });
 const volt = createVolt(world);
 const tourMarker = createTourMarker();
 world.scene.add(volt.object, tourMarker.object);
 const voltBubble = createVoltBubble(uiRoot);
+const stormFx = createStormFx(uiRoot);
 const voltVoice = createVoltVoice({ store: { load: loadSettings, save: saveSettings } });
 // Volt is an interactable that moves: "Press E to talk to Volt"
 const voltTarget = { id: 'volt', zone: 'habitat', x: 0, z: 0, prompt: 'Press E to talk to Volt', action: { type: 'volt' } };
@@ -158,6 +190,12 @@ function enterPlay() {
     volt.hopTo(player);
     voltVoice.prewarm(); // load Volt's robot voice engine in the background
     assistant.startIfNeeded();
+    sunReady.then(() => {
+      assistant.notify(sun?.fellBack ? 'sun-stormy' : `sun-${sun?.mode ?? 'stormy'}`);
+      const c = getClock(day);
+      feedback.log.unshift({ time: 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute), text: 'Space weather: ' + (sun?.label ?? '') + (sun?.fellBack ? ' (the data you picked could not be loaded)' : '') });
+      if (import.meta.env.DEV) devStormShortcut();
+    });
   }
   mode = pausedFromBusy ? 'busy' : 'playing';
   pausedFromBusy = false;
@@ -195,6 +233,7 @@ function enterPause() {
 
 const menus = createMenus(uiRoot, {
   onStart: requestLock,
+  sun: { modes: SUN_MODES, get: () => sunMode, set: (m) => pickSun(m) },
   onResume: requestLock,
   getQuality: () => quality,
   onQuality(q) {
@@ -255,6 +294,8 @@ function voltSnapshot(moved = 0) {
     food: gauges.food,
     power: (gauges.batteryKwh / POWER.BATTERY_CAPACITY_KWH) * 100,
     tankKg: station.tankKg,
+    storm: radiation.phase === 'calm' ? null : radiation.phase,
+    inShelter: playerPlace() === 'shelter',
   };
 }
 
@@ -290,7 +331,7 @@ const instances = createInstanceManager(uiRoot, {
     if (document.pointerLockElement) document.exitPointerLock(); // free the mouse for clicking
   },
   onClose(id, result) {
-    if (result.completed) {
+    if (id === 'electrolysis' && result.completed) {
       advanceGameHours(result.gameHours);
       const c = getClock(day);
       const text =
@@ -299,7 +340,7 @@ const instances = createInstanceManager(uiRoot, {
       feedback.log.unshift({ time: 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute), text });
       // Volt's tour step 4 completes here; otherwise show the usual caption
       if (!assistant.notify('oxygen-made')) feedback.notify('Oxygen made!', { long: text, seconds: 3.5 });
-    } else if (assistant.tourStep?.id === 'oxygen' && checkAfford(gauges, station, 'small').reason === 'full') {
+    } else if (id === 'electrolysis' && assistant.tourStep?.id === 'oxygen' && checkAfford(gauges, station, 'small').reason === 'full') {
       assistant.notify('oxygen-made'); // supply already full (e.g. tour replayed late): don't get stuck
     }
     // Back to the 3D world. Re-locking the mouse needs a click; the "Back to base" button is
@@ -421,6 +462,10 @@ function useStation(action) {
     instances.open('electrolysis', createElectrolysisInstance, { gauges, station, mastery, voice: voltVoice });
     return;
   }
+  if (action.station === 'water-walls') {
+    instances.open('water-walls', createWaterWallsInstance, { gauges, station, voice: voltVoice });
+    return;
+  }
   // a few words on screen; the full text goes to the PDA log
   const short = action.caption ?? action.toast.split('!')[0];
   feedback.notify(short, { long: action.toast, seconds: 3.5 });
@@ -431,14 +476,18 @@ function useStation(action) {
  * Simulated in 1-second steps of the sped-up clock: the Sun moves, gauges drain,
  * the battery charges or drains. (The panel is assumed to face the Sun.)
  */
-function advanceGameHours(hours) {
+function advanceGameHours(hours, place = 'habitat') {
   const seconds = (hours * 3600) / TIME.SCALE;
+  const events = [];
   for (let t = 0; t < seconds; t += 1) {
     const step = Math.min(1, seconds - t);
     stepDayCycle(day, step);
     const s = getSun(day);
     stepGauges(gauges, step, { pressurized: true, sunVisibility: s.visibility, alignment: 1 });
+    events.push(...stepRadiation(radiation, gameHourNow(), (step * TIME.SCALE) / 3600, { place, wallKg: station.wallKg }));
   }
+  // a storm that hit while you were busy still shows its card afterwards (no gentle failure)
+  for (const e of events) if (e.type !== 'limit') handleRadiationEvent(e, { quiet: true });
 }
 
 // ---------------------------------------------------------------- gentle failure
@@ -452,24 +501,32 @@ async function gentleFailure(reason) {
   feedback.setPrompt(null);
   await feedback.fadeTo(true, RECOVERY.FADE_SECONDS);
 
-  advanceGameHours(RECOVERY.REST_GAME_HOURS);
-  applyRecovery(gauges, { oxygen: RECOVERY.OXYGEN_RESTORE_PERCENT, food: RECOVERY.FOOD_RESTORE_PERCENT });
-  const s = LAYOUT.HABITAT.spawn;
-  player.placeAt('habitat', LAYOUT.HABITAT.x + s.x, LAYOUT.HABITAT.z + s.z, s.yawDeg);
+  const radiationRest = reason === 'radiation';
+  advanceGameHours(RECOVERY.REST_GAME_HOURS, radiationRest ? 'shelter' : 'habitat');
+  if (!radiationRest) applyRecovery(gauges, { oxygen: RECOVERY.OXYGEN_RESTORE_PERCENT, food: RECOVERY.FOOD_RESTORE_PERCENT });
+  if (radiationRest) {
+    const sp = world.habitat.shelterSpawn;
+    player.placeAt('habitat', sp.x, sp.z, sp.yawDeg);
+  } else {
+    const s = LAYOUT.HABITAT.spawn;
+    player.placeAt('habitat', LAYOUT.HABITAT.x + s.x, LAYOUT.HABITAT.z + s.z, s.yawDeg);
+  }
   volt.hopTo(player);
 
-  const why =
-    reason === 'oxygen'
-      ? 'The oxygen supply ran too low, so you rested in the habitat while the base opened its emergency oxygen reserve.'
-      : 'You got too hungry and tired, so you rested in the habitat and ate from the emergency food box.';
-  const tip =
-    reason === 'oxygen'
-      ? 'Tip: working outside in a spacesuit is hard work — you use oxygen about 2 times faster out there.'
-      : 'Tip: an astronaut eats about 0.8 kg of food every day (not counting the water in it).';
+  const why = {
+    oxygen: 'The oxygen supply ran too low, so you rested in the habitat while the base opened its emergency oxygen reserve.',
+    food: 'You got too hungry and tired, so you rested in the habitat and ate from the emergency food box.',
+    radiation: 'The storm dose got too high, so Volt helped you into the storm shelter to rest until the particles passed.',
+  }[reason];
+  const tip = {
+    oxygen: 'Tip: working outside in a spacesuit is hard work — you use oxygen about 2 times faster out there.',
+    food: 'Tip: an astronaut eats about 0.8 kg of food every day (not counting the water in it).',
+    radiation: 'Tip: run to the shelter as soon as a flare is seen — and water in the walls blocks even more particles.',
+  }[reason];
   feedback.showFadeCard(`
     <h2>Phew — you are safe!</h2>
     <p>${why}</p>
-    <p class="small">You rested for ${RECOVERY.REST_GAME_HOURS} hours. Time passed: you used food and oxygen, and the base kept using power.</p>
+    <p class="small">You rested for ${RECOVERY.REST_GAME_HOURS} hours. Time passed: you used food and oxygen, and the base kept using power.${radiationRest ? ' The radiation dose you got stays on your record (dose adds up — it does not heal).' : ''}</p>
     <p class="small">${tip}</p>`);
   await wait(5200);
   feedback.showFadeCard('');
@@ -515,6 +572,93 @@ function handleInteraction() {
     else if (target.action.type === 'farm') farming.interact(target.action.potId);
     else if (target.action.type === 'supply') supply.interact(target);
   }
+}
+
+// ---------------------------------------------------------------- particle storms
+/** Where the player is, for radiation: outside | greenhouse | habitat | shelter. */
+function playerPlace() {
+  const z = player.zoneId;
+  if (z !== 'habitat') return z;
+  const r = world.habitat.shelterRect;
+  const { x, z: pz } = player.position;
+  return x >= r.minX && x <= r.maxX && pz >= r.minZ && pz <= r.maxZ ? 'shelter' : 'habitat';
+}
+
+/** Marker toward the shelter from wherever the player is. */
+function shelterMarkerTarget(zoneId) {
+  const find = (id) => world.interactables.find((i) => i.id === id);
+  const at = (it) => it && { zone: it.zone, x: it.x, z: it.z, y: it.zone === 'outside' ? heightAt(it.x, it.z) : world.zones[it.zone].floorY };
+  if (zoneId === 'habitat') {
+    const sp = world.habitat.shelterSpawn;
+    return { zone: 'habitat', x: sp.x, z: sp.z, y: world.zones.habitat.floorY };
+  }
+  if (zoneId === 'outside') return at(find('hab-outer-door'));
+  if (zoneId === 'greenhouse') return at(find('gh-inner-door'));
+  return null;
+}
+
+function stormLog(text) {
+  const c = getClock(day);
+  feedback.log.unshift({ time: 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute), text });
+  if (feedback.log.length > 14) feedback.log.length = 14;
+}
+
+const flareName = (storm) => (storm.flare?.classType ? `${storm.flare.classType} flare` : 'solar eruption');
+const flareDate = (storm) => (storm.flare?.peak ? new Date(storm.flare.peak).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '');
+
+/** React to radiation.js events. opts.quiet: it happened during a time skip. */
+function handleRadiationEvent(e, { quiet = false } = {}) {
+  const where = sun?.live ? 'Live' : 'Replay of real data';
+  if (e.type === 'warning') {
+    if (!quiet) {
+      voltEvent('storm-warning', 'Particle storm coming — go to the shelter!', null, 'critical');
+      sfx.alarm();
+    }
+    stormLog(`${where}: based on NASA DONKI, a ${flareName(e.storm)} (${flareDate(e.storm)}) — fast particles on the way. Go to the storm shelter.`);
+  } else if (e.type === 'storm-start') {
+    if (!quiet) voltEvent(playerPlace() === 'shelter' ? 'storm-sheltered' : 'storm-exposed', 'Particle storm!', null, 'critical');
+  } else if (e.type === 'limit') {
+    if (mode === 'playing') gentleFailure('radiation');
+  } else if (e.type === 'storm-end') {
+    ringLinger = RADIATION.RING_LINGER_S;
+    stormLog(`Storm over (${flareName(e.storm)}). Storm dose ${Math.round(e.summary.dose)}% of the safe limit; mission total ${Math.round(radiation.missionDose)}%.`);
+    pendingReport = { storm: e.storm, summary: e.summary };
+    assistant.notify('storm-over');
+  }
+}
+
+function showStormReport() {
+  const r = pendingReport;
+  pendingReport = null;
+  instances.open('storm-report', createStormReportInstance, { ...r, sunLabel: sun?.label ?? '', live: Boolean(sun?.live), voice: voltVoice });
+}
+
+/** HUD state for the dose ring + storm chip. */
+function radiationHud() {
+  const phase = radiation.phase;
+  const inShelter = playerPlace() === 'shelter';
+  let chip = '';
+  let chipMode = '';
+  if (phase === 'warning') {
+    const secs = Math.ceil(((hoursToArrival(radiation, gameHourNow()) ?? 0) * 3600) / TIME.SCALE);
+    chip = inShelter ? `Particles in ${secs} s — you’re in the shelter` : `Particles in ${secs} s → storm shelter`;
+    chipMode = inShelter ? 'safe' : 'warning';
+  } else if (phase === 'storm') {
+    chip = inShelter ? 'Storm! Stay in the shelter' : 'Storm! Get to the shelter';
+    chipMode = inShelter ? 'safe' : 'storm';
+  }
+  return {
+    phase,
+    chip,
+    chipMode,
+    showRing: phase !== 'calm' || ringLinger > 0,
+    // warning: a new storm starts at 0; storm: live dose; calm: the last storm's result (while lingering)
+    dosePct: phase === 'storm' ? radiation.stormDose : phase === 'warning' ? 0 : (radiation.history.at(-1)?.dose ?? 0),
+    missionDose: radiation.missionDose,
+    wallKg: station.wallKg,
+    next: radiation.schedule[radiation.index] ?? null,
+    nowHour: gameHourNow(),
+  };
 }
 
 // ---------------------------------------------------------------- gauge reactions
@@ -631,7 +775,17 @@ renderer.setAnimationLoop(() => {
   voltTarget.x = volt.position.x;
   voltTarget.z = volt.position.z;
   sayLine(assistant.step(frameDt, voltSnapshot(moved)));
-  tourMarker.setTarget(assistant.tourActive ? tourTargetPosition(assistant.tourStep?.target, zoneId) : null);
+  // ---- particle storms
+  if (running) {
+    for (const e of stepRadiation(radiation, gameHourNow(), (dt * TIME.SCALE) / 3600, { place: playerPlace(), wallKg: station.wallKg })) handleRadiationEvent(e);
+  }
+  if (mode === 'playing' && pendingReport && !instances.isOpen) showStormReport();
+  ringLinger = Math.max(0, ringLinger - frameDt);
+  // camera "snow" + dosimeter ticks follow the live dose rate (quiet in the shelter)
+  stormFx.update(frameDt, running ? exposureLevel(radiation, playerPlace(), station.wallKg) : 0);
+  world.habitat.waterWall.setWaterLevel(station.wallKg / RADIATION.WALL_CAPACITY_KG);
+  const stormMarker = radiation.phase !== 'calm' && playerPlace() !== 'shelter' ? shelterMarkerTarget(zoneId) : null;
+  tourMarker.setTarget(stormMarker ?? (assistant.tourActive ? tourTargetPosition(assistant.tourStep?.target, zoneId) : null));
   tourMarker.update(frameDt, zoneId);
   voltBubble.update(frameDt, camera, volt.headPosition(voltHead), mode === 'playing');
   // the Sun is off indoors, so skip re-rendering its shadow map there
@@ -645,6 +799,8 @@ renderer.setAnimationLoop(() => {
     zone: zoneId === 'outside' ? { id: 'outside' } : { id: zoneId, name: world.zones[zoneId].name },
     clock: getClock(day),
     station,
+    radiation: radiationHud(),
+    sun,
   };
   hud.update(lastHudState);
 
@@ -659,6 +815,37 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   postfx.setSize(window.innerWidth, window.innerHeight);
 });
+
+/**
+ * DEV ONLY (npm run dev, never in the published game): jump the clock to just before a storm
+ * so you can test it without waiting.
+ *   ?storm      → the next storm      ?storm=3 → storm #3 (the big X5.8 one in Stormy Sun)
+ *   Key J       → jump to 15 s before the next storm's warning
+ */
+function devStormShortcut() {
+  const jumpTo = (storm) => {
+    if (!storm) {
+      feedback.notify('No more storms in this data');
+      return;
+    }
+    const leadHours = (15 * TIME.SCALE) / 3600; // 15 real seconds before the warning
+    day.gameSeconds = TIME.START_HOUR * 3600 + (storm.warnGameHour - leadHours) * 3600;
+    feedback.notify(`DEV: storm ${storm.id.replace('storm-', '#')} (${storm.flare?.classType ?? '?'}) warns in 15 s`);
+  };
+  const param = new URLSearchParams(location.search).get('storm');
+  if (param !== null) {
+    const n = Number(param);
+    const pick = n >= 1 ? radiation.schedule.find((s) => s.id === `storm-${n}`) : radiation.schedule[radiation.index];
+    if (pick) {
+      // keep the chosen storm (and later ones) as "next"
+      radiation.index = radiation.schedule.indexOf(pick);
+      jumpTo(pick);
+    } else jumpTo(null);
+  }
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyJ' && mode === 'playing' && radiation.phase === 'calm') jumpTo(radiation.schedule[radiation.index]);
+  });
+}
 
 if (import.meta.env.DEV) {
   // Dev-only helpers for screenshots and render-cost benchmarks (work even when the
@@ -694,5 +881,5 @@ if (import.meta.env.DEV) {
       greenhouse: ['greenhouse', 1.4, 30, 90, -0.08],
     },
   };
-  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, voltBubble, voltVoice };
+  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, voltBubble, voltVoice, get radiation() { return radiation; }, get sun() { return sun; }, playerPlace, sunReady };
 }

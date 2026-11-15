@@ -27,6 +27,10 @@ export const LAYOUT = {
     insideArrive: { x: 6.5, z: 1.7, yawDeg: 0 }, // after entering: facing −Z, into the bay
     outsideArrive: { x: 6.5, z: 8.9, yawDeg: 180 }, // after exiting: facing +Z, away from the hab
     outerDoor: { x: 6.5, z: 8.0 },
+    // Storm shelter = the sleeping nook (−X end). Its +Z wall is lined with water tanks.
+    // Being inside this rectangle during a particle storm counts as "in the shelter".
+    shelter: { minX: -9.7, maxX: -5.6, minZ: -2.95, maxZ: 2.95, spawn: { x: -6.6, z: 0.4, yawDeg: 90 } },
+    waterWall: { x0: -8.2, x1: -5.9, z: 2.98, panelX: -6.95 },
   },
 
   GREENHOUSE: {

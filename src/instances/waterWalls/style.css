@@ -1,0 +1,300 @@
+/* Water walls panel — extends the console look from instances/electrolysis/style.css. */
+.ww-split {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 8px;
+}
+.ww-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  border: 3px solid var(--ink);
+  background: linear-gradient(180deg, #2a3d7a, #1c2a5a);
+  box-shadow: 0 6px 0 var(--ink);
+}
+.ww-col-walls {
+  background: linear-gradient(180deg, #2b4f8f, #1b3566);
+}
+.ww-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 17px;
+  color: var(--text-muted);
+}
+.ww-label .ez-ic {
+  width: 24px;
+  height: 24px;
+}
+.ww-big {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 34px;
+}
+.ww-sub {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.ww-arrow {
+  font-family: var(--font-head);
+  font-size: 40px;
+  color: var(--cyan);
+}
+.ww-slider-label {
+  display: block;
+  margin: 10px 0 6px;
+  font-size: 18px;
+}
+.ww-slider {
+  width: 100%;
+  height: 44px; /* touch target */
+  accent-color: #4fa8ff;
+  cursor: pointer;
+}
+.ww-meters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+.ww-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid var(--console-edge);
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.ww-meter b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--text);
+}
+.ww-meter .ez-ic {
+  width: 24px;
+  height: 24px;
+}
+.ez-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 6px 0 var(--ink);
+}
+/* particle test + "where are you safest?" */
+.ww-lab {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0 4px;
+}
+.ww-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 2px solid var(--console-edge);
+  background: rgba(0, 0, 0, 0.3);
+}
+.ww-box-title {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 19px;
+  color: var(--text);
+}
+.ww-canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 360 / 170;
+  border-radius: 12px;
+  background: #050a1c;
+}
+.ww-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.ww-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ww-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.ww-dot-fly {
+  background: #ffe066;
+}
+.ww-dot-stop {
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+}
+.ww-dot-pass {
+  background: #ff7a59;
+}
+.ww-bars {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ww-bar {
+  display: grid;
+  grid-template-columns: 9.5em 1fr 2.2em;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.ww-bar-track {
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.ww-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #ff9a7d;
+  transition: width 0.25s ease;
+}
+.ww-bar-num {
+  font-family: var(--font-head);
+  font-size: 18px;
+  color: var(--text);
+  text-align: right;
+}
+.ww-bar.is-you {
+  color: var(--text);
+  font-weight: 700;
+}
+.ww-bar.is-you .ww-bar-fill {
+  background: #4fa8ff;
+}
+
+/* "Did you know?" + quick check */
+.ww-learn {
+  margin-top: 12px;
+}
+.ww-fact {
+  padding: 12px 16px;
+  border-radius: 18px;
+  border: 3px solid var(--ink);
+  background: linear-gradient(180deg, #24407a, #1a2e5c);
+  box-shadow: 0 6px 0 var(--ink);
+  font-size: 17px;
+  line-height: 1.45;
+}
+.ww-fact p {
+  margin: 6px 0;
+}
+.ww-fact-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 12px 2px 8px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: #ffd43b;
+  color: var(--ink);
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 16px;
+}
+.ww-fact-tag .ez-ic {
+  width: 22px;
+  height: 22px;
+}
+.ww-fact-tag small {
+  font-size: 15px;
+  opacity: 0.8;
+}
+.ww-next {
+  margin-top: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ww-bar-fill {
+    transition: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .ww-lab,
+  .ww-split,
+  .ww-meters {
+    grid-template-columns: 1fr;
+  }
+  .ww-arrow {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+}
+
+/* storm report card */
+.sr-facts {
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.sr-facts li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid var(--console-edge);
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.sr-facts li b {
+  color: var(--text);
+}
+.sr-facts .ez-ic {
+  width: 30px;
+  height: 30px;
+  margin-top: 2px;
+}
+.sr-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: #ffd43b;
+  color: var(--ink);
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 15px;
+}
+.sr-source {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+.sr-source a {
+  color: var(--cyan);
+}

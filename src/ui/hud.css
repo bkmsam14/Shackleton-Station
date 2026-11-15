@@ -513,3 +513,73 @@
     animation: none;
   }
 }
+
+/* ---------- particle storm: dose ring (only during storms) + countdown chip ---------- */
+.ring-dose {
+  --ring: #c9a3ff; /* soft purple: the dosimeter (7.9:1 on the dark halo) */
+  --ring-track: rgba(201, 163, 255, 0.22);
+  width: 96px;
+  height: 96px;
+}
+.ring-dose[hidden] {
+  display: none;
+}
+.ring-dose .ring-icon svg {
+  width: 26px;
+  height: 26px;
+}
+.ring-dose .ring-value {
+  font-size: 20px;
+}
+.ring-dose .ring-value::after {
+  content: '%';
+  font-size: 13px;
+  margin-left: 1px;
+}
+.hud-storm {
+  position: absolute;
+  top: 150px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px 8px 10px;
+  border-radius: 999px;
+  background: rgba(30, 12, 52, 0.82);
+  border: 2px solid #c9a3ff;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  transform: translateX(-50%) translateY(-8px);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+.hud-storm.is-on {
+  opacity: 1;
+  transform: translateX(-50%);
+}
+.hud-storm .storm-icon svg {
+  display: block;
+  width: 30px;
+  height: 30px;
+  color: #ffd43b;
+}
+.hud-storm[data-mode='warning'] {
+  border-color: #ffd43b;
+}
+.hud-storm[data-mode='safe'] {
+  border-color: var(--hud-food);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hud-storm[data-mode='warning'] .storm-icon {
+    animation: storm-spin 2.4s linear infinite;
+  }
+}
+@keyframes storm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -218,7 +218,9 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
       }
       const T = lines.TALK;
       let line;
-      if (snap.oxygen < 40) line = snap.zoneId === 'outside' ? T.oxygenOutside : T.oxygen;
+      if (snap.storm === 'warning') line = T.stormWarning;
+      else if (snap.storm === 'storm') line = snap.inShelter ? T.stormInside : T.stormOutside;
+      else if (snap.oxygen < 40) line = snap.zoneId === 'outside' ? T.oxygenOutside : T.oxygen;
       else if (snap.power < 30) line = T.power;
       else if (snap.food < 35) line = T.food;
       else if (snap.tankKg < config.TANK_LOW_KG) line = T.tank;

@@ -64,7 +64,23 @@ function voiceRow() {
     </div></div>`;
 }
 
-export function createMenus(root, { onStart, onResume, onQuality, getQuality, volt = null }) {
+/** Start screen: which Sun to play with (real space-weather data). */
+function sunRow() {
+  return `<div class="menu-row sun-row"><span class="label">The Sun</span>
+    <div class="seg" role="group" aria-label="Which real Sun data to play with">
+      <button type="button" data-sun="calm">Calm · Dec 2019</button>
+      <button type="button" data-sun="stormy">Stormy · May 2024</button>
+      <button type="button" data-sun="live">Live · this week</button>
+    </div></div>
+    <p class="note sun-note" data-sun-note></p>`;
+}
+const SUN_NOTES = {
+  calm: 'Replay of real NASA data from December 2019, when the Sun was quiet.',
+  stormy: 'Replay of real NASA data from May 2024: big solar flares and particle storms.',
+  live: 'Real NASA space weather from the last 7 days, fetched now (needs internet).',
+};
+
+export function createMenus(root, { onStart, onResume, onQuality, getQuality, volt = null, sun = null }) {
   const start = document.createElement('div');
   start.className = 'menu';
   start.innerHTML = `
@@ -74,6 +90,7 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
       <p class="menu-sub">You are the astronaut at a small base at the Moon's south pole. Keep your oxygen, food and base power up!</p>
       <button type="button" class="btn btn-big" data-action="start">▶ Click to start</button>
       <div class="menu-hint" data-hint></div>
+      ${sun ? sunRow() : ''}
       ${CONTROLS}
       ${qualityToggle('start')}
       ${TIME_NOTE}
@@ -137,6 +154,23 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
       else volt.replayTour();
       syncVolt();
     });
+  }
+  // Sun picker (start screen only: the storms are planned when the game starts)
+  function syncSun() {
+    if (!sun) return;
+    const m = sun.get();
+    start.querySelectorAll('[data-sun]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sun === m)));
+    const note = start.querySelector('[data-sun-note]');
+    if (note) note.textContent = SUN_NOTES[m] ?? '';
+  }
+  if (sun) {
+    start.querySelectorAll('[data-sun]').forEach((b) =>
+      b.addEventListener('click', () => {
+        sun.set(b.dataset.sun);
+        syncSun();
+      }),
+    );
+    syncSun();
   }
   start.querySelector('[data-action="start"]').addEventListener('click', onStart);
   pause.querySelector('[data-action="resume"]').addEventListener('click', onResume);
