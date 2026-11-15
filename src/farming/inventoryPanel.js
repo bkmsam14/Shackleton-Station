@@ -5,7 +5,7 @@ import { countOf } from './inventory.js';
 import { canEat, eatPotato } from './farmState.js';
 import { sfx } from './sfx.js';
 
-export function createInventoryPanel({ root, state, gauges, feedback, getMode, isViewOpen, save }) {
+export function createInventoryPanel({ root, state, gauges, feedback, getMode, isViewOpen, save, onEvent = () => {} }) {
   const el = document.createElement('div');
   el.className = 'inv-panel';
   el.setAttribute('role', 'status');
@@ -28,6 +28,7 @@ export function createInventoryPanel({ root, state, gauges, feedback, getMode, i
   }
 
   function eat() {
+    onEvent('eat-tried'); // the Training Day only asks you to try (you may be told to keep it)
     const check = canEat(state);
     if (!check.ok) {
       if (check.reason === 'none') {
@@ -45,6 +46,7 @@ export function createInventoryPanel({ root, state, gauges, feedback, getMode, i
       return;
     }
     eatPotato(state);
+    onEvent('potato-eaten');
     const kg = addFood(gauges, FARMING.FOOD_KG_PER_POTATO);
     const pct = (kg / FOOD.CAPACITY_KG) * 100;
     const hours = kg / (BVAD.FOOD_KG_PER_DAY_DRY / 24);

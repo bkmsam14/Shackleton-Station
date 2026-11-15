@@ -21,14 +21,22 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
   } catch {
     saved = {};
   }
-  let tourDone = Boolean(saved.tourDone);
+  // A finished tour only counts for the tour that was finished: when the tour changes
+  // (e.g. the old 7-step tour → the Training Day), everyone gets the new one once.
+  const tourVersion = lines.TOUR_VERSION ?? 1;
+  const sameTour = (saved.tourVersion ?? 1) === tourVersion;
+  let tourDone = Boolean(saved.tourDone) && sameTour;
   let chattiness = CHATTINESS.includes(saved.chattiness) ? saved.chattiness : 'chatty';
+  // the tour (Training Day) is long: remember the step so a reload carries on from there
+  const savedStep = sameTour && Number.isInteger(saved.tourIndex) && saved.tourIndex >= 0 && saved.tourIndex < lines.TOUR.length ? saved.tourIndex : 0;
 
   let tourIndex = -1; // -1 = no tour running
+  let tourEnded = null; // 'done' | 'skipped' — read once with consumeTourEnd()
   let walked = 0;
   let tourIdle = 0; // seconds since the current tour line was said
   let tourWaitGap = 0; // short pause before saying the next tour step
   let tourLineSaid = false;
+  let earlyDone = false; // the step's action happened before Volt said the line
   let queue = []; // { line, kind, age }
   let cooldown = 0;
   let sinceFact = 0;
@@ -37,7 +45,7 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
 
   function persist() {
     try {
-      store?.save({ volt: { tourDone, chattiness } });
+      store?.save({ volt: { tourDone, chattiness, tourVersion, tourIndex: tourIndex >= 0 ? tourIndex : 0 } });
     } catch {
       // storage blocked — fine, it only means the tour may show again next time
     }
@@ -56,12 +64,14 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
   // ---------------------------------------------------------------- tour
   const tourStep = () => (tourIndex >= 0 ? lines.TOUR[tourIndex] : null);
 
-  function beginStep(i) {
+  function beginStep(i, resumed = false) {
     tourIndex = i;
     walked = 0;
     tourIdle = 0;
     tourLineSaid = false;
-    tourWaitGap = i === 0 ? 0 : config.TOUR_GAP_S;
+    earlyDone = false;
+    tourWaitGap = i === 0 || resumed ? 0 : config.TOUR_GAP_S;
+    persist();
   }
 
   function completeStep() {
@@ -69,6 +79,7 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
     if (next >= lines.TOUR.length) {
       tourIndex = -1;
       tourDone = true;
+      tourEnded = 'done';
       persist();
       enqueue(lines.TOUR_DONE, 'tour');
     } else {
@@ -79,18 +90,25 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
   function checkTourDone(snap, dt) {
     const s = tourStep();
     if (!s || !tourLineSaid) return; // the kid must hear the step before it can complete
+    if (earlyDone) {
+      completeStep(); // they already did it while Volt was getting ready to say it
+      return;
+    }
     if (s.done.walk) {
       walked += snap.moved ?? 0;
       if (walked >= config.TOUR_WALK_M) completeStep();
     } else if (s.done.flag && snap[s.done.flag]) {
       completeStep();
+    } else if (s.done.after !== undefined && tourIdle >= s.done.after) {
+      completeStep(); // a step you only watch (e.g. the micrometeorite flash)
+      return;
     }
     tourIdle += dt;
   }
 
-  function startTour() {
+  function startTour(from = 0) {
     queue = queue.filter((q) => q.kind !== 'tour');
-    beginStep(0);
+    beginStep(from, from > 0);
   }
 
   // ---------------------------------------------------------------- talk ("E" on Volt)
@@ -114,6 +132,12 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
     get tourStep() {
       return tourStep();
     },
+    /** 'done' | 'skipped' once, right after the tour ends; null otherwise. */
+    consumeTourEnd() {
+      const e = tourEnded;
+      tourEnded = null;
+      return e;
+    },
 
     setChattiness(level) {
       if (!CHATTINESS.includes(level)) return;
@@ -124,18 +148,18 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
 
     /** Call once when play starts: runs the tour the first time, otherwise says hello. */
     startIfNeeded() {
-      if (!tourDone) startTour();
+      if (!tourDone) startTour(savedStep);
       else enqueue(lines.WELCOME_BACK, 'news');
     },
     replayTour() {
       tourDone = false;
-      persist();
-      startTour();
+      startTour(0);
     },
     skipTour() {
       if (tourIndex < 0) return;
       tourIndex = -1;
       tourDone = true;
+      tourEnded = 'skipped';
       persist();
       queue = queue.filter((q) => q.kind !== 'tour');
       enqueue(lines.TOUR_SKIPPED, 'tour');
@@ -148,8 +172,9 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
      */
     notify(event) {
       const s = tourStep();
-      if (s && tourLineSaid && s.done.event === event) {
-        completeStep();
+      if (s && s.done.event === event) {
+        if (tourLineSaid) completeStep();
+        else earlyDone = true; // counts as soon as Volt has said the step
         return true;
       }
       if (event.startsWith('zone:')) {

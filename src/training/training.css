@@ -1,0 +1,20 @@
+/* training.css — the "Training day" badge under the clock (HUD style: no box clutter,
+   readable on bright and dark scenes, HUD text ≥ 18px). */
+.training-badge {
+  position: absolute;
+  top: 46px;
+  left: 16px;
+  max-width: calc(100vw - 32px);
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(10, 16, 32, 0.72);
+  border: 1px solid rgba(123, 224, 160, 0.6);
+  color: #ffffff;
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 18px;
+  pointer-events: none;
+}
+.training-badge[hidden] {
+  display: none;
+}
