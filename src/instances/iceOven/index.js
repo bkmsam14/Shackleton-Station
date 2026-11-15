@@ -3,11 +3,15 @@
 // cold plate catches it as water, which trickles into the Electrolysis tank over game time.
 // Rules: systems/iceMining.js.
 //
-// Kept SIMPLE for ages 7–12 (one picture, one big line, one button):
-//  - "60 kg of icy soil → about 3.4 kg of water";
-//  - a 3-step picture Heat → Vapour → Water that animates while baking, plus a progress bar;
-//  - a Bake button that shows its small cost; extra facts only behind "Did you know?".
+// Kept SIMPLE for ages 7–12 (pictures first, very few words):
+//  - a first-time "How it works" card: 3 looping pictures (ui/tutorial.js);
+//  - one big animated picture of the oven (art.js): heat → vapour → cold plate → drops → tank;
+//  - "60 kg of icy soil → about 3.4 kg of water" with icons; a Bake button with its small cost;
+//  - extra facts only behind "Did you know?".
 import '../electrolysis/style.css';
+import './style.css';
+import { OVEN_ART } from './art.js';
+import { showTutorial, tutorialSeen } from '../../ui/tutorial.js';
 import '../waterWalls/style.css';
 import '../iceDrill/style.css';
 import { ICE, POWER } from '../../config/gameplay.js';
@@ -46,10 +50,11 @@ export function createIceOvenInstance({ root, ctx, done }) {
 
         <p class="io-big" data-big></p>
 
-        <ol class="io-flow io-flow-3" data-flow aria-label="How the Ice Oven works">
-          <li><span class="io-step-ic">${IC.heat}</span><b>Heat</b></li>
-          <li><span class="io-step-ic">${IC.cloud}</span><b>Ice → vapour</b></li>
-          <li><span class="io-step-ic">${IC.water}</span><b>Water</b></li>
+        ${OVEN_ART.scene}
+        <ol class="io-steps-row" aria-label="How the Ice Oven works">
+          <li><span>1</span>Heat</li>
+          <li><span>2</span>Ice → vapour</li>
+          <li><span>3</span>Water</li>
         </ol>
 
         <div class="io-progress" data-progress hidden>
@@ -61,6 +66,7 @@ export function createIceOvenInstance({ root, ctx, done }) {
 
         <div class="ez-row">
           <button class="ez-btn ez-btn-ghost" data-close>${IC.back}<span>Back</span></button>
+          <button class="ez-btn ez-btn-ghost" data-how>${IC.book}<span>How it works</span></button>
           <button class="ez-btn ez-btn-ghost" data-more>${IC.book}<span>Did you know?</span></button>
           <button class="ez-btn ez-btn-go ww-pump" data-bake>${IC.heat}<span>Bake</span><small class="ww-cost" data-cost></small></button>
         </div>
@@ -90,10 +96,10 @@ export function createIceOvenInstance({ root, ctx, done }) {
   function refresh() {
     const o = ice.oven;
     const baking = Boolean(o);
-    $('[data-flow]').classList.toggle('is-baking', baking);
+    el.classList.toggle('is-baking', baking);
     const bake = $('[data-bake]');
     if (baking) {
-      say('Baking! The water drips into the tank. You can go — it keeps working.', 'cheer');
+      say('Baking! Water is dripping into the tank. You can go: it keeps working.', 'cheer');
       $('[data-big]').innerHTML = `${ICE_ICON}<span>${kg(o.soilKg)} of soil</span><span class="io-arrow">→</span>${IC.water}<span><b>${kg(o.waterKg)}</b> of water</span>`;
       $('[data-progress]').style.display = ''; // (a CSS display rule beats [hidden])
       $('[data-progress-bar]').style.width = `${((1 - o.hoursLeft / ICE.OVEN_GAME_HOURS) * 100).toFixed(1)}%`;
@@ -106,7 +112,7 @@ export function createIceOvenInstance({ root, ctx, done }) {
     const c = ovenCost(ice.bagKg);
     const check = checkOven(ice, gauges);
     if (ice.bagKg > 0) {
-      say('Lots of soil, only a little water inside!', 'wow');
+      say('Heat the soil. The ice turns into vapour. The cold plate makes it water again!', 'wow');
       $('[data-big]').innerHTML = `${ICE_ICON}<span>${kg(ice.bagKg)} of icy soil</span><span class="io-arrow">→</span>${IC.water}<span>about <b>${kg(c.waterKg)}</b> of water</span>`;
     } else {
       say(OVEN_REASONS['no-soil'], 'think');
@@ -134,13 +140,40 @@ export function createIceOvenInstance({ root, ctx, done }) {
     started = { waterKg: c.waterKg, kwh: c.kwh, soilKg: c.soilKg };
   });
 
+  // the first visit: a 3-picture "How it works" card
+  const TUT = {
+    id: 'ice-oven',
+    title: 'How the Ice Oven works',
+    lead: `${voltBot('wow')}<p>Moon soil has a little ice inside. Heat gets it out!</p>`,
+    leadSay: 'Moon soil has a little ice inside. Heat gets it out!',
+    go: 'Got it!',
+    panels: [
+      { art: OVEN_ART.load, caption: 'Pour in icy soil', say: 'Pour the icy soil into the oven.' },
+      { art: OVEN_ART.heat, caption: 'Heat: ice → vapour', say: 'Heat it. The ice turns into vapour: water as a gas.' },
+      { art: OVEN_ART.water, caption: 'Cold plate → water', say: 'A cold plate turns the vapour back into water. It drips into the tank.' },
+    ],
+  };
+  const showHow = () => showTutorial(el, TUT, { onSpeak: (t) => ctx.voice?.speak(t) });
+  $('[data-how]').addEventListener('click', () => {
+    sfx.click();
+    showHow();
+  });
+
   refresh();
-  ctx.voice?.speak($('[data-msg]').textContent);
+  if (!tutorialSeen(TUT.id)) showHow();
+  else ctx.voice?.speak($('[data-msg]').textContent);
   const timer = setInterval(refresh, 1000);
   ($('[data-bake]:not([disabled])') ?? $('[data-close]')).focus();
 
   return {
     onKey(e) {
+      if (el.querySelector('.tut')) {
+        if (e.code === 'Enter' || e.code === 'Space' || e.code === 'Escape') {
+          e.preventDefault();
+          el.querySelector('.tut-go')?.click();
+        }
+        return;
+      }
       if (e.code === 'Escape') {
         e.preventDefault();
         close();

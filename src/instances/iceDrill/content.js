@@ -84,7 +84,7 @@ export const OVEN_FACTS = [
 ];
 
 export const OVEN_REASONS = {
-  'no-soil': 'No icy soil to bake. Drill some in the cold-trap crater past the solar array!',
+  'no-soil': 'The oven is empty. Dig icy soil in the dark crater past the solar array!',
   busy: 'The oven is already baking.',
-  power: 'Not enough base power to heat the oven. Wait for sunlight!',
+  power: 'Not enough power to heat it. Wait for sunlight!',
 };

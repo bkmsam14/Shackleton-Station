@@ -1,0 +1,93 @@
+/* Ice Oven — the animated picture (ov-*). Calm loops; while baking they run faster and the
+   tank fills. Motion off under prefers-reduced-motion (the picture still explains it). */
+.ov-scene {
+  display: block;
+  width: min(100%, 520px);
+  height: auto;
+  margin: 4px auto 8px;
+}
+.ov-scene .ov-puff,
+.ta .ov-puff {
+  animation: ov-rise 2.4s ease-in infinite;
+  animation-delay: var(--d, 0s);
+  transform-box: fill-box;
+}
+.ov-scene .ov-drop,
+.ta .ov-drop {
+  animation: ov-fall 1.5s ease-in infinite;
+  animation-delay: var(--d, 0s);
+}
+.ov-heat path {
+  animation: ov-heat 1.2s ease-in-out infinite;
+}
+.ov-tank-fill {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  transform: scaleY(0.25);
+}
+.io.is-baking .ov-tank-fill {
+  animation: ov-fill 6s ease-out infinite;
+}
+.io:not(.is-baking) .ov-scene .ov-puff,
+.io:not(.is-baking) .ov-scene .ov-drop {
+  animation-duration: 4.5s; /* idle: a slow "this is what happens" loop */
+}
+.io:not(.is-baking) .ov-scene .ov-heat {
+  opacity: 0.35;
+}
+.ta .ov-bag {
+  animation: ov-pour 3.2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.ta .ov-tank-fill {
+  animation: ov-fill 3.2s ease-out infinite;
+}
+@keyframes ov-rise {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 0.9; }
+  100% { transform: translateY(-56px); opacity: 0; }
+}
+@keyframes ov-fall {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(30px); opacity: 0; }
+}
+@keyframes ov-heat {
+  50% { opacity: 0.35; }
+}
+@keyframes ov-fill {
+  0% { transform: scaleY(0.25); }
+  100% { transform: scaleY(1); }
+}
+@keyframes ov-pour {
+  0%, 20% { transform: translateY(0) rotate(0deg); }
+  50%, 100% { transform: translateY(14px) rotate(70deg); }
+}
+.io-steps-row {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-head);
+  font-size: 19px;
+  color: #ffffff;
+}
+.io-steps-row li span {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ov-scene .ov-puff, .ta .ov-puff, .ov-scene .ov-drop, .ta .ov-drop, .ov-heat path, .io.is-baking .ov-tank-fill, .ta .ov-bag, .ta .ov-tank-fill {
+    animation: none;
+  }
+}
