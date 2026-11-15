@@ -44,20 +44,22 @@ export function powerPercent(g) {
  * @param {object} p
  * @param {number} p.sunVisibility  0..1 (0 = Sun behind the ridge)
  * @param {number} p.alignment      0..1 (how well the panel faces the Sun)
+ * @param {number} [p.extraLoadKw]  other loads right now (e.g. suit heaters in a cold trap)
  */
-export function computePowerFlow({ sunVisibility, alignment }) {
+export function computePowerFlow({ sunVisibility, alignment, extraLoadKw = 0 }) {
   const solarKw = POWER.SOLAR_ARRAY_PEAK_KW * clamp(sunVisibility, 0, 1) * clamp(alignment, 0, 1);
   const loads = {
     habitat: POWER.HABITAT_LOAD_KW,
     greenhouse: POWER.GREENHOUSE_LED_LOAD_KW,
+    other: Math.max(0, extraLoadKw),
   };
-  const loadKw = loads.habitat + loads.greenhouse;
+  const loadKw = loads.habitat + loads.greenhouse + loads.other;
   return { solarKw, loadKw, netKw: solarKw - loadKw, loads };
 }
 
 /**
  * Advance the gauges by dt real seconds.
- * ctx: { pressurized: boolean, sunVisibility, alignment }
+ * ctx: { pressurized: boolean, sunVisibility, alignment, extraLoadKw? }
  * Returns a report the HUD and game can use (rates, flags, events).
  */
 export function stepGauges(g, dt, ctx) {

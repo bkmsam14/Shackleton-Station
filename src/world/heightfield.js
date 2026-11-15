@@ -61,12 +61,15 @@ export const CRATERS = (() => {
     { x: 58, z: 12, r: 18, depth: 4 },
     { x: 20, z: 78, r: 11, depth: 2.4 },
     { x: -70, z: 55, r: 24, depth: 5 },
+    // the ice-mining cold trap (deep for its size, so its floor stays in shadow)
+    { x: LAYOUT.ICE_CRATER.x, z: LAYOUT.ICE_CRATER.z, r: LAYOUT.ICE_CRATER.r, depth: LAYOUT.ICE_CRATER.depth },
   ];
   for (let i = 0; i < 40; i++) {
     const r = 1.5 + rand() * rand() * 9;
     const x = (rand() * 2 - 1) * 210;
     const z = (rand() * 2 - 1) * 210;
     if (baseMask(x, z) > 0.05) continue;
+    if (Math.hypot(x - LAYOUT.ICE_CRATER.x, z - LAYOUT.ICE_CRATER.z) < LAYOUT.ICE_CRATER.r * 2 + r) continue;
     list.push({ x, z, r, depth: r * (0.18 + rand() * 0.1) });
   }
   return list;

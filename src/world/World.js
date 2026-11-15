@@ -11,6 +11,8 @@ import { createGreenhouse } from './greenhouse.js';
 import { mergeStatic } from './mergeStatic.js';
 import { createEnvironments, ENV_INTENSITY } from './environment.js';
 import { createOutdoorDetails } from './details.js';
+import { createIceSite } from './iceSite.js';
+import { createIceOven } from './iceOven.js';
 import { LAYOUT } from './layout.js';
 import { skyDirection } from '../systems/daycycle.js';
 
@@ -38,6 +40,10 @@ export function createWorld({ quality = 'high', renderer } = {}) {
   // indoors so the GPU doesn't draw the whole Moon behind the walls.
   const outdoorDetails = createOutdoorDetails();
   mergeStatic(outdoorDetails.object);
+  // ice mining: the cold-trap crater outside, the Ice Oven in the habitat work bay
+  const iceSite = createIceSite(terrain);
+  const iceOven = createIceOven(habitat);
+  habitat.zone.obstacles.push(iceOven.obstacle);
   const outdoorOnly = [
     terrain,
     horizon,
@@ -47,6 +53,7 @@ export function createWorld({ quality = 'high', renderer } = {}) {
     createPathLights(),
     createPowerCable(),
     outdoorDetails.object,
+    iceSite.object,
   ];
   scene.add(...outdoorOnly, habitat.object, greenhouse.object);
   let lastZone = null;
@@ -65,6 +72,8 @@ export function createWorld({ quality = 'high', renderer } = {}) {
   const interactables = [
     ...habitat.interactables,
     ...greenhouse.interactables,
+    ...iceSite.interactables,
+    iceOven.interactable,
     {
       id: 'solar-info',
       zone: 'outside',
@@ -93,6 +102,8 @@ export function createWorld({ quality = 'high', renderer } = {}) {
     interactables,
     habitat,
     greenhouse,
+    iceSite,
+    iceOven,
     /**
      * Called once per frame. sun = getSun(); zoneId = where the player is.
      * Returns solar alignment 0..1.
