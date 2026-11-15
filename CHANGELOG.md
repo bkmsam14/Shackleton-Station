@@ -1,5 +1,16 @@
 # Changelog — Shackleton Station
 
+## 0.10.1 — Calmer Water Walls and Ice Oven screens
+
+- **Simpler for kids:** each screen now has one picture, one big number and one main button.
+  Water Walls: the particle animation + "8 of 100 particles reach you", the tank ⇄ walls slider,
+  and "Pump into walls (uses 1% power)". Ice Oven: "60 kg of icy soil → about 3.4 kg of water", a
+  3-step Heat → Ice → vapour → Water picture with a progress bar, and "Bake (uses 4% power)".
+- Extra facts and sources moved behind an optional **Did you know?** button; the easy question
+  after pumping stays. Removed the bar chart, cost meters, Earth-vs-Moon box and small print.
+- The airlock room got a realistic crew-lock interior (cylinder, padded panels, real-style hatches,
+  spacesuits, control panel, caution beacons).
+
 ## 0.10.0 — The airlock: hatches, pumps and the sound of air
 
 ### Gameplay
