@@ -89,7 +89,8 @@ export const LAYOUT = {
     sign: { x: -44.2, z: 18.6, yawDeg: 255 }, // on the rim, facing the path
   },
   // Ice Oven in the habitat work bay, beside Electrolysis (habitat coordinates).
-  ICE_OVEN: { x: 9.2, z: -1.55, use: { x: 8.25, z: -1.55 } },
+  // against the −Z wall of the work bay, door facing +Z (into the bay)
+  ICE_OVEN: { x: 7.25, z: -2.45, use: { x: 7.25, z: -1.45 } },
 
   // Far hills ring (also hides the Sun during the ridge period).
   // Real LOLA terrain disc you can walk on (the 5 m map covers ±400 m around the site)

@@ -1,4 +1,4 @@
-// iceOven.js — the Ice Oven in the habitat work bay, beside Electrolysis (placeholder art).
+// iceOven.js — the Ice Oven against the −Z wall of the habitat work bay (placeholder art).
 // It heats icy soil; the ice turns to vapour, a cold plate catches it as water, and a pipe
 // carries the water to the Electrolysis tank. Glows and steams while it bakes.
 import * as THREE from 'three';
@@ -15,28 +15,42 @@ export function createIceOven(habitat) {
   const z = H.z + O.z;
   const group = new THREE.Group();
   group.name = 'iceOven';
+  // The oven is built around its own centre with the window facing local −X, then turned
+  // so the window faces +Z (into the bay).
+  const body = new THREE.Group();
+  body.position.set(x, 0, z);
+  body.rotation.y = Math.PI / 2; // local −X → world +Z
+  group.add(body);
 
-  // body (0.9 wide along Z, 0.95 deep along X) with a round window facing −X (into the bay)
-  group.add(mesh(rbox(0.95, 1.25, 0.9, 0.06), MAT.painted(0xe4e8ec), x, FY + 0.625, z));
-  group.add(mesh(rbox(0.97, 0.12, 0.92, 0.03), MAT.darkMetal(), x, FY + 1.3, z));
+  // body (0.9 wide, 0.95 deep) with a round window on the front
+  body.add(mesh(rbox(0.95, 1.25, 0.9, 0.06), MAT.painted(0xe4e8ec), 0, FY + 0.625, 0));
+  body.add(mesh(rbox(0.97, 0.12, 0.92, 0.03), MAT.darkMetal(), 0, FY + 1.3, 0));
   const glowMat = new THREE.MeshStandardMaterial({ color: 0x2a1a10, emissive: 0xff8a3d, emissiveIntensity: 0, roughness: 0.6 });
   const window = new THREE.Mesh(new THREE.CircleGeometry(0.27, 40), glowMat);
-  window.position.set(x - 0.48, FY + 0.72, z);
+  window.position.set(-0.48, FY + 0.72, 0);
   window.rotation.y = -Math.PI / 2;
-  group.add(window);
+  body.add(window);
   const rim = new THREE.Mesh(new THREE.TorusGeometry(0.29, 0.035, 10, 40), MAT.metal());
   rim.position.copy(window.position);
   rim.rotation.y = -Math.PI / 2;
-  group.add(rim);
+  body.add(rim);
   // cold plate on top (where the vapour freezes out as water)
   const plateMat = MAT.glow(0x9fe8ff, 0.4).clone();
-  group.add(mesh(rbox(0.5, 0.06, 0.5, 0.02), plateMat, x, FY + 1.4, z, { cast: false }));
-  // water pipe to the Electrolysis unit (next to it, toward z = 0)
-  group.add(pipe(new THREE.Vector3(x + 0.3, FY + 1.4, z + 0.2), new THREE.Vector3(x + 0.3, FY + 1.4, -0.75), 0.035, MAT.accent()));
+  body.add(mesh(rbox(0.5, 0.06, 0.5, 0.02), plateMat, 0, FY + 1.4, 0, { cast: false }));
   const sign = createSign(['ICE OVEN', 'icy soil → water'], 1.1, 0.4, { accent: '#6fd8ff' });
-  sign.position.set(x - 0.49, FY + 1.75, z);
+  sign.position.set(-0.49, FY + 1.75, 0);
   sign.rotation.y = -Math.PI / 2;
-  group.add(sign);
+  body.add(sign);
+  // water pipe to the Electrolysis tank: up the back, along the wall above the screens,
+  // then down the corner (out of the way of your head)
+  const py = FY + 2.25;
+  const pz = z - 0.3;
+  const wx = 9.5; // just in front of the end wall
+  const pm = MAT.accent();
+  group.add(pipe(new THREE.Vector3(x, FY + 1.43, pz), new THREE.Vector3(x, py, pz), 0.035, pm));
+  group.add(pipe(new THREE.Vector3(x, py, pz), new THREE.Vector3(wx, py, pz), 0.035, pm));
+  group.add(pipe(new THREE.Vector3(wx, py, pz), new THREE.Vector3(wx, py, -0.7), 0.035, pm));
+  group.add(pipe(new THREE.Vector3(wx, py, -0.7), new THREE.Vector3(wx, FY + 1.74, -0.7), 0.035, pm)); // into the tank
 
   // steam puffs (a few soft sprites that rise and fade while baking)
   const puffTex = (() => {
@@ -61,7 +75,8 @@ export function createIceOven(habitat) {
 
   habitat.interior.add(group); // shown only when you are in the habitat
 
-  const obstacle = { type: 'box', minX: x - 0.5, maxX: x + 0.5, minZ: z - 0.48, maxZ: z + 0.48 };
+  // turned 90°: 0.9 along X, 0.95 along Z
+  const obstacle = { type: 'box', minX: x - 0.47, maxX: x + 0.47, minZ: z - 0.5, maxZ: z + 0.5 };
   const interactable = {
     id: 'ice-oven',
     zone: 'habitat',
