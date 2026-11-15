@@ -49,7 +49,7 @@ export function createCallouts(root) {
         busy = false;
         showNext();
       }, 450);
-    }, 4200);
+    }, 2600); // long enough to read, short enough that the tour keeps moving
   }
 
   return {

@@ -135,6 +135,20 @@ test('a later day after the Training Day: welcome back, no tour', () => {
   assert.equal(a.tourActive, false);
 });
 
+test('Next passes a Training Day step without doing it', () => {
+  const a = createAssistant({ store: memoryStore() });
+  a.startIfNeeded({ day: 1 });
+  runUntilLine(a); // step 1 said
+  assert.equal(a.nextStep(), true);
+  assert.equal(a.tourStep.id, LINES.TOUR[1].id);
+  assert.equal(runUntilLine(a).id, LINES.TOUR[1].id); // and Volt says the next one
+  a.nextStep();
+  a.nextStep(); // even before its line is said
+  assert.equal(a.tourStep.id, LINES.TOUR[3].id);
+  const done = createAssistant({ store: memoryStore() });
+  assert.equal(done.nextStep(), false); // no tour running: nothing to pass
+});
+
 test('silent while not playing (menus, PDA, mini-games)', () => {
   const a = createAssistant({ store: memoryStore() });
   a.startIfNeeded();

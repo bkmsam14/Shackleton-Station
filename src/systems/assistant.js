@@ -164,6 +164,13 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
       tourDone = false;
       startTour(0);
     },
+    /** Training Day "Next": pass the current step without doing it. Returns true if it did. */
+    nextStep() {
+      if (tourIndex < 0) return false;
+      queue = queue.filter((q) => q.kind !== 'tour'); // drop the passed step's line if still waiting
+      completeStep();
+      return true;
+    },
     skipTour() {
       if (tourIndex < 0) return;
       tourIndex = -1;
