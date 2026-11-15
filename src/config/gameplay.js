@@ -33,6 +33,9 @@ export const DAYS = {
   START_HOUR: 7, // shift starts — GAME BALANCE (not real data)
   END_HOUR: 19, // shift ends — GAME BALANCE (not real data)
   TITLE_SECONDS: 2.2, // "Day 2" on black before the fade-in — GAME BALANCE (not real data)
+  // Day 1 (the Training Day) does NOT start full: Volt's tour has you make oxygen and eat, so
+  // those gauges start low enough to need it. Days 2–4 start with the overnight refill.
+  DAY1_START: { OXYGEN_PERCENT: 60, FOOD_PERCENT: 60 }, // GAME BALANCE (not real data)
 };
 DAYS.SHIFT_HOURS = DAYS.END_HOUR - DAYS.START_HOUR;
 DAYS.NIGHT_HOURS = 24 - DAYS.SHIFT_HOURS;
@@ -323,8 +326,9 @@ export const RADIATION = {
 export const FARMING = {
   START_SEED_POTATOES: 3, // GAME BALANCE (not real data)
   // Packaged space meals from Earth in the galley store at the start (the farm takes days to
-  // give its first harvest). NASA BVAD counts food per day; one meal = a third of a day.
-  START_SPACE_MEALS: 2, // GAME BALANCE (not real data)
+  // give its first harvest: the first potatoes come on Day 3). NASA BVAD counts food per day;
+  // one meal = a third of a day. 3 meals + Day 1's 60 % carry a careful player to Day 3.
+  START_SPACE_MEALS: 3, // GAME BALANCE (not real data)
   POT_COUNT: 4, // pots in the greenhouse (2 stands × 2) — level layout
   // Days are shifts now (see DAYS): plants grow OVERNIGHT, one step per night, and only if the
   // grow lights were on for at least this share of the day (light is what plants grow with).
@@ -513,9 +517,10 @@ export const AIRLOCK = {
 // ---------------------------------------------------------------------------
 export const TRAINING = {
   // While the training script runs, the base clock (gauges, Sun, plants, oven, deliveries)
-  // runs at this fraction of its normal speed so there is time to learn. Movement is
-  // unchanged. The HUD says so. 0.05 → 1 game day = 80 real minutes instead of 4.
-  PACE: 0.05, // GAME BALANCE (not real data)
+  // runs at this fraction of its normal speed so there is time to learn, but the gauges still
+  // visibly move (oxygen ≈ −3 %/min inside, −7 %/min outside). Movement is unchanged.
+  // The HUD says so. After the tour, the day's 6-minute countdown starts.
+  PACE: 0.15, // GAME BALANCE (not real data)
   // Steps can set their own pace (the storm drill runs at normal speed, 1).
   RUSH_SECONDS: 1.5, // the scripted delivery skips to landing within this many seconds — GAME BALANCE
 };

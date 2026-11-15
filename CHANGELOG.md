@@ -16,7 +16,9 @@ Merged after the 0.11.0 balance pass; `package.json` still says 0.11.0.
 - **Food values:** the food gauge holds one day of BVAD food. A potato (a whole plant's crop,
   ≈ 2 kg) fills **50 %**, a packaged space meal 33 % (2 at the start), lettuce ≈ 3 % and a radish
   handful ≈ 0.5 % (honest USDA calories: the requested 25 % for lettuce would need ≈ 2 kg of
-  lettuce). F picks the food that fits without waste.
+  lettuce). F picks the food that fits without waste. Day 1 (the Training Day) starts with oxygen
+  and food at 60 % (Volt has you make oxygen and eat), 3 space meals in the store, and the tour
+  clock runs 7× slower (was 20×) so the gauges visibly move while you learn.
 - **Storms by calendar day:** Day 1 = the replay's first date; a storm that really came at night
   is dosed in the shelter (you sleep in it) and reported in the morning.
 - **Ice Oven:** an animated picture (heat → vapour → cold plate → water) and a first-time
@@ -24,7 +26,10 @@ Merged after the 0.11.0 balance pass; `package.json` still says 0.11.0.
 - **Main menu (indie style):** the live base drifting by under the stars, a big title, Volt
   waving, Continue / New mission / Settings / How to play / Credits.
 - **Sound:** two CC0 music tracks that crossfade: "Outer Space Loop" by wipics in the menu and
-  inside the base, "Blue Moon Beach" by Tsorthan Grove outside on the Moon; footsteps (metal taps inside, a soft
+  inside the base, "Blue Moon Beach" by Tsorthan Grove outside on the Moon (it is mastered ≈ 15 dB
+  quieter, so each track gets its own Web Audio gain + a soft limiter: both play equally loud);
+  in-suit breathing made of real breaths (in → pause → out) inside a small helmet echo, faster and
+  stronger when you hop; footsteps (metal taps inside, a soft
   crunch felt through the boots outside: no air), faster suit breathing when you move, and themed
   sound kits for the mini-games (fizz and bubbles, sparks and hum, hiss and clank, drill, oven).
 - **Micrometeoroids hit the array OR the habitat (never both at once).** One scheduler

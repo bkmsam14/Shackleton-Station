@@ -13,11 +13,11 @@ const MIN = 60;
 const RUNS = 200;
 const firstFailures = (m) => m.results.map((r) => r.firstFailure?.t ?? Infinity);
 
-test('idle: doing nothing needs a rescue during Day 1 (after 2 minutes at the earliest)', () => {
+test('idle: doing nothing needs a rescue during Day 1 (it starts at 60 % oxygen; not before 1.5 min)', () => {
   const m = simulateMany(BOTS.idle, RUNS);
   for (const r of m.results) {
     assert.ok(r.firstFailure && r.firstFailure.day === 1, JSON.stringify(r.firstFailure));
-    assert.ok(r.firstFailure.t >= 2 * MIN, `first rescue at ${r.firstFailure.t} s`);
+    assert.ok(r.firstFailure.t >= 1.5 * MIN, `first rescue at ${r.firstFailure.t} s`);
   }
 });
 

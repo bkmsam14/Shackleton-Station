@@ -9,6 +9,10 @@
 //   trigger            — scripted event fired when Volt says the line (src/training/index.js)
 //   pace               — base-clock speed during this step (default TRAINING.PACE; storm drill: 1)
 // Real things only: no random events on Day 1 — every surprise here is planned.
+// Day 1 starts with oxygen and food at DAYS.DAY1_START (low on purpose: you fix both here).
+import { DAYS, FARMING } from '../config/gameplay.js';
+
+const O2_START = DAYS.DAY1_START.OXYGEN_PERCENT;
 
 export const TRAINING_DAY = [
   // ---------------------------------------------------------------- wake up
@@ -41,8 +45,8 @@ export const TRAINING_DAY = [
   {
     id: 'oxygen',
     chapter: 'air',
-    text: 'Our oxygen is at 60%. Let’s make more at Electrolysis!',
-    long: 'Our oxygen supply is at 60%. Walk to the Electrolysis unit in the work bay (follow the arrow) and press E to make more.',
+    text: `Our oxygen is at ${O2_START}%. Let’s make more at Electrolysis!`,
+    long: `Our oxygen supply is only at ${O2_START}%. Walk to the Electrolysis unit in the work bay (follow the arrow) and press E to make more. It costs water and power.`,
     mood: 'wow',
     target: 'electrolysis',
     done: { event: 'oxygen-made' },
@@ -61,8 +65,8 @@ export const TRAINING_DAY = [
   {
     id: 'eat',
     chapter: 'food',
-    text: 'Breakfast! Press F to eat a potato. Keep the rest to plant!',
-    long: 'Breakfast time! Press F to eat a potato: it fills the green Food ring a little. Keep the others, because a potato you keep can be planted to grow more.',
+    text: 'Breakfast! Press F to eat a space meal. Keep your potatoes to plant!',
+    long: 'Breakfast time! Press F to eat: a packaged space meal from Earth fills about a third of the green Food ring. Keep your potatoes, because a potato you keep can be planted to grow more. One potato harvest fills half the ring!',
     mood: 'happy',
     done: { event: 'eat-tried' },
   },
@@ -89,7 +93,7 @@ export const TRAINING_DAY = [
     id: 'plant',
     chapter: 'grow',
     text: 'Find the grow pots. Plant, cover and water a seed!',
-    long: 'Find the GROW POTS between the grow racks and press E. Pick a seed: a potato (slow, lots of food) or lettuce or radish (fast, a little food). Drag it into the soil, cover it, then tilt the watering can until the soil is wet. It grows under the red and blue lights.',
+    long: `Find the GROW POTS between the grow racks and press E. Pick a seed: a potato (ready in ${FARMING.GROW_NIGHTS} days, lots of food) or lettuce or radish (ready tomorrow, a little food). Drag it into the soil, cover it, then tilt the watering can until the soil is wet. Plants grow overnight under the red and blue lights.`,
     mood: 'happy',
     target: 'pots',
     done: { event: 'crop-watered' },
@@ -108,7 +112,7 @@ export const TRAINING_DAY = [
     id: 'hit',
     chapter: 'meteor',
     text: 'Whoa, see that flash? A micrometeorite hit the array!',
-    long: 'Whoa! A micrometeorite, a tiny speck of space rock, hit the array. They hit the Moon all the time, because there is no air to burn them up. Our power is down to 40%. Good thing we ordered a repair kit!',
+    long: 'Whoa! A micrometeorite, a tiny speck of space rock, hit the array. They hit the Moon all the time, because there is no air to burn them up. Now the array makes only 40% of its power. Good thing we ordered a repair kit!',
     mood: 'wow',
     trigger: 'micrometeorite',
     done: { after: 7 },
@@ -165,7 +169,7 @@ export const TRAINING_DAY = [
   },
   // ---------------------------------------------------------------- storm drill (normal speed)
   // It starts as soon as you leave the telescope: you are far from the shelter, like a real
-  // surprise. The real warning time (about 48 s of play) is enough to get back inside.
+  // surprise. The warning time (at least 2 game hours = 60 s of play) is enough to get back inside.
   {
     id: 'storm',
     chapter: 'storm',
@@ -201,7 +205,7 @@ export const TRAINING_DAY = [
     id: 'harvest',
     chapter: 'harvest',
     text: 'Your plant is ready! Go harvest it in the greenhouse.',
-    long: 'Your plant is ready (for training we let it grow fast; real plants take weeks or months). Go to the greenhouse and use the cutters to harvest it.',
+    long: 'Your plant is ready! Normally plants grow overnight, but for training we sped it up (real plants take weeks or months). Go to the greenhouse and use the cutters to harvest it.',
     mood: 'cheer',
     target: 'pots',
     trigger: 'ripen',
@@ -214,8 +218,8 @@ export const TRAINING_CHAPTERS = [
   { id: 'wake', title: 'Wake up', learned: 'Your gauges and the PDA' },
   { id: 'air', title: 'Air', learned: 'Electrolysis splits water to make oxygen' },
   { id: 'supplies', title: 'Supplies', learned: 'Radio signals take about 1.3 s to reach Earth' },
-  { id: 'food', title: 'Food', learned: 'Eat potatoes, keep some to plant' },
-  { id: 'grow', title: 'Grow', learned: 'Plant, cover and water under red + blue light' },
+  { id: 'food', title: 'Food', learned: 'Eat space meals; keep potatoes to plant' },
+  { id: 'grow', title: 'Grow', learned: 'Plant, water, and plants grow overnight' },
   { id: 'meteor', title: 'Micrometeorite', learned: 'No air: tiny space rocks reach the ground' },
   { id: 'delivery', title: 'Delivery', learned: 'Cargo lands on thrusters, not parachutes' },
   { id: 'solar', title: 'Solar Fix', learned: 'Sunlight frees electrons: that is electricity' },
@@ -228,6 +232,6 @@ export const TRAINING_CHAPTERS = [
 export const TRAINING_DONE = {
   id: 'tour-done',
   text: 'Training day done! From now on, you’re in charge.',
-  long: 'Training day done! You made oxygen, ordered supplies, grew food, fixed the solar array, mined Moon ice, looked at the stars and got through a solar storm. From now on time runs at normal speed and you’re in charge. Press E on me any time for a tip.',
+  long: `Training day done! You made oxygen, ordered supplies, grew food, fixed the solar array, mined Moon ice, looked at the stars and got through a solar storm. From now on time runs at normal speed and you’re in charge: keep everything going until ${DAYS.END_HOUR}:00 to finish Day 1. Press E on me any time for a tip.`,
   mood: 'cheer',
 };

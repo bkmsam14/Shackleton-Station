@@ -40,7 +40,7 @@ export const EVENTS = {
   'food-low': {
     kind: 'warning',
     text: 'Food is low. Resting inside makes it last longer.',
-    long: 'Food is low. You use food energy about 2× faster working outside, so rest inside. Press F to eat a potato, and grow more in the greenhouse pots.',
+    long: 'Food is low. You use food energy about 2× faster working outside, so rest inside. Press F to eat, and grow more in the greenhouse pots.',
     mood: 'think',
   },
   'power-low': {

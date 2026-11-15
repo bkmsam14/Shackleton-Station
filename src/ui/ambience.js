@@ -11,8 +11,8 @@ import { getAudio } from './sfx.js';
 
 const LEVEL = {
   habitat: 0.05, // air-vent hum inside a module
-  suitBreath: 0.05,
-  suitFan: 0.025,
+  suitBreath: 0.32, // one breath at its loudest (close to your mouth inside the helmet)
+  suitFan: 0.02, // the suit's steady ventilation airflow
   hiss: 0.22, // airlock air rushing
   motor: 0.08, // airlock pump motor (through the air)
   boots: 0.025, // the same motor felt through your boots (no air needed)
@@ -22,6 +22,8 @@ export function createAmbience() {
   let a = null; // { ctx, out, noise, habitat, suit, lock }
   let zone = 'habitat';
   let lockOn = false;
+  let exertion = 0; // 0 resting … 1 hopping fast (breaths come faster and stronger)
+  let nextBreath = 0; // AudioContext time of the next breath (0 = not breathing in a suit)
 
   function setup() {
     if (a) return a;
@@ -63,23 +65,75 @@ export function createAmbience() {
     fan.start();
     habitatBus.connect(out);
 
-    // suit: breathing (band-passed noise, slow in/out) + a quiet fan
+    // suit: real breaths (scheduled one by one in update(): in → pause → out) + the suit's
+    // ventilation fan, all through a tiny "helmet" echo (sound bouncing inside the bubble helmet,
+    // right next to your face). Outside there is no air, so this is ALL you hear out there.
     const suitBus = gain(0);
-    const breathG = gain(0);
-    const breathF = filter('bandpass', 750, 0.9);
-    noiseSrc().connect(breathF).connect(breathG).connect(suitBus);
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.22; // ~4.5 s per breath at rest; faster when you move (setExertion)
-    const lfoDepth = gain(LEVEL.suitBreath / 2);
-    lfo.connect(lfoDepth).connect(breathG.gain);
-    breathG.gain.value = LEVEL.suitBreath / 2;
-    // breathing in sounds brighter than breathing out: the same wave sweeps the filter
-    const lfoTone = gain(260);
-    lfo.connect(lfoTone).connect(breathF.frequency);
-    lfo.start();
+    const helmetIn = gain(1);
+    const helmetTone = filter('lowpass', 5200, 0.5);
+    helmetIn.connect(helmetTone);
+    for (const [sec, fb] of [[0.0085, 0.26], [0.0145, 0.18]]) {
+      const dl = ctx.createDelay(0.05);
+      dl.delayTime.value = sec;
+      const fbG = gain(fb);
+      helmetIn.connect(dl);
+      dl.connect(fbG).connect(dl);
+      dl.connect(gain(0.35)).connect(helmetTone);
+    }
+    helmetTone.connect(suitBus);
     const suitFanG = gain(LEVEL.suitFan);
-    noiseSrc().connect(filter('lowpass', 300)).connect(suitFanG).connect(suitBus);
+    noiseSrc().connect(filter('bandpass', 900, 0.6)).connect(suitFanG).connect(helmetIn);
+    noiseSrc().connect(filter('lowpass', 180)).connect(gain(LEVEL.suitFan * 1.5)).connect(helmetIn);
     suitBus.connect(out);
+
+    /** One breath (in + out) starting at time t0. e = exertion 0..1. Returns its length (s). */
+    function breath(t0, e) {
+      const inDur = 1.25 - 0.4 * e + Math.random() * 0.15;
+      const gap = 0.16 + Math.random() * 0.08;
+      const outDur = 1.65 - 0.45 * e + Math.random() * 0.2;
+      const peak = LEVEL.suitBreath * (1 + 0.6 * e);
+      const shot = (start, dur) => {
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+        src.start(start, Math.random() * 1.5);
+        src.stop(start + dur + 0.05);
+        return src;
+      };
+      // breathing IN: an airy, rising hiss (air rushing past the lips)
+      {
+        const src = shot(t0, inDur);
+        const bp = filter('bandpass', 1000, 1.1);
+        bp.frequency.setValueAtTime(950, t0);
+        bp.frequency.linearRampToValueAtTime(1750, t0 + inDur);
+        const air = filter('highpass', 3600, 0.7);
+        const g = gain(0);
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(peak * 0.85, t0 + inDur * 0.55);
+        g.gain.linearRampToValueAtTime(0, t0 + inDur);
+        src.connect(bp).connect(g);
+        src.connect(air).connect(gain(0.18)).connect(g);
+        g.connect(helmetIn);
+      }
+      // breathing OUT: warmer and lower, falling away (a soft "hhhh")
+      {
+        const t1 = t0 + inDur + gap;
+        const src = shot(t1, outDur);
+        const lp = filter('lowpass', 1500, 0.7);
+        lp.frequency.setValueAtTime(1600, t1);
+        lp.frequency.exponentialRampToValueAtTime(700, t1 + outDur);
+        const chest = filter('bandpass', 420, 1.0); // a little chest/mouth body
+        const g = gain(0);
+        g.gain.setValueAtTime(0, t1);
+        g.gain.linearRampToValueAtTime(peak, t1 + 0.14);
+        g.gain.exponentialRampToValueAtTime(peak * 0.25, t1 + outDur * 0.8);
+        g.gain.linearRampToValueAtTime(0, t1 + outDur);
+        src.connect(lp).connect(g);
+        src.connect(chest).connect(gain(0.6)).connect(g);
+        g.connect(helmetIn);
+      }
+      return inDur + gap + outDur;
+    }
 
     // airlock: rushing air (its brightness + loudness follow the pressure) + pump motor
     const hissF = filter('bandpass', 2400, 0.6);
@@ -95,7 +149,7 @@ export function createAmbience() {
     motor.connect(filter('lowpass', 110)).connect(bootsG).connect(out);
     motor.start();
 
-    a = { ctx, out, habitatBus, suitBus, hissF, hissG, motorG, motorF, bootsG, lfo, breathG, lfoDepth };
+    a = { ctx, out, habitatBus, suitBus, hissF, hissG, motorG, motorF, bootsG, breath };
     return a;
   }
 
@@ -118,8 +172,21 @@ export function createAmbience() {
       const s = active ? setup() : a;
       if (!s) return;
       const inside = zone !== 'outside';
+      const suit = active && !lockOn && !inside;
       ramp(s.habitatBus.gain, active && !lockOn && inside ? LEVEL.habitat : 0, 0.6);
-      ramp(s.suitBus.gain, active && !lockOn && !inside ? 1 : 0, 0.6);
+      ramp(s.suitBus.gain, suit ? 1 : 0, 0.6);
+      // breaths: schedule each one a moment before it starts (rest ≈ one every 4.5 s)
+      const now = s.ctx.currentTime;
+      if (!suit) {
+        nextBreath = 0;
+        return;
+      }
+      if (!nextBreath || nextBreath < now) nextBreath = now + 0.4;
+      if (nextBreath < now + 0.2) {
+        const len = s.breath(nextBreath, exertion);
+        const rest = (1.7 - 1.1 * exertion) * (0.85 + Math.random() * 0.3); // a natural pause
+        nextBreath += len + rest;
+      }
     },
 
     /**
@@ -127,11 +194,7 @@ export function createAmbience() {
      * and a little louder — like a real spacewalk, where you use about 2× more oxygen (BVAD).
      */
     setExertion(x) {
-      if (!a) return;
-      const e = Math.max(0, Math.min(1, x));
-      ramp(a.lfo.frequency, 0.22 + 0.26 * e, 1.2);
-      ramp(a.lfoDepth.gain, (LEVEL.suitBreath / 2) * (1 + 0.6 * e), 1.2);
-      ramp(a.breathG.gain, (LEVEL.suitBreath / 2) * (1 + 0.6 * e), 1.2);
+      exertion = Math.max(0, Math.min(1, x));
     },
 
     /** Airlock: start / follow the pressure / stop. pressure 1 = module air, 0 = vacuum. */

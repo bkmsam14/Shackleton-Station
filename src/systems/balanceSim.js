@@ -103,7 +103,7 @@ const FOOD_ITEMS = ['lettuce', 'radish', 'potato', 'space-meal'];
  */
 export function simulate(bot, { blockSeconds = 100, seed = 1, damage = true } = {}) {
   const rand = seededRandom(seed);
-  const g = createGauges();
+  const g = createGauges({ oxygen: DAYS.DAY1_START.OXYGEN_PERCENT, food: DAYS.DAY1_START.FOOD_PERCENT });
   const day = createDayCycle();
   const station = createElectrolysisState();
   const ice = createIceState();

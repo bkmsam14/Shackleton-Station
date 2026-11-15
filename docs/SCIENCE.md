@@ -230,6 +230,12 @@ skipped → "Day N" → you wake up in your bunk in the sleeping nook.
 - **Storms by calendar day:** game Day 1 = the replay's first date at 07:00 UTC, Day 2 the next
   date… so the Stormy May 2024 storms land on Day 2 (9 May, ~14:00), Day 3 (10 May, ~13:00) and the
   night before Day 4 (11 May, 02:10). The day title shows the replay date.
+- **Day 1 = the Training Day:** it starts with oxygen and food at **60 %** (`DAYS.DAY1_START`) because
+  Volt's tour has you make oxygen and eat breakfast; while the tour runs the base clock is 7× slower
+  (`TRAINING.PACE` 0.15: oxygen ≈ −3 %/min inside, −7 %/min outside), and the 6-minute countdown
+  starts when the tour ends. Normal speed: oxygen −21 %/min inside, −49 %/min outside (a full supply
+  lasts 4.7 / 2 min), food −50 % per resting day (−100 % fully outside), power −25 %/min in the dark
+  with the grow lights on, +20 %/min in full sun.
 - **Gentle failure = a rescue:** a 1-hour rest (short on purpose: with a countdown, a long rest
   would HELP), partial refill, and the rescue is counted. Day stars: 3 with no rescue, 2 with one,
   1 otherwise.
@@ -247,7 +253,7 @@ Supply deliveries keep their old real waiting times (game hours ÷ 3).
 | Item | Gauge | Why (honest) |
 |---|---|---|
 | Potato (a plant's crop) | **50 %** (owner's design) | 0.4 kg dry ≈ 1,530 kcal ≈ 2 kg of raw potatoes (USDA 77 kcal / 100 g): a whole plant's harvest, not one potato |
-| Packaged space meal (2 at the start) | 33 % | a third of a day's BVAD food |
+| Packaged space meal (3 at the start) | 33 % | a third of a day's BVAD food |
 | Lettuce head (0.6 kg) | 3.3 % | romaine is 17 kcal / 100 g: mostly water. The owner asked for 25 %; that would need ≈ 2 kg of lettuce, so it stays honest |
 | Radish handful (0.1 kg, 3 per pot) | 0.5 % each | 16 kcal / 100 g |
 
@@ -259,9 +265,9 @@ fits your hunger best without wasting any.
 
 | Bot | What it does | Target | Result (Nov 2026) |
 |---|---|---|---|
-| idle | nothing | first rescue during Day 1, not before 2 min | first rescue at 2:39 in every run |
+| idle | nothing | first rescue during Day 1, not before 1.5 min | first rescue on Day 1 in every run (earliest 1:48) |
 | sloppy | reacts at 25 %, 3 pots (potato, lettuce, radish), 40 % outside, grow lights always on | Days 1–2 without a rescue in ≥ 90 % of runs; ≤ 3 rescues in the mission | 196 / 200 clean Days 1–2; max 2 rescues (Day 3 is dark: lights on → blackout → no oxygen) |
-| skilled | makes O₂ at 60 %, 3 potato + 1 lettuce pot, lights off in the dark, mines ice, 2 kg in the walls, spare repair kit | no rescue at all; food never below 15 % | 0 / 200 rescued; food ≥ 29 %, ends O₂ ≥ 76 %, no blackout |
+| skilled | makes O₂ at 60 %, 3 potato + 1 lettuce pot, lights off in the dark, mines ice, 2 kg in the walls, spare repair kit | no rescue at all; food never below 15 % | 0 / 200 rescued; food ≥ 22 %, ends O₂ ≥ 76 %, no blackout |
 
 ## Data sources (credit these in the game)
 **Required by the team:** BVAD (https://ntrs.nasa.gov/citations/20210024855), NASA BPS data hub (https://science.nasa.gov/biological-physical/data/), RadLab overview (https://visualization.osdr.nasa.gov/radlab/gui/overview/), DONKI (https://ccmc.gsfc.nasa.gov/donki/). See the table in CLAUDE.md for what each one is used for.

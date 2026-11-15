@@ -312,6 +312,10 @@ function enterPlay() {
   feedback.setCrosshairVisible(true);
   if (mode === 'start') {
     if (savedMission && !savedMission.won && mission.day > 1 && Number.isFinite(savedMission.food)) gauges.food = savedMission.food;
+    if (mission.day === 1) {
+      gauges.oxygen = DAYS.DAY1_START.OXYGEN_PERCENT; // the Training Day has you make oxygen…
+      gauges.food = DAYS.DAY1_START.FOOD_PERCENT; // …and eat breakfast
+    }
     saveMission();
     hud.showLocation('habitat');
     // Volt runs the first-day tour (it points at the gauge rings in step 2), or says hello.
@@ -1045,7 +1049,7 @@ function reactToGauges(report, sun) {
       'low',
     );
   }
-  if (c.food) voltEvent('food-low', 'Food low', 'Food is low! Press F to eat a potato, or grow more in the greenhouse pots.', 'low');
+  if (c.food) voltEvent('food-low', 'Food low', 'Food is low! Press F to eat, or grow more in the greenhouse pots.', 'low');
   if (c.power) voltEvent('power-low', 'Base power low', 'Base power is low! The battery needs sunlight on the solar array.', 'low');
   if (wasPowered !== report.hasPower) {
     wasPowered = report.hasPower;
@@ -1404,7 +1408,7 @@ renderer.setAnimationLoop(() => {
     shift: (() => {
       const info = shiftInfo(day.gameSeconds);
       const left = info.secondsLeft / training.pace();
-      // the Training Day runs the clock 20× slower: no countdown until Volt's tour is done
+      // the Training Day runs the clock slower: no countdown until Volt's tour is done
       return { count: DAYS.COUNT, left: training.active ? null : fmtCountdown(left), ending: !training.active && left < 30 };
     })(),
     station,

@@ -31,7 +31,7 @@ export function createTrainingReportInstance({ root, ctx, done }) {
             (c) => `<li class="ez-res ez-tone-power">${IC.check}<span><b>${c.title}</b> ${c.learned}</span></li>`,
           ).join('')}
         </ul>
-        <p class="ez-p ez-center">From now on, time runs at normal speed: 1 day on the base = ${minutes} minutes of play.</p>
+        <p class="ez-p ez-center">From now on, time runs at normal speed. Keep everything going until 19:00 to finish the day: each day lasts ${minutes / 2} minutes of play.</p>
         <div class="ez-row ez-row-center"><button class="ez-btn ez-btn-go ez-btn-xl" data-go>${IC.back}<span>Start my mission</span></button></div>
       </div>
       <p class="ez-status" aria-live="polite">Training day complete.</p>

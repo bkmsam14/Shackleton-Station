@@ -61,7 +61,7 @@ export function createTraining({ root, assistant, actions }) {
           badge.title =
             p >= 1
               ? 'The storm drill runs at normal speed.'
-              : `Time runs ${Math.round(1 / p)}× slower today so you can learn. Normally 1 day on the base = ${Math.round(TIME.REAL_SECONDS_PER_GAME_DAY / 60)} minutes of play.`;
+              : `Time runs ${Math.round(1 / p)}× slower during training so you can learn. Normally each day is a ${Math.round(TIME.REAL_SECONDS_PER_GAME_DAY / 120)}-minute shift: survive until 19:00!`;
         }
       }
     },
