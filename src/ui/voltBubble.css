@@ -123,12 +123,6 @@
   font-size: 15px;
   font-weight: 700;
 }
-.volt-skip {
-  font-family: var(--font-body);
-  font-size: 16px;
-  font-weight: 700;
-  color: #3a4566; /* 9:1 on the bubble */
-}
 /* words left up after Volt finished talking: a little quieter, still readable */
 .volt-say.is-staying.is-on {
   opacity: 0.92;

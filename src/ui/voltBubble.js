@@ -5,7 +5,6 @@
 import * as THREE from 'three';
 import { voltBot } from '../instances/electrolysis/icons.js';
 import { ASSISTANT } from '../config/gameplay.js';
-import { TOUR_SKIP_HINT } from '../data/voltLines.js';
 import './voltBubble.css';
 
 const EDGE_MARGIN = 64; // px from the screen edge for the docked marker
@@ -22,7 +21,6 @@ export function createVoltBubble(root, { onNext = null } = {}) {
     <div class="volt-bubble"><p class="volt-text"></p>
       <div class="volt-tour" hidden>
         <button type="button" class="volt-next">Next <span aria-hidden="true">▶</span><kbd>Enter</kbd></button>
-        <span class="volt-skip">${TOUR_SKIP_HINT}</span>
       </div></div>`;
   root.appendChild(el);
   const pin = el.querySelector('.volt-pin');
