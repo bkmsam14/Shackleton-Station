@@ -103,9 +103,38 @@ Shielding is **mass**, not an energy shield. The storm shelter walls are water t
 
 Not in the alpha: ice mining, comms dish, supply lander, upgrades, touch controls, real terrain. Design the code so these slot in later.
 
+## Build status (v0.11.0 + later changes on main, Nov 2026)
+
+What exists in the game today, against the plan above. Details are in `CHANGELOG.md`.
+
+| Plan item | Status |
+|---|---|
+| M0–M3 scaffold, world, player, survival | **Done.** Oxygen became one shared supply (team decision), and food drains faster outside. |
+| M4 Electrolysis instance | **Done:** 3 mini-games (Molecule Zapper, Bubble Detective, Atom Match), water + power costs, quiz, mastery. |
+| M4 Greenhouse instance | **Partly.** Farming exists: plant, water and harvest potato, lettuce and radish, eat with F, and the real growth time is shown. Missing: the LED light-level choice and the water cost for watering (watering doesn't use the water tank). |
+| M4 Solar instance | **Different:** *Solar Fix* repairs micrometeorite-damaged cells (photons, circuits, series chains). Aiming the panel, brushing dust and the dark-period forecast are not built. |
+| M5 Solar flare QTE | **Done:** real DONKI + RadLab storms, storm shelter, water walls, storm report card. |
+| M5 Micrometeorite leak QTE | **Not built.** Micrometeorites hit the *solar array* instead (power drop + Solar Fix). |
+| M6 Polish | **Done:** title screen, Calm / Stormy / Live picker, sound (suit breathing, habitat hum, airlock, alarms), credits, quality toggle. (The Calm data file is missing; see CLAUDE.md "Known issues".) |
+| Ice mining (after alpha) | **Done:** cold-trap crater, Ice Drill, Ice Oven, LCROSS ice share. |
+| Supply lander (after alpha) | **Partly:** supply terminal with the real light delay and crates landing on the pad. No scheduled food/seed deliveries every few days. |
+| Real terrain (after alpha) | **Done:** NASA LRO LOLA Shackleton rim. |
+| Comms dish | **Not built** (supply orders already use the 1.28 s light delay). |
+| Lander dust, moonquake, dark-period machine choice | **Not built** (only a grow-lights switch). |
+| Missions, science points, upgrades, crew-swap goal, end screen | **Not built.** |
+| Water gauge | **Off** (`ENABLE_WATER_GAUGE`); the Electrolysis water tank is shown in the PDA. |
+| Touch controls | **Not built** (some mini-games accept taps). |
+| Extra, not in this plan | Volt the helper robot + 19-step Training Day, telescope Star Hunt with real stars, Live sky, first-person airlock cycle, helmet visor, balance bots (`npm run balance`). |
+
 ## Look and feel
 
-- Clean, consistent low-poly style. Black sky; gray regolith in several shades; warm sun orange (#FFB547), cyan (#4FD1E8) for UI and habitat lights, greenhouse green (#7BE0A0), alert orange-red (#FF7A59).
-- Fonts: Fredoka for headings, Nunito for body text (Google Fonts).
-- The HUD sits in the corners and stays readable on bright and dark backgrounds (use semi-opaque panels).
+- Stylized, semi-realistic and smooth-shaded (v0.2.1 and the later graphics overhaul replaced
+  the original low-poly look; rocks stay angular). Black sky; gray regolith in several shades;
+  warm sun orange (#FFB547), cyan (#4FD1E8) for UI and habitat lights, greenhouse green
+  (#7BE0A0), alert orange-red (#FF7A59).
+- Fonts: Fredoka for headings, Nunito for body text (self-hosted via Fontsource, so they work
+  offline).
+- The HUD sits in the corners and stays readable on bright and dark backgrounds. Team decision:
+  it's minimal, with rings and numbers and a soft dark halo instead of panels. Oxygen is blue,
+  food green, amber = low, red = critical. Explanations live in the PDA (Tab).
 - Juice: gauges pulse when low, a small camera shake for moonquakes, a soft click on every interaction, smooth fades into and out of instances.

@@ -1,21 +1,23 @@
-# Shackleton Station — Demo 0
+# Shackleton Station
 
-A browser-based 3D survival sandbox for kids (7–12) at the Moon's south pole.
-NASA Space Apps Challenge 2026. No download, no account.
+A browser-based 3D survival sandbox for kids (7–12) at the Moon's south pole, built for the
+NASA Space Apps Challenge 2026. No download, no account. Version **0.11.0** (plus newer changes
+on `main`, see `CHANGELOG.md`).
 
 ## Run it
 
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # pure-logic unit tests (gauges, day cycle, collision)
+npm test         # pure-logic unit tests (175)
+npm run balance  # bots play a lunar day on the real rules (balance check)
 npm run build    # production build in dist/ (base path /Shackleton-Station/)
 ```
 
 If `npm install` cannot reach registry.npmjs.org on your network, add
 `--registry=https://registry.yarnpkg.com` (official npm mirror).
 
-GitHub Pages: `.github/workflows/deploy.yml` is **manual only** — pushing does not deploy.
+GitHub Pages: `.github/workflows/deploy.yml` is **manual only**, so pushing does not deploy.
 To publish: *Actions → Deploy to GitHub Pages → Run workflow* (and set
 *Settings → Pages → Source: GitHub Actions* once).
 
@@ -27,59 +29,69 @@ To publish: *Actions → Deploy to GitHub Pages → Run workflow* (and set
 | W A S D / arrows | Walk |
 | Shift | Hop faster |
 | Space | Jump — Moon gravity is 1/6 of Earth's |
-| E | Use / open doors / start a station mini-game |
-| Click or Space | Zap water molecules in the Electrolysis mini-game (Esc leaves it) |
-| Tab | PDA: detailed stats, Databank (science + NASA sources), log |
-| E (looking at Volt) | Ask Volt for a tip |
-| Esc | Pause (credits + time notes, Low/High graphics) |
+| E | Use / open doors / start a station mini-game / talk to Volt (look at him) |
+| F | Eat (fresh greens first, then potatoes) |
+| Tab | PDA: detailed stats, Databank (science + NASA sources), Star Album, log |
+| Enter | Next step in Volt's Training Day |
+| Esc | Pause (time notes, credits, graphics, sound, Volt settings) — or leave a mini-game |
 
-## Performance check
+Mini-games show their own controls (e.g. click/Space to zap, S for the Ice Drill scanner).
 
-Add `?fps` to the URL (e.g. `http://localhost:5173/?fps`) to show fps, frame time and draw
-calls. Measurements and the cost of each effect are in `docs/PERFORMANCE.md`.
+## What is in the game
 
-## What is in Demo 0
+- **Base at the real Shackleton crater rim** (NASA LRO LOLA terrain), a habitat (sleeping nook
+  with a storm shelter, lounge + galley, work bay), a greenhouse, a vertical solar array, a
+  cold-trap crater, a telescope and a cargo pad.
+- **Sky:** black sky with 1,640 real stars, a low Sun circling the horizon and Earth near it.
+  **Live sky** mode shows the real Sun, Earth and stars over the south pole right now.
+- **Gauges:**
+  - **Oxygen** (blue ring) is one shared supply for habitat + greenhouse + suit.
+  - **Food** (green ring).
+  - **Base power** (battery, top-centre).
+  - A **dose ring** appears around particle storms.
+  - Drain rates use NASA BVAD (2022) values; see `docs/SCIENCE.md`.
+- **Lessons / mini-games:** Electrolysis (3 games: Molecule Zapper, Bubble Detective, Atom
+  Match), Solar Fix, Ice Drill + Ice Oven, Water Walls, Telescope Star Hunt.
+- **Farming:** potato, lettuce and radish in grow pots; F to eat. A grow-lights switch trades
+  power for food.
+- **Supply terminal:** order kits, water, seeds and battery packs with the real light delay
+  (1.28 s); crates land on the pad.
+- **Particle storms** from real NASA DONKI + RadLab data: *Calm · Dec 2019* / *Stormy · May 2024*
+  replays, or *Live*. Get to the storm shelter; water in its walls blocks more, but can't make
+  oxygen. (Known issue: the Calm data file is missing, so Calm currently plays the Stormy replay.
+  See CLAUDE.md.)
+- **Airlock cycle** seen from inside, with a pressure gauge and air sounds; a helmet visor
+  outside.
+- **Volt**, a helper robot with a voice, guides Day 1 (the Training Day) and gives tips and
+  sourced facts.
+- **Gentle failure:** you wake up in the habitat, time passes, and there's no death screen.
 
-- Spawn inside the habitat → airlock → lunar south-pole surface (black sky, stars, Sun
-  1.5° above the horizon, long shadows, Earth low on the horizon with real phase).
-- Tall vertical solar array that turns to follow the Sun.
-- Greenhouse with grow racks under red + blue LEDs.
-- Gauges: **Oxygen** (one shared supply for habitat + greenhouse + suit) and **Food**
-  (bottom-left), and **Base Power** (whole base, top-right). Drain rates use NASA BVAD (2022)
-  values — see `docs/SCIENCE.md`. Oxygen is refilled only at the Electrolysis unit (below).
-- Gentle failure: wake up in the habitat, time passes, no death screen.
-- **Electrolysis mini-game "Molecule Zapper" (v0.3.0):** in the habitat work bay, press E. Pick a
-  batch (Small / Medium / Big, costs shown up front), zap H₂O molecules and watch the H₂ tube fill
-  twice as fast as the O₂ tube, answer one quiz question, and earn 1–3 stars (bronze / silver /
-  gold mastery, saved). Each batch costs water from the unit's own tank (1.125 kg per kg O₂) and
-  base power (physics minimum 4.96 kWh per kg O₂, NIST), and the base clock moves on by the real
-  ISS production time.
-- The grow racks still show a "Coming soon" lesson toast.
-- **Volt, the helper robot (v0.4.0):** a small wheeled robot follows you, runs a 7-step
-  learn-by-doing first-day tour, warns when a gauge gets low (and says how to fix it), and shares
-  sourced science facts now and then. Look at Volt and press E for a tip. Volt speaks out loud
-  in a cute robot voice (eSpeak engine + robot effects; GPL-3.0, see public/CREDITS.md). Pause menu: how often
-  Volt talks (Chatty / Helpful / Quiet), his voice On / Off, and Replay / Skip the tour.
-
-- **Solar storms + storm shelter (v0.5.0):** pick a Sun on the start screen (Calm Dec 2019 /
-  Stormy May 2024 replays of real NASA DONKI + RadLab data, or Live). When a real flare is
-  replayed, get to the storm shelter in the sleeping nook before the particles arrive. Pump water
-  into the shelter walls for more protection — but that water can't make oxygen.
-
-### Updating the space-weather data
+## Updating real data
 
 ```bash
-NASA_API_KEY=your_key node scripts/fetch-space-weather.mjs   # writes public/data/space-weather-*.json
+NASA_API_KEY=your_key node scripts/fetch-space-weather.mjs   # public/data/space-weather-*.json
+node scripts/fetch-stars.mjs                                 # public/data/stars-bsc.json
+node scripts/fetch-lola.mjs                                  # src/data/lolaTerrain.js
 ```
 
 Get a free key at https://api.nasa.gov (the shared `DEMO_KEY` is rate-limited). For Live mode in
 the browser, put `VITE_NASA_API_KEY=your_key` in `.env` (never committed).
 
+## Performance check
+
+Add `?fps` to the URL (e.g. `http://localhost:5173/?fps`) to show fps, frame time and draw
+calls. Graphics Low/High is in the start and pause menus; on High, ambient occlusion turns
+itself off if frames get slow. See `docs/PERFORMANCE.md`.
+
 ## Where things live
 
-- `src/config/gameplay.js` — every rate and cost (sourced, or marked GAME BALANCE)
-- `src/systems/` — pure logic (no Three.js): gauges, day cycle, save
-- `src/world/` — terrain, sky, lighting, buildings (one model function per object)
-- `src/player/` — controller, collision, interaction
-- `src/ui/` — HUD, menus, prompts, toasts
-- `docs/SCIENCE.md` — every fact and number with its source
+- `src/config/gameplay.js`: every rate and cost (sourced, or marked GAME BALANCE).
+- `src/systems/`: pure logic, no Three.js, unit-tested (gauges, day cycle, electrolysis,
+  radiation, space weather, ice mining, airlock, Volt's brain, navigation, live sky, balance
+  bots).
+- `src/world/`: terrain, sky, lighting, buildings, Volt, guide trail.
+- `src/instances/`: the 2D lessons and mini-games.
+- `src/farming/`, `src/supply/`, `src/training/`: farming, supplies, Training Day.
+- `src/ui/`: HUD, PDA, menus, Volt's bubble and voice, visor, sounds.
+- `docs/SCIENCE.md`: every fact and number with its source. `docs/GAME_DESIGN.md`: the design.
+- `CLAUDE.md`: project rules, current state, what's not built yet, known issues.

@@ -2,6 +2,15 @@
 
 Budget (CLAUDE.md): 60 fps on a mid-range laptop = **16.7 ms per frame**.
 
+> **Out of date.** These numbers were measured at v0.2.0–0.2.1, before the real LOLA terrain,
+> real stars, Volt, farming, supply, airlock room, helmet visor and the graphics overhaul (ACES
+> tone mapping, procedural textures, brighter outdoor exposure). Re-measure the same three views
+> with the method below (or with `?fps` on a real laptop) before quoting them.
+>
+> What still holds: Low quality renders without post-processing, and on High the AO pass turns
+> itself off if frames average more than ~17.5 ms. Interiors are drawn only when you are inside
+> them.
+
 ## How these numbers were measured
 
 - Machine: **Intel UHD Graphics (integrated, ANGLE / Direct3D 11)**, Chrome-based browser.

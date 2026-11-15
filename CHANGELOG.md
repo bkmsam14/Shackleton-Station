@@ -1,5 +1,45 @@
 # Changelog — Shackleton Station
 
+## Unreleased — on main after 0.11.0
+
+Merged after the 0.11.0 balance pass; `package.json` still says 0.11.0.
+
+### Gameplay
+- **Three electrolysis mini-games.** The station picks one at random (never the same twice in
+  a row, and leaving doesn't re-roll it):
+  - **Molecule Zapper**
+  - **Bubble Detective:** H₂ at the − plate, O₂ at the +, 2 : 1.
+  - **Atom Match:** 2 H₂O → 2 H₂ + O₂, no atom lost.
+
+  First-time "How to play" cards use looping pictures (`ui/tutorial.js`). Volt explains the
+  idea, gives one-time tips and a "What really happened" recap. Batch, cost and quiz are the same
+  for every game.
+- **Helmet visor outside:** you see through a spacesuit helmet (visor rim, glass tint and
+  reflections, chin at the bottom). It's one SVG under the HUD, so it costs no GPU time, and the
+  HUD moves inward while the suit is on. The helmet goes on in the airlock after the hatch
+  closes, before the air is pumped out, and comes off once the pressure is back.
+- **Climbable airlock stairs:** the stairs used to be a wall. `world/ground.js` now gives them a
+  smooth walkable height for the player, Volt and the guide trail, with thin walls under the
+  handrails. "E to enter" is now at the hatch at the top of the stairs (interactables can set a
+  `reach`).
+- **Tidier work bay:** the decorative crates are gone and the Supply terminal stands alone. The
+  console desk is replaced by BASE STATUS / COMMS wall screens. The Ice Oven moved to the −Z wall,
+  with its water pipe running into the Electrolysis tank.
+- **Training Day step:** after the Ice Oven, visit the telescope (Star Hunt). The storm drill
+  then starts while you're outside, with the real warning time (about 45 s of play) to get back
+  to the shelter. TOUR_VERSION 3.
+
+### Look
+- **Stylized semi-realistic graphics overhaul (visuals only):**
+  - **Textures:** procedural PBR textures made at start-up, with no download (wall plates with
+    seams and screws, perforated floor, solar cells, soil).
+  - **Palette and indoor light:** a shared palette, and indoors warm light from above with a soft
+    blue-purple bounce.
+  - **Post-processing:** ACES Filmic tone mapping (replaces AgX), slight saturation, a subtle
+    vignette and softer bloom.
+- **Brighter outside:** camera exposure 1.8 outdoors, plus more fill, earthshine and ground
+  reflection, so kids can see. The sky stays black and shadows stay sharp; indoors is unchanged.
+
 ## 0.11.0 — Game balance: challenging, not crushing
 
 ### Gameplay
@@ -110,6 +150,25 @@
   `data/stars.js`, `data/constellations.js` (+ tests), `world/telescope.js`,
   `instances/telescope/`; `world/sky.js` draws the real stars; `getSun()` returns `skyTurnDeg`.
 
+## Guided Training Day + tutorial guidance — merged after 0.6.0 (no version number)
+
+- **Training Day:** Volt's first-day tour becomes a 19-step guided Day 1 (`data/trainingDay.js`):
+  gauges, PDA, electrolysis, a supply order (light delay), eating, planting and watering, a
+  micrometeorite hit, a cargo landing, Solar Fix, ice drill + oven, a storm drill (shelter +
+  water walls + real-storm card), harvest, then a report card.
+- **Pace:** the base clock runs 20× slower while training (`TRAINING.PACE`), but the storm drill
+  runs at normal speed. There are no random events on Day 1; scripted ones fire as Volt says the
+  line.
+- **Controls:** a "Next ▶ Enter" button passes a step and Esc skips the tour. Day 1 (and a page
+  reload) always starts the Training Day from step 1, including for players who finished the
+  old 7-step tour.
+- **Guidance:**
+  - `systems/navigation.js` builds walkable grids from the colliders and finds paths with A* +
+    line-of-sight smoothing.
+  - `world/guide.js` draws a chevron trail to the next spot (routed through doors), an arrow
+    above the machine and a circle where you stand.
+  - Volt rolls ahead along the trail and never clips walls or furniture.
+
 ## 0.6.0 — Ice mining: make water from Moon ice
 
 ### Gameplay
@@ -135,6 +194,25 @@
 ### Code
 - `systems/iceMining.js` (pure rules + tests), `world/iceSite.js`, `world/iceOven.js`,
   `instances/iceDrill/`, `instances/iceOven/`; `computePowerFlow` takes `extraLoadKw`.
+
+## Supply terminal, cargo pad and Solar Fix — merged after 0.5.0 (no version number)
+
+- **Supply terminal** in the habitat work bay ([E] Request Supplies): pick supplies and
+  quantities, and see cargo mass (60 kg lander limit), light delay and arrival time.
+  - **Order stages:** transmitting → Mission Control review → approval → preparing → in
+    transit → landing → arrived → collected, shown with a live countdown.
+  - **Communication delay:** 384,400 km ÷ the speed of light = 1.28 s each way, always in real
+    time (not sped up). Orders keep moving in the background.
+- **Cargo pad** east of the habitat: crates land on thrusters (no air, so no parachutes) and
+  throw up regolith dust. It holds up to 6 crates; extra cargo waits in orbit.
+- **Opening a crate:** [E] Open Cargo Crate, tick the items you want and collect them. Repair
+  kits and seeds go to the inventory, water to the Electrolysis tank, battery packs to the base
+  battery. Orders, crates and IDs (SR-001…) persist across reloads.
+- **Solar array damage + Solar Fix:** micrometeorite hits drop the array to 40 % output (game
+  balance). [E] at the damaged array with a repair kit opens the Solar Fix lesson: free
+  electrons with photons, close the circuit (DC), swap cracked cells in series chains, then a
+  quiz. Sources: U.S. EIA, U.S. DOE PV Cells 101, PVEducation, NASA Moon Fact Sheet.
+  Tests: `tests/supply.test.js`.
 
 ## 0.5.0 — Solar storms, storm shelter and water walls (real DONKI + RadLab data)
 
@@ -174,6 +252,19 @@
   `instances/stormReport`. 14 new tests (68 total).
 - Volt's speech synthesis now runs in a **Web Worker**, so the game no longer freezes for a
   moment each time he speaks (most noticeable on slow laptops).
+
+## Potato farming — merged after 0.4.0 (no version number)
+
+- **Grow pots** in the greenhouse, in the gap between the rack runs.
+- **Close-up pot view (E):** drag the seed potato into the soil, cover it, and tilt the watering
+  can. The plant grows under the grow lights, only while base power is on.
+- **Harvest:** each snip of a leafy stem pulls it up with its potato hanging from the root
+  (potatoes grow underground, not on the leaves).
+- **Eating:** an inventory panel (bottom-right), and F eats a potato through `addFood()`
+  (the twin of `addOxygen()`). You can't eat the last seed potato while nothing is planted.
+- **Food value:** derived in `gameplay.js` from grow time and the BVAD hunger rate (0.8 kg/day),
+  so a full farm feeds a resting astronaut (raised to 1.4× in 0.11.0). Pots and inventory are
+  saved.
 
 ## 0.4.0 — Volt, the helper robot
 

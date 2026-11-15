@@ -28,7 +28,9 @@ The challenge brief: kids must experience real engineering trade-offs (life supp
 
 - **Vite** + **Three.js** (ES modules, plain JavaScript, no TypeScript unless the team decides otherwise)
 - `three/examples/jsm` addons: `PointerLockControls`, `GLTFLoader`, `RoomEnvironment` (PMREM)
-- Post-processing (team decision, polish pass): pmndrs `postprocessing` + `n8ao` — N8AO ambient occlusion (indoors only) + subtle bloom + AgX tone mapping + FXAA, **High quality only**; AO switches itself off if frames get slow. Low quality renders directly.
+- Post-processing (team decision): pmndrs `postprocessing` + `n8ao` — N8AO ambient occlusion (indoors only) + soft bloom + **ACES Filmic** tone mapping (graphics overhaul; replaced AgX) + slight saturation + subtle vignette + FXAA, **High quality only**; AO switches itself off if frames get slow. Low quality renders directly (still ACES). Outdoors the camera exposure is 1.8 so kids can see; the sky stays black.
+- Textures: CC0 sets in `public/textures/` (see `public/CREDITS.md`) plus **procedural PBR textures** made at start-up (`world/proceduralTextures.js`, no download).
+- Volt's voice: `mespeak` (eSpeak, GPL-3.0) in a Web Worker (`ui/voltVoice.worker.js`); `vite.config.js` reads its ESpeak.js as Latin-1. Falls back to the browser voice.
 - HTML/CSS for the HUD and all instances. Keep game logic out of the DOM code.
 - Physics: none at first. Use a simple ground-height sample plus capsule collision. Add `@dimforge/rapier3d-compat` only if it is really needed.
 - Save data: `localStorage`, wrapped in try/catch (it can be unavailable)
@@ -39,34 +41,42 @@ The challenge brief: kids must experience real engineering trade-offs (life supp
 
 ```
 src/
-  main.js              # boot, game loop
+  main.js              # boot, game loop, modes (start/playing/paused/busy/pda/instance)
   config/
     gameplay.js        # ALL rates, timings, costs (with source comments)
-  world/               # terrain, lighting, sky, Earth, sun, buildings
-  player/              # first-person controls, suit, interaction raycast
-  systems/
-    gauges.js          # gauge state + drain/refill (pure logic, unit-testable)
-    daycycle.js        # sunlight / dark periods → solar power
-    events.js          # QTE scheduler (flare, leak, ...)
-    mastery.js         # per-station mastery levels (bronze/silver/gold)
-    save.js
-  instances/
-    InstanceManager.js # opens/closes overlays, pauses world
-    electrolysis/      # each instance: index.js + style.css + content.js
-    greenhouse/
-    solar/
-  data/
-    donki.js           # fetch live DONKI + load archived JSON fallback
-    facts.js           # loads public/data/facts.json
-  ui/                  # HUD, prompts, menus, credits screen
+  world/               # LOLA terrain, sky + real stars, lighting, habitat, greenhouse,
+                       # airlock room, solar array, ice site + oven, telescope, Volt, guide trail
+  player/              # first-person controls, collision, input, interaction
+  systems/             # PURE logic (no Three.js), all unit-tested:
+    gauges.js            gauge drain/refill, power flow (addOxygen / addFood)
+    daycycle.js          game + live clocks, Sun position, real-horizon visibility
+    electrolysis.js      batch costs (water, power, time)   mastery.js  bronze/silver/gold
+    radiation.js         storm phases, dose, water walls    spaceWeather.js  DONKI → storms
+    iceMining.js         LCROSS ice share, bag, dig spots   airlock.js  cycle steps
+    assistant.js         Volt's brain (tour, tips, cooldown) navigation.js  A* walk grids
+    ephemeris.js / skyMath.js   live sky (IAU, USNO), star placement
+    balanceSim.js        bots that play the real rules (npm run balance)
+    save.js, speechText.js, tutorials.js
+  instances/           # 2D lessons/mini-games (InstanceManager pauses the world)
+    electrolysis/  solar/  iceDrill/  iceOven/  waterWalls/  telescope/
+    stormReport/  trainingReport/
+  farming/             # grow pots (potato, lettuce, radish), inventory, eating
+  supply/              # supply terminal, light-delay orders, cargo pad, solar damage
+  training/            # Training Day (Day 1 guided by Volt)
+  data/                # databank, Volt lines, Training Day script, stars, constellations,
+                       # LOLA terrain, space-weather loader
+  ui/                  # HUD, PDA, menus, Volt bubble + voice, visor, sounds, tutorials
 public/
   data/
-    donki-flr-2024-05.json   # archived real DONKI flares (Stormy Sun)
-    donki-flr-2019-12.json   # archived real DONKI flares (Calm Sun)
-    facts.json               # every in-game fact + source URL
-  models/  audio/  textures/
+    facts.json                 # every in-game fact + source URL
+    space-weather-2024-05.json # archived real DONKI + RadLab data (Stormy Sun)
+    stars-bsc.json             # Yale Bright Star Catalog (NASA HEASARC)
+    # space-weather-2019-12.json (Calm Sun) is MISSING — see "Known issues"
+  textures/  CREDITS.md
+scripts/               # fetch-lola, fetch-space-weather, fetch-stars, balance-sim
+tests/                 # node --test (175 tests)
 docs/
-  GAME_DESIGN.md  SCIENCE.md
+  GAME_DESIGN.md  SCIENCE.md  PERFORMANCE.md  screenshots/
 ```
 
 Keep the systems (`systems/`) as pure logic with no Three.js imports, so they can be tested and tuned on their own.
@@ -75,31 +85,68 @@ Keep the systems (`systems/`) as pure logic with no Three.js imports, so they ca
 
 - One feature per session. Make a small commit after each working step, with a clear message.
 - After every change: `npm run dev` must start with no console errors. Check the browser console.
-- Performance budget: 60 fps on a mid-range laptop. One shadow-casting directional light, low-poly models, textures 1024px at most, total download around 30 MB at most. Add a Low/High quality toggle.
+- Performance budget: 60 fps on a mid-range laptop. One shadow-casting directional light, light models (merge static meshes per material, instance repeats), textures 1024px at most, total download around 30 MB at most. Add a Low/High quality toggle.
 - Placeholder art is fine: simple shapes in one **clean, smooth-shaded style** (v0.2.1 team decision: rounded/bevelled edges, smooth shading, no faceted low-poly look; rocks may stay angular). A teammate will swap in real models (glTF) later. Keep model loading behind one function so swapping is easy.
 - When you add an in-game fact, add it to `public/data/facts.json` with a `source` URL at the same time.
 - If something in the design conflicts with these rules, the rules win. Mention the conflict to the user.
 
-## Current target: Demo 0 (build this first, nothing more)
+## Current state (v0.11.0 + unreleased changes on main)
 
-The user wants to see this before anything else gets built:
+Demo 0 is long done; see `CHANGELOG.md` for every version. What the game has now:
 
-1. **Spawn inside the habitat**, in first person, as the astronaut.
-2. **Exit the habitat** through an airlock/door onto the lunar south-pole surface (low Sun, long hard shadows, black sky, stars, Earth near the horizon).
-3. **See the solar panel array** outside: a tall vertical array that slowly turns to follow the Sun.
-4. **Walk to the greenhouse and enter it**: an interior with grow racks under pink-purple (red and blue) LED light.
-5. **Three gauges:**
-   - **Oxygen** (shown in the astronaut panel): **one shared oxygen supply for the habitat, greenhouse and suit together** (team decision, Nov 2026). The suit is assumed to stay topped up from it. It drains slowly while the astronaut is inside and faster outside (BVAD spacewalk rate). **Nothing refills it in Demo 0**: making oxygen comes with the electrolysis mini-game, which will call `addOxygen()` in `systems/gauges.js` and pay its own water + power cost.
-   - **Food / hunger** (astronaut): drains slowly all the time.
-   - **Power** (the whole base, not the astronaut): shown **separately from the astronaut rings**, top-centre. **Team decision (polish pass):** a large readout ("BASE POWER" label + 5-cell battery + % + charging/draining arrow) inside pressurized modules; outside the same battery + % shows smaller, without the label. Gauge colours: oxygen blue, food green; amber = low, red = critical. Details are in the PDA (Tab). It drains with base load and recharges from the solar array while it's in sunlight.
-6. Interaction prompt ("Press E to open door") and smooth inside/outside transitions.
-7. Gentle failure: if Oxygen or Food reaches 0, fade out and wake up in the habitat (no death screen).
+- **World:** real Shackleton-rim terrain (NASA LOLA), real stars, an optional Live sky, a habitat
+  (sleeping nook, lounge + galley, work bay, storm shelter), a greenhouse with grow pots, a
+  vertical solar array, a cold-trap crater for ice, a telescope, a cargo pad, and a first-person
+  airlock cycle with a helmet visor outside.
+- **Gauges (rules that still hold):**
+  - **Oxygen:** one shared supply for habitat + greenhouse + suit. It drains faster outside
+    (BVAD spacewalk rate) and is refilled **only** by Electrolysis, which costs water and power.
+    Each airlock cycle loses 0.03 kg.
+  - **Food:** drains faster outside (BVAD) and is refilled by eating farm crops (F).
+  - **Base power:** shown separately, top-centre. It's large inside modules and smaller outside.
+    A blackout stops the machines.
+  - **Colours:** oxygen blue, food green; amber = low, red = critical.
+  - **Dose ring:** a 4th ring, shown only around particle storms.
+  - **Water:** the Electrolysis water tank is shown in the PDA, but there is no water gauge
+    (`ENABLE_WATER_GAUGE` = false).
+- **Lessons / mini-games:**
+  - Electrolysis (3 games, picked at random)
+  - Solar Fix (repair the array after a micrometeorite hit)
+  - Ice Drill + Ice Oven
+  - Water Walls (shielding)
+  - Telescope Star Hunt
+  - Storm report and Training Day report cards
+- **Events:** particle storms from real DONKI + RadLab data (Calm / Stormy replays or Live) and
+  random micrometeorite hits on the solar array.
+- **Volt:** a helper robot with a voice. He runs a 19-step Training Day on Day 1 (base clock 20×
+  slower), with a ground trail and machine markers.
+- **Supply:** orders with the real light delay (1.28 s), a 60 kg lander limit, and crates that
+  land on the pad.
+- **Balance:** `npm run balance` (bot playthroughs); targets are locked in `tests/balance.test.js`.
 
-**Not in Demo 0:** instances/mini-games, risk events (QTEs), water gauge, missions, upgrades, real NASA terrain, touch controls. Leave clean hooks for them (for example, interactable stations as objects with an `onInteract` that currently shows a "Coming soon: Electrolysis lesson" toast).
+### Not built yet (from `docs/GAME_DESIGN.md`)
+- Habitat micrometeorite **leak** QTE (find and patch), **moonquake**, **lander dust** on the
+  panels, and the dark-period "choose machines to turn off" event (only the grow-lights switch
+  exists).
+- **Comms dish** instance. **Scheduled supply landers** every few days with food (today you
+  order kits, water, seeds and battery packs at the terminal; there is no food item, so food
+  comes only from the farm).
+- **Missions:** Mission Control tasks, science points, upgrades, the crew-swap goal and an end
+  screen with stars.
+- **Water gauge**, greenhouse LED light-level choice, BPS data hub facts, touch controls,
+  glTF models.
+
+### Known issues
+- **Calm Sun data is missing:** `public/data/space-weather-2019-12.json` was never committed.
+  Picking "Calm · Dec 2019" logs a warning and silently plays the Stormy May 2024 replay. Run
+  `scripts/fetch-space-weather.mjs` (with a NASA API key) and commit the file.
+- `package.json` still says 0.11.0, although more features were merged after it (see
+  "Unreleased" in `CHANGELOG.md`).
+- `docs/PERFORMANCE.md` numbers predate the 0.3–0.11 features.
 
 ## Required NASA sources (the user says these MUST be used)
 
-Demo 0 only needs the BVAD (for realistic *relative* drain rates). Use the others when building the educational mini-games and events:
+All four are required by the team; three are in use (see Status below):
 
 | Source | What it is | Use it for |
 |---|---|---|
@@ -108,10 +155,15 @@ Demo 0 only needs the BVAD (for realistic *relative* drain rates). Use the other
 | https://visualization.osdr.nasa.gov/radlab/gui/overview/ | RadLab: radiation telemetry from several space agencies (ISS/LEO and beyond-LEO instruments), with a Data API and CSV/TSV/JSON export | Radiation dose facts and the flare/shelter event. ISS values are low Earth orbit, **not** Moon values: label them that way. |
 | https://ccmc.gsfc.nasa.gov/donki/ | DONKI space weather database (flares, CMEs, SEPs), with web search and an API (also through https://api.nasa.gov/) | Real solar flare events for the radiation QTE. DONKI calls its real-time data "science and prototyping quality", so say "based on" in the game. |
 
-**Status (v0.5.0):** BVAD values are in `docs/SCIENCE.md` §1 and `src/config/gameplay.js`. **DONKI** (flare alerts + SEP events) and **RadLab** (CRaTER on LRO, ISS Timepix) drive the particle-storm feature: archives are made by `scripts/fetch-space-weather.mjs` into `public/data/space-weather-*.json`; Live mode fetches DONKI at runtime. The **BPS data hub** is still unused (planned for the greenhouse, which a teammate is building).
+**Status (v0.11.0):**
+- **BVAD:** values are in `docs/SCIENCE.md` and `src/config/gameplay.js` (oxygen, food, water, spacewalk rates).
+- **DONKI** (flare alerts + SEP events) and **RadLab** (CRaTER on LRO, ISS Timepix): drive the particle storms. `scripts/fetch-space-weather.mjs` writes the archives to `public/data/space-weather-*.json`, and Live mode fetches DONKI at runtime.
+- **BPS data hub:** still unused (planned for greenhouse facts).
+- **Other NASA data now in the game:** LRO LOLA terrain (`scripts/fetch-lola.mjs`), the Yale Bright Star Catalog via NASA HEASARC (`scripts/fetch-stars.mjs`), IAU / JPL NAIF Moon orientation and USNO Sun formulas for the Live sky, LCROSS (ice share) and LRO Diviner (cold traps).
 
 ## Open decisions (ask the user if a task depends on one)
 
-- Demo 0 uses **3 gauges** (Oxygen, Food, Power). A Water gauge may come later with the electrolysis mini-game (`ENABLE_WATER_GAUGE`, default `false`).
+- **3 gauges** (Oxygen, Food, Power) + the dose ring during storms. A Water gauge is still off (`ENABLE_WATER_GAUGE`, default `false`): the water tank lives in the PDA.
+- Version numbers: the changelog has features merged after 0.11.0 without a new version; bump `package.json` when the team agrees.
 - Controls: keyboard and mouse first; touch controls (on-screen joystick) later.
 - One astronaut (decided).
