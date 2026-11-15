@@ -2,7 +2,7 @@
 // Inside, three areas along the module:
 //   −X  sleeping nook  (bunk with curtain, shelf, Earth photo, wardrobe, rug)
 //   mid lounge + galley (sofa, Earth-view camera screen, kitchen counter, dining table, plants)
-//   +X  work bay       (life support rack, control console, lockers, electrolysis, airlock)
+//   +X  work bay       (life support rack, Ice Oven, wall screens, lockers, electrolysis, airlock)
 // createHabitatModel() builds all meshes (swap for a glTF later); createHabitat() adds
 // gameplay data: colliders, the pressurized zone, interactables and lights.
 import * as THREE from 'three';
@@ -15,7 +15,6 @@ import {
   mesh,
   pipe,
   label,
-  crate,
   createHatch,
   hazardStripeMaterial,
   rugMaterial,
@@ -395,13 +394,7 @@ function buildWorkBay(group) {
     group.add(mesh(rbox(0.03, 0.3, 0.03, 0.012), MAT.metal(), x - 0.18, FY + 1.1, 2.42));
     group.add(mesh(new THREE.BoxGeometry(0.3, 0.05, 0.01), MAT.accent(), x, FY + 1.65, 2.425));
   }
-  // storage crates in the +X/+Z corner
-  const c1 = crate(0.9, 0.7, 0.7);
-  c1.position.set(9.1, FY, 2.45);
-  const c2 = crate(0.6, 0.5, 0.55);
-  c2.position.set(9.12, FY + 0.7, 2.45);
-  c2.rotation.y = 0.15;
-  group.add(c1, c2);
+  // (the +X/+Z corner is left clear: the Supply terminal stands there on its own)
 
   // life-support rack (−Z wall)
   const lx = 5.0;
@@ -413,22 +406,18 @@ function buildWorkBay(group) {
   }
   for (let i = 0; i < 4; i++) group.add(mesh(rbox(1.0, 0.04, 0.02, 0.01), MAT.darkMetal(), lx + 0.7, FY + 0.5 + i * 0.12, -2.305));
 
-  // control console (−Z wall)
-  const cx = 8.0;
-  group.add(mesh(rbox(2.2, 0.06, 0.78, 0.02), MAT.painted(0xe2e6ea), cx, FY + 0.77, -2.52));
-  group.add(mesh(rbox(2.2, 0.72, 0.1, 0.03), MAT.painted(0xc9d0d7), cx, FY + 0.38, -2.86));
+  // wall screens (−Z wall, right of the Ice Oven): flat on the wall, no desk or chair, so
+  // the floor in front of the machines stays open
+  const cx = 8.78;
+  group.add(mesh(rbox(1.62, 0.66, 0.06, 0.03), MAT.painted(0xc9d0d7), cx, FY + 1.5, -2.86));
   for (const [ox, key, title, lines, acc] of [
-    [-0.5, 'base', 'BASE STATUS', ['Habitat', 'Greenhouse', 'Solar array'], '#4fd1e8'],
-    [0.5, 'comms', 'COMMS', ['Earth link', 'Messages', 'Weather'], '#7be0a0'],
+    [-0.39, 'base', 'BASE STATUS', ['Habitat', 'Greenhouse', 'Solar array'], '#4fd1e8'],
+    [0.39, 'comms', 'COMMS', ['Earth link', 'Messages', 'Weather'], '#7be0a0'],
   ]) {
-    group.add(mesh(rbox(0.9, 0.56, 0.04, 0.02), MAT.darkMetal(), cx + ox, FY + 1.25, -2.8));
-    const s = mesh(new THREE.PlaneGeometry(0.84, 0.5), screenMaterial(key, title, lines, acc), cx + ox, FY + 1.25, -2.775, { cast: false });
+    group.add(mesh(rbox(0.74, 0.5, 0.04, 0.02), MAT.darkMetal(), cx + ox, FY + 1.5, -2.81));
+    const s = mesh(new THREE.PlaneGeometry(0.68, 0.44), screenMaterial(key, title, lines, acc), cx + ox, FY + 1.5, -2.785, { cast: false });
     group.add(s);
   }
-  group.add(mesh(rbox(0.5, 0.08, 0.48, 0.03), MAT.fabric(FABRIC.navy), cx, FY + 0.48, -1.75));
-  group.add(mesh(rbox(0.48, 0.5, 0.07, 0.03), MAT.fabric(FABRIC.navy), cx, FY + 0.8, -1.52));
-  group.add(mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.42, 12), MAT.metal(), cx, FY + 0.22, -1.75));
-  group.add(mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.03, 20), MAT.metal(), cx, FY + 0.015, -1.75));
 
   // electrolysis unit (+X end) — hook for the future lesson
   const ex = 9.2;
@@ -549,10 +538,8 @@ export function createHabitat() {
         { type: 'circle', x: 2.35, z: -2.45, r: 0.36 }, // plant
         { type: 'box', minX: 3.35, maxX: 5.0, minZ: 2.42, maxZ: 3.0 }, // lockers
         { type: 'box', minX: 3.58, maxX: 6.42, minZ: -3.0, maxZ: -2.29 }, // life support
-        { type: 'box', minX: 6.88, maxX: 9.12, minZ: -3.0, maxZ: -2.12 }, // console
-        { type: 'circle', x: 8.0, z: -1.7, r: 0.34 }, // chair
+        { type: 'box', minX: 7.95, maxX: 9.62, minZ: -3.0, maxZ: -2.78 }, // wall screens
         { type: 'box', minX: 8.48, maxX: 9.7, minZ: -0.95, maxZ: 0.95 }, // electrolysis
-        { type: 'box', minX: 8.6, maxX: 9.7, minZ: 2.05, maxZ: 3.0 }, // crates
       ],
     },
     interactables: [

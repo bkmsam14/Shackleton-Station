@@ -210,7 +210,16 @@ const guide = createGuide({
   groundAt: (zone, x, z) => (zone === 'outside' ? heightAt(x, z) : world.zones[zone].floorY),
 });
 world.scene.add(volt.object, guide.object);
-const voltBubble = createVoltBubble(uiRoot);
+const voltBubble = createVoltBubble(uiRoot, { onNext: () => nextTourStep() });
+/** Training Day "Next" (button on Volt's bubble, or Enter): pass the current step. */
+function nextTourStep() {
+  if (mode !== 'playing' || !assistant.tourActive) return;
+  if (assistant.nextStep()) {
+    sfx.click();
+    voltBubble.hide();
+    voltVoice.stop();
+  }
+}
 const stormFx = createStormFx(uiRoot);
 const voltVoice = createVoltVoice({ store: { load: loadSettings, save: saveSettings } });
 // Volt is an interactable that moves: "Press E to talk to Volt"
@@ -290,7 +299,7 @@ function enterPlay() {
     // Volt runs the first-day tour (it points at the gauge rings in step 2), or says hello.
     volt.hopTo(player);
     voltVoice.prewarm(); // load Volt's robot voice engine in the background
-    assistant.startIfNeeded();
+    assistant.startIfNeeded({ day: getClock(day).day }); // Day 1 always starts with the Training Day
     sunReady.then(() => {
       assistant.notify(sun?.fellBack ? 'sun-stormy' : `sun-${sun?.mode ?? 'stormy'}`);
       const c = getClock(day);
@@ -377,7 +386,11 @@ document.addEventListener('pointerlockerror', onLockFailed);
 /** Show one of Volt's lines: bubble in the world, face mood, full text in the PDA log. */
 function sayLine(line) {
   if (!line) return;
-  voltBubble.say(line, { holdWhile: () => voltVoice.speaking });
+  voltBubble.say(line, {
+    holdWhile: () => voltVoice.speaking,
+    // a Training Day line stays readable (with its Next button) until the step is done
+    stayWhile: line.tour ? () => assistant.tourStep?.id === line.id : null,
+  });
   voltVoice.speak(line.text);
   volt.model.setMood(line.mood ?? 'happy');
   const c = getClock(day);
@@ -1091,6 +1104,7 @@ renderer.setAnimationLoop(() => {
     input.consumeInteract();
   }
   if (input.consumeTab()) togglePda();
+  if (input.consumeNext()) nextTourStep();
 
   const sun = getSun(day);
   const alignment = world.update(dt, camera, player.position, sun, (day.gameSeconds / 86400) * Math.PI * 2, player.zoneId);
@@ -1136,7 +1150,7 @@ renderer.setAnimationLoop(() => {
   const standingStill = Math.hypot(player.position.x - lastPX, player.position.z - lastPZ) < 0.002;
   if (running) {
     volt.update(dt, player, {
-      talking: voltBubble.isShowing,
+      talking: voltBubble.isTalking, // words left up afterwards: he goes back to leading
       waiting: mode === 'playing' && standingStill && lookingAtVolt(),
       speaking: voltVoice.speaking,
       lead: guide.path, // the trail to the next spot (last frame's), so Volt shows the way

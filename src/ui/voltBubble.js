@@ -5,28 +5,38 @@
 import * as THREE from 'three';
 import { voltBot } from '../instances/electrolysis/icons.js';
 import { ASSISTANT } from '../config/gameplay.js';
-import { TOUR_SKIP_HINT } from '../data/voltLines.js';
 import './voltBubble.css';
 
 const EDGE_MARGIN = 64; // px from the screen edge for the docked marker
 const HEAD_OFFSET_PX = 18; // bubble sits this far above the projected head
 
-export function createVoltBubble(root) {
+/** opts.onNext: called when the kid clicks "Next" on a Training Day line. */
+export function createVoltBubble(root, { onNext = null } = {}) {
   const el = document.createElement('div');
   el.className = 'volt-say';
   el.setAttribute('role', 'status');
   el.setAttribute('aria-live', 'polite');
   el.innerHTML = `
     <div class="volt-pin" aria-hidden="true">${voltBot('happy')}</div>
-    <div class="volt-bubble"><p class="volt-text"></p><p class="volt-skip" hidden>${TOUR_SKIP_HINT}</p></div>`;
+    <div class="volt-bubble"><p class="volt-text"></p>
+      <div class="volt-tour" hidden>
+        <button type="button" class="volt-next">Next <span aria-hidden="true">▶</span><kbd>Enter</kbd></button>
+      </div></div>`;
   root.appendChild(el);
   const pin = el.querySelector('.volt-pin');
   const textEl = el.querySelector('.volt-text');
-  const skipEl = el.querySelector('.volt-skip');
+  const tourEl = el.querySelector('.volt-tour');
+  const nextBtn = el.querySelector('.volt-next');
+  nextBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    onNext?.();
+  });
 
   let showFor = 0;
   let visible = false;
   let holdWhile = null; // e.g. () => voice.speaking: keep the bubble up until Volt finishes
+  let stayWhile = null; // e.g. "this Training Day step is not done yet": keep the words on screen
+  let talking = false; // still speaking / just said it (Volt turns to face you)
   let mood = 'happy';
   const v = new THREE.Vector3();
 
@@ -37,11 +47,17 @@ export function createVoltBubble(root) {
   }
 
   return {
-    /** Show a line. line: { text, mood, tour }. opts.holdWhile: () => boolean */
-    say(line, { holdWhile: hold = null } = {}) {
+    /**
+     * Show a line. line: { text, mood, tour }.
+     * opts.holdWhile: () => boolean — Volt is still talking (keep it up, he faces you)
+     * opts.stayWhile: () => boolean — keep the words on screen after that (he goes back to
+     *   leading the way): a Training Day step stays readable until it is done.
+     */
+    say(line, { holdWhile: hold = null, stayWhile: stay = null } = {}) {
       holdWhile = hold;
+      stayWhile = stay;
       textEl.textContent = line.text;
-      skipEl.hidden = !line.tour;
+      tourEl.hidden = !line.tour;
       setMood(line.mood ?? 'happy');
       const words = line.text.split(/\s+/).length;
       showFor = ASSISTANT.BUBBLE_BASE_S + words * ASSISTANT.BUBBLE_PER_WORD_S + (line.tour ? 3 : 0);
@@ -52,9 +68,15 @@ export function createVoltBubble(root) {
     },
     hide() {
       showFor = 0;
+      holdWhile = null;
+      stayWhile = null;
     },
     get isShowing() {
-      return visible && showFor > 0;
+      return visible && (showFor > 0 || talking);
+    },
+    /** Volt is saying it right now (not just leaving the words up). */
+    get isTalking() {
+      return visible && talking;
     },
     /**
      * Place the bubble. headWorld: THREE.Vector3; enabled = false hides everything
@@ -63,7 +85,11 @@ export function createVoltBubble(root) {
     update(dt, camera, headWorld, enabled = true) {
       showFor = Math.max(0, showFor - dt);
       if (holdWhile?.()) showFor = Math.max(showFor, 0.8); // still talking: stay up a bit after
-      const on = enabled && showFor > 0;
+      talking = showFor > 0;
+      const staying = !talking && Boolean(stayWhile?.());
+      if (!talking && !staying) stayWhile = null;
+      const on = enabled && (talking || staying);
+      el.classList.toggle('is-staying', staying);
       el.classList.toggle('is-on', on);
       if (!on) {
         visible = false;

@@ -21,8 +21,6 @@ export const WELCOME_BACK = {
   text: 'Welcome back! Press E on me if you need a tip.',
   mood: 'happy',
 };
-/** Shown in the tour bubble so kids know how to skip (the mouse is locked during play). */
-export const TOUR_SKIP_HINT = 'Esc → Skip tour';
 
 // ---------------------------------------------------------------- events
 // kind: 'warning' (always said, even in Quiet mode) | 'news' (Chatty + Helpful)

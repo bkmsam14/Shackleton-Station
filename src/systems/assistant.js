@@ -147,13 +147,29 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
     },
 
     /** Call once when play starts: runs the tour the first time, otherwise says hello. */
-    startIfNeeded() {
-      if (!tourDone) startTour(savedStep);
+    /**
+     * opts.day: the game day the player starts on. Day 1 ALWAYS begins with the Training
+     * Day from its first step — a page reload resets the clock to Day 1, so the training
+     * starts over too (even if it was finished, skipped or half-done before).
+     * Later days: the tour only if it was never finished.
+     */
+    startIfNeeded({ day } = {}) {
+      if (day === 1) {
+        tourDone = false;
+        startTour(0);
+      } else if (!tourDone) startTour(savedStep);
       else enqueue(lines.WELCOME_BACK, 'news');
     },
     replayTour() {
       tourDone = false;
       startTour(0);
+    },
+    /** Training Day "Next": pass the current step without doing it. Returns true if it did. */
+    nextStep() {
+      if (tourIndex < 0) return false;
+      queue = queue.filter((q) => q.kind !== 'tour'); // drop the passed step's line if still waiting
+      completeStep();
+      return true;
     },
     skipTour() {
       if (tourIndex < 0) return;

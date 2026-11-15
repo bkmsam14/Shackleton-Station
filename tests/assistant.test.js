@@ -108,6 +108,47 @@ test('returning player gets a welcome, not the tour', () => {
   assert.equal(runUntilLine(a).id, 'welcome-back');
 });
 
+test('Day 1 always starts with the Training Day, even after finishing or skipping it', () => {
+  const done = createAssistant({ store: memoryStore({ volt: { tourDone: true, tourVersion: LINES.TOUR_VERSION, tourIndex: 7 } }) });
+  done.startIfNeeded({ day: 1 });
+  assert.equal(done.tourActive, true);
+  assert.equal(done.tourStep.id, LINES.TOUR[0].id); // from the start, not the old saved step
+  const store = memoryStore();
+  const a = createAssistant({ store });
+  a.startIfNeeded({ day: 1 });
+  a.skipTour();
+  const b = createAssistant({ store });
+  b.startIfNeeded({ day: 1 });
+  assert.equal(b.tourActive, true);
+  assert.equal(b.tourStep.id, LINES.TOUR[0].id);
+});
+
+test('Day 1 after a reload starts the Training Day over, even if it was half-done', () => {
+  const a = createAssistant({ store: memoryStore({ volt: { tourDone: false, tourVersion: LINES.TOUR_VERSION, tourIndex: 3 } }) });
+  a.startIfNeeded({ day: 1 });
+  assert.equal(a.tourStep.id, LINES.TOUR[0].id);
+});
+
+test('a later day after the Training Day: welcome back, no tour', () => {
+  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true, tourVersion: LINES.TOUR_VERSION } }) });
+  a.startIfNeeded({ day: 2 });
+  assert.equal(a.tourActive, false);
+});
+
+test('Next passes a Training Day step without doing it', () => {
+  const a = createAssistant({ store: memoryStore() });
+  a.startIfNeeded({ day: 1 });
+  runUntilLine(a); // step 1 said
+  assert.equal(a.nextStep(), true);
+  assert.equal(a.tourStep.id, LINES.TOUR[1].id);
+  assert.equal(runUntilLine(a).id, LINES.TOUR[1].id); // and Volt says the next one
+  a.nextStep();
+  a.nextStep(); // even before its line is said
+  assert.equal(a.tourStep.id, LINES.TOUR[3].id);
+  const done = createAssistant({ store: memoryStore() });
+  assert.equal(done.nextStep(), false); // no tour running: nothing to pass
+});
+
 test('silent while not playing (menus, PDA, mini-games)', () => {
   const a = createAssistant({ store: memoryStore() });
   a.startIfNeeded();
