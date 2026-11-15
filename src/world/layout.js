@@ -62,7 +62,28 @@ export const LAYOUT = {
     [8.2, 10.9], [6.0, 14], [4.0, 17.5], [2.0, 21], [0.0, 24.5], [-1.8, 27.6],
     // habitat airlock → solar array
     [4.6, 10.2], [-0.5, 10.6], [-6, 11.4], [-11.5, 12.4], [-16.4, 13.4],
+    // solar array → cold-trap crater (ice mining)
+    [-25.5, 15.6], [-31, 17], [-36.5, 18.4], [-41.5, 19.4],
   ],
+
+  // Ice mining: a small, permanently shadowed "cold trap" crater past the solar array.
+  // The bowl is carved into the terrain (heightfield.js); dig spots sit on its floor.
+  ICE_CRATER: {
+    x: -54,
+    z: 21,
+    r: 10, // rim radius
+    depth: 4.2,
+    // you count as "in the cold trap" inside this radius (the dark floor)
+    coldRadius: 7.5,
+    spots: [
+      { id: 'ice-spot-1', x: -55.5, z: 17.5 },
+      { id: 'ice-spot-2', x: -51, z: 22.5 },
+      { id: 'ice-spot-3', x: -57, z: 24 },
+    ],
+    sign: { x: -44.2, z: 18.6, yawDeg: 255 }, // on the rim, facing the path
+  },
+  // Ice Oven in the habitat work bay, beside Electrolysis (habitat coordinates).
+  ICE_OVEN: { x: 9.2, z: -1.55, use: { x: 8.25, z: -1.55 } },
 
   // Far hills ring (also hides the Sun during the ridge period).
   HORIZON: { innerRadius: 300, outerRadius: 460, segments: 180 },

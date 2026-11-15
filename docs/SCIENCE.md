@@ -102,6 +102,15 @@ How the game uses them (ratios stay real, amounts are scaled):
 - Location/shelter/water-wall factors and the storm length are game balance. Real shelters would need **thousands of kg** of water; the game's water amounts are game-sized and the game says so.
 - Short real warnings are stretched to at least 40 s of play so kids can react; the report card tells the real warning time.
 
+### Ice in cold traps (ice mining)
+- **Cold traps:** the Moon's axis is tilted only about 1.6°, so near the poles some deep crater floors never get sunlight. LRO's Diviner measured minimum brightness temperatures below about **35 K (−238 °C)** in parts of these craters; Cabeus averaged about 37 K. The game says "colder than −230 °C". *Source: NASA SVS — https://svs.gsfc.nasa.gov/4043*
+- **How much water is in icy soil:** LCROSS (impact 9 Oct 2009, Cabeus crater) measured **5.6 ± 2.9 % water ice by mass** in the regolith. The game uses 5.6 % for every scoop (`ICE.ICE_MASS_FRACTION`) and says other places can have more or less. *Source: Colaprete et al., Science 2010 — https://www.science.org/doi/10.1126/science.1186986*
+- **Ice is in many places:** LRO found signs of ice in many cold, shadowed places near both poles. *Source: https://science.nasa.gov/solar-system/moon/nasas-lro-lunar-ice-deposits-are-widespread/*
+- **Getting the water out:** icy regolith is heated so the ice sublimates (turns to vapour); a cold surface (cold trap) catches the vapour again as ice/water. NASA-funded projects are testing this; heating times and power are not settled, so the oven's time and kWh are **game balance** and the panel says no real time is shown yet. *Sources: NASA ISRU overview — https://www.nasa.gov/overview-in-situ-resource-utilization/ ; NASA LuSTR thermal mining project — https://www.nasa.gov/directorates/stmd/space-tech-research-grants/advanced-thermal-mining-approach-for-extraction-transportation-and-condensation-of-lunar-ice/*
+- **Finding ice by its hydrogen:** neutron spectrometers count neutrons coming off the surface; fewer fast neutrons means more hydrogen. Lunar Prospector found extra hydrogen near the poles in 1998. The drill game's scanner is made up but uses the same idea. *Source: NASA ISRU overview 2023 — https://ntrs.nasa.gov/citations/20230012260*
+- **Carrying the bag:** Moon gravity is 1.62 m/s² (NASA Moon Fact Sheet), so 60 kg weighs like ~10 kg on Earth. Mass (and inertia) stays the same — the game only says it "feels like" / "weighs".
+- **Game simplifications:** bag size, kg per chunk, drill round, rocks, mega lumps, streaks and the scanner charges are game balance. The cold trap's extra base power is the suit heaters and lamp being recharged by the base (game balance amount); we do **not** claim cold makes you breathe more oxygen.
+
 ### Dust
 - Lunar regolith is sharp, abrasive and sticky. It clings to suits and covers equipment.
 - **There is no wind, so there are no dust storms on the Moon.** Dust gets thrown up by rocket exhaust, rovers and walking.

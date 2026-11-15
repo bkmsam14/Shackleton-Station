@@ -51,6 +51,9 @@ export function createHud(root) {
     <div class="hud-storm" data-storm role="status" aria-live="assertive">
       <span class="storm-icon">${ICONS.dose}</span><span class="storm-text" data-storm-text></span>
     </div>
+    <div class="hud-carry" data-carry role="status" aria-live="polite">
+      <span class="carry-icon" aria-hidden="true"></span><span data-carry-text></span>
+    </div>
     <div class="hud-rings">
       ${ring('oxygen', 'Oxygen supply')}
       ${ring('food', 'Food')}
@@ -65,6 +68,8 @@ export function createHud(root) {
   const el = {
     storm: q('[data-storm]'),
     stormText: q('[data-storm-text]'),
+    carry: q('[data-carry]'),
+    carryText: q('[data-carry-text]'),
     time: q('[data-time]'),
     power: q('[data-power]'),
     battery: q('[data-battery]'),
@@ -175,6 +180,12 @@ export function createHud(root) {
         el.storm.classList.toggle('is-on', Boolean(v));
       });
       set('stormMode', rad?.chipMode ?? '', (v) => (el.storm.dataset.mode = v));
+
+      // carrying icy soil (ice mining): a small chip so you remember where it goes
+      set('carry', chip ? '' : (s.carry ?? ''), (v) => {
+        el.carryText.textContent = v;
+        el.carry.classList.toggle('is-on', Boolean(v));
+      });
     },
   };
 }

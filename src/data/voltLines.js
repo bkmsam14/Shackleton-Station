@@ -133,9 +133,21 @@ export const EVENTS = {
   },
   'tank-low': {
     kind: 'warning',
-    text: 'The water tank is getting low. Use it wisely!',
-    long: 'The Electrolysis water tank is getting low, and nothing refills it yet. Make small batches only when oxygen really needs it.',
+    text: 'The water tank is low. Let’s mine ice for more!',
+    long: 'The Electrolysis water tank is getting low. Drill icy soil in the cold-trap crater past the solar array and bake it in the Ice Oven — or order water from Earth at the supply terminal.',
     mood: 'think',
+  },
+  // --- ice mining
+  'ice-coldtrap': {
+    kind: 'news',
+    text: 'Brr! This crater never sees the Sun. Ice hides in its soil!',
+    long: 'This crater floor never sees the Sun, so it stays colder than −230 °C (NASA LRO Diviner) and water ice can last in the soil. Press E on a glowing spot to drill.',
+    mood: 'wow',
+  },
+  'ice-water-done': {
+    kind: 'news',
+    text: 'The Ice Oven is done! Fresh Moon water is in the tank.',
+    mood: 'cheer',
   },
   'recovered': {
     kind: 'news',
@@ -218,6 +230,9 @@ export const FACTS = [
   { id: 'fact-sep', text: 'Only some solar flares send dangerous particles. Scientists watch them all!', databank: 'solar-particles', mood: 'think' },
   { id: 'fact-shelter', text: 'Water, food and supplies can all be a radiation shield!', databank: 'storm-shelter', mood: 'happy' },
   { id: 'fact-snow', text: 'Storm sparkles on screen? Real space cameras show that “snow” too!', databank: 'camera-snow', mood: 'wow' },
+  { id: 'fact-ice-share', text: 'Icy Moon soil: 100 kg holds only about 6 kg of water!', databank: 'moon-ice-soil', mood: 'think' },
+  { id: 'fact-scan', text: 'Spacecraft find Moon ice by sniffing its hydrogen from orbit!', databank: 'hydrogen-scan', mood: 'wow' },
+  { id: 'fact-isru', text: 'Making water from Moon ice means fewer deliveries from Earth!', databank: 'isru', mood: 'happy' },
   { id: 'fact-moon-dose', text: 'On the Moon’s surface, radiation is about twice the Space Station’s.', databank: 'moon-radiation', mood: 'think' },
 ];
 
@@ -230,6 +245,7 @@ export const TALK = {
   oxygenOutside: { id: 'talk-oxygen-out', text: 'Oxygen drains fast out here. Let’s go back inside!', mood: 'wow' },
   power: { id: 'talk-power', text: 'Power is low. Wait for sunlight before big oxygen batches.', mood: 'think' },
   food: { id: 'talk-food', text: 'Food is low. Rest inside, it lasts longer there.', mood: 'think' },
-  tank: { id: 'talk-tank', text: 'Water is precious. Make oxygen only when you need it.', mood: 'think' },
+  tank: { id: 'talk-tank', text: 'Water is low. Mine ice in the dark crater past the array!', mood: 'think' },
+  iceBag: { id: 'talk-ice-bag', text: 'Carry your icy soil to the Ice Oven, next to Electrolysis.', mood: 'happy' },
   // when everything is fine, Volt shares the next science fact instead
 };

@@ -223,6 +223,7 @@ export function createAssistant({ store, lines = LINES, config = ASSISTANT } = {
       else if (snap.oxygen < 40) line = snap.zoneId === 'outside' ? T.oxygenOutside : T.oxygen;
       else if (snap.power < 30) line = T.power;
       else if (snap.food < 35) line = T.food;
+      else if (snap.bagKg > 0 && T.iceBag) line = snap.inColdTrap ? T.iceBagFull ?? T.iceBag : T.iceBag;
       else if (snap.tankKg < config.TANK_LOW_KG) line = T.tank;
       else line = nextFact();
       cooldown = config.COOLDOWN_S;

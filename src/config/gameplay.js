@@ -350,6 +350,31 @@ export const SOLAR_DAMAGE = {
   TEST_HIT_EVERY_REAL_SECONDS: null,
 };
 
+// ---------------------------------------------------------------------------
+// ICE MINING — dig icy regolith in a cold trap, bake the water out (src/systems/iceMining.js)
+// See docs/SCIENCE.md "Ice in cold traps". Making water here (ISRU) vs ordering it from Earth.
+// ---------------------------------------------------------------------------
+export const ICE = {
+  // LCROSS (2009) hit Cabeus crater: the soil there held 5.6 ± 2.9 % water ice by mass
+  // (Colaprete et al., Science 2010). Real ice content varies from place to place.
+  ICE_MASS_FRACTION: 0.056,
+  BAG_MAX_KG: 60, // GAME BALANCE (not real data) — one carry of icy soil
+  SOIL_KG_PER_CHUNK: 4, // GAME BALANCE (not real data) — icy soil per chunk the drill grabs
+  DRILL_ROUND_S: 45, // GAME BALANCE (not real data)
+  STAR_CHUNKS: 10, // GAME BALANCE (not real data) — chunks for the 2nd star
+  MEGA_CHUNKS: 3, // GAME BALANCE (not real data) — a rare big lump of icy soil counts as 3 chunks
+  SCAN_CHARGES: 2, // GAME BALANCE (not real data) — scanner pulses per drill round
+  SCAN_SECONDS: 3, // GAME BALANCE (not real data) — how long a scan shows the hidden ice
+  // Ice Oven: heat the soil, the ice turns to vapour, a cold plate catches it as water.
+  OVEN_KWH_PER_KG_SOIL: 0.05, // GAME BALANCE (not real data) — heating soil costs power
+  OVEN_GAME_HOURS: 2, // GAME BALANCE (not real data) — one bag, start to finish
+  // In the permanently shadowed crater the suit's heaters and helmet lamp run hard; their
+  // batteries are recharged by the base, so the base battery pays while you are down there.
+  COLD_TRAP_EXTRA_KW: 1.5, // GAME BALANCE (not real data)
+  SPOT_COOLDOWN_GAME_HOURS: 24, // GAME BALANCE (not real data) — a dug spot rests a day
+  FAIL_KEEP_FRACTION: 0.5, // GAME BALANCE (not real data) — gentle failure spills half the bag
+};
+
 // Feature flags (later demos).
 export const FEATURES = {
   ENABLE_WATER_GAUGE: false,

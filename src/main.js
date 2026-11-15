@@ -42,6 +42,10 @@ import { createStormFx } from './ui/stormFx.js';
 import { loadSun, SUN_MODES } from './data/spaceWeather.js';
 import { createFarming } from './farming/index.js';
 import { createSupply } from './supply/index.js';
+import { createHelmetLamp } from './world/iceSite.js';
+import { createIceDrillInstance } from './instances/iceDrill/index.js';
+import { createIceOvenInstance } from './instances/iceOven/index.js';
+import { createIceState, stepOven, spillBag, spotReady, coldTrapLoadKw, DIG_SPOTS } from './systems/iceMining.js';
 
 // ---------------------------------------------------------------- setup
 let quality = loadSettings().quality === 'low' ? 'low' : 'high';
@@ -85,6 +89,16 @@ const callouts = createCallouts(uiRoot);
 const gauges = createGauges();
 const station = createElectrolysisState(); // the electrolysis unit's own water tank
 const mastery = createMastery({ load: loadSettings, save: saveSettings });
+
+// ---------------------------------------------------------------- ice mining
+// Bag of icy soil + Ice Oven + dig spots (systems/iceMining.js), saved like other settings.
+const ice = createIceState(loadSettings().ice ?? {});
+const saveIce = () => saveSettings({ ice: { bagKg: ice.bagKg, oven: ice.oven, spots: ice.spots } });
+const helmetLamp = createHelmetLamp(world.scene, camera); // lights the dark cold-trap floor
+let wasInColdTrap = false;
+let iceSaveIn = 5;
+/** Is the player down on the dark floor of the cold-trap crater? */
+const inColdTrap = () => player.zoneId === 'outside' && world.iceSite.inColdTrap(player.position.x, player.position.z);
 
 // ---------------------------------------------------------------- space weather + radiation
 // The Sun the player picked (real DONKI + RadLab replays, or live DONKI). Storms are put on
@@ -296,6 +310,8 @@ function voltSnapshot(moved = 0) {
     tankKg: station.tankKg,
     storm: radiation.phase === 'calm' ? null : radiation.phase,
     inShelter: playerPlace() === 'shelter',
+    bagKg: ice.bagKg,
+    inColdTrap: inColdTrap(),
   };
 }
 
@@ -342,6 +358,15 @@ const instances = createInstanceManager(uiRoot, {
       if (!assistant.notify('oxygen-made')) feedback.notify('Oxygen made!', { long: text, seconds: 3.5 });
     } else if (id === 'electrolysis' && assistant.tourStep?.id === 'oxygen' && checkAfford(gauges, station, 'small').reason === 'full') {
       assistant.notify('oxygen-made'); // supply already full (e.g. tour replayed late): don't get stuck
+    }
+    if (id === 'ice-drill' && result.completed) {
+      saveIce();
+      if (result.bestStreak > (loadSettings().iceBestStreak ?? 0)) saveSettings({ iceBestStreak: result.bestStreak });
+      stormLog(`Drilled ${result.soilKg.toFixed(0)} kg of icy soil (about ${result.waterKg.toFixed(1)} kg of water in it). Bag: ${result.bagKg.toFixed(0)} kg — bake it in the Ice Oven.`);
+    }
+    if (id === 'ice-oven' && result.completed) {
+      saveIce();
+      stormLog(`Ice Oven started: ${result.soilKg.toFixed(0)} kg of icy soil, ${result.kwh.toFixed(1)} kWh of power, about ${result.waterKg.toFixed(1)} kg of water on the way to the tank.`);
     }
     // Back to the 3D world. Re-locking the mouse needs a click; the "Back to base" button is
     // one. If the browser refuses (e.g. closed with Esc), show the pause menu to click on.
@@ -466,6 +491,14 @@ function useStation(action) {
     instances.open('water-walls', createWaterWallsInstance, { gauges, station, voice: voltVoice });
     return;
   }
+  if (action.station === 'ice-drill') {
+    instances.open('ice-drill', createIceDrillInstance, { ice, mastery, spotId: action.spotId, nowHour: gameHourNow(), bestStreak: loadSettings().iceBestStreak ?? 0, voice: voltVoice });
+    return;
+  }
+  if (action.station === 'ice-oven') {
+    instances.open('ice-oven', createIceOvenInstance, { ice, gauges, station, voice: voltVoice });
+    return;
+  }
   // a few words on screen; the full text goes to the PDA log
   const short = action.caption ?? action.toast.split('!')[0];
   feedback.notify(short, { long: action.toast, seconds: 3.5 });
@@ -484,10 +517,32 @@ function advanceGameHours(hours, place = 'habitat') {
     stepDayCycle(day, step);
     const s = getSun(day);
     stepGauges(gauges, step, { pressurized: true, sunVisibility: s.visibility, alignment: 1 });
+    stepIceOven((step * TIME.SCALE) / 3600);
     events.push(...stepRadiation(radiation, gameHourNow(), (step * TIME.SCALE) / 3600, { place, wallKg: station.wallKg }));
   }
   // a storm that hit while you were busy still shows its card afterwards (no gentle failure)
   for (const e of events) if (e.type !== 'limit') handleRadiationEvent(e, { quiet: true });
+}
+
+/** The Ice Oven keeps baking while you play (game hours); water drips into the tank. */
+function stepIceOven(dtGameHours) {
+  if (!ice.oven) return;
+  const r = stepOven(ice, station, dtGameHours);
+  if (r.finished) {
+    saveIce();
+    voltEvent('ice-water-done', 'Ice Oven done — water in the tank', 'The Ice Oven finished: the water from your icy soil is in the Electrolysis tank.');
+    stormLog(`Ice Oven finished. Electrolysis tank: ${station.tankKg.toFixed(1)} kg of water.`);
+  }
+}
+
+/** Where the marker goes while you carry icy soil: the Ice Oven (through the airlock). */
+function ovenMarkerTarget(zoneId) {
+  const find = (id) => world.interactables.find((i) => i.id === id);
+  const at = (it) => it && { zone: it.zone, x: it.x, z: it.z, y: it.zone === 'outside' ? heightAt(it.x, it.z) : world.zones[it.zone].floorY };
+  if (zoneId === 'habitat') return at(find('ice-oven'));
+  if (zoneId === 'outside') return at(find('hab-outer-door'));
+  if (zoneId === 'greenhouse') return at(find('gh-inner-door'));
+  return null;
 }
 
 // ---------------------------------------------------------------- gentle failure
@@ -502,6 +557,9 @@ async function gentleFailure(reason) {
   await feedback.fadeTo(true, RECOVERY.FADE_SECONDS);
 
   const radiationRest = reason === 'radiation';
+  // carrying icy soil? some spills on the way back (the rest stays in the bag)
+  const spilledKg = ice.bagKg > 0 ? spillBag(ice) : 0;
+  if (spilledKg > 0) saveIce();
   advanceGameHours(RECOVERY.REST_GAME_HOURS, radiationRest ? 'shelter' : 'habitat');
   if (!radiationRest) applyRecovery(gauges, { oxygen: RECOVERY.OXYGEN_RESTORE_PERCENT, food: RECOVERY.FOOD_RESTORE_PERCENT });
   if (radiationRest) {
@@ -527,6 +585,7 @@ async function gentleFailure(reason) {
     <h2>Phew — you are safe!</h2>
     <p>${why}</p>
     <p class="small">You rested for ${RECOVERY.REST_GAME_HOURS} hours. Time passed: you used food and oxygen, and the base kept using power.${radiationRest ? ' The radiation dose you got stays on your record (dose adds up — it does not heal).' : ''}</p>
+    ${spilledKg > 0 ? `<p class="small">Some icy soil spilled on the way: you lost ${spilledKg.toFixed(0)} kg and kept ${ice.bagKg.toFixed(0)} kg in your bag.</p>` : ''}
     <p class="small">${tip}</p>`);
   await wait(5200);
   feedback.showFadeCard('');
@@ -754,10 +813,27 @@ renderer.setAnimationLoop(() => {
 
   // ---- survival gauges (pure logic) + reactions
   const zoneId = player.zoneId;
+  // ---- ice mining: cold trap (helmet lamp + suit heaters on base power), dig spots, oven
+  const coldTrap = inColdTrap();
+  helmetLamp.set(coldTrap);
+  helmetLamp.update(frameDt);
+  if (coldTrap && !wasInColdTrap && mode === 'playing') voltEvent('ice-coldtrap', 'Cold trap: no sunlight, ever', 'This crater floor never sees the Sun. Your helmet lamp is on, and your suit heaters use base power while you are down here.');
+  wasInColdTrap = coldTrap;
+  const nowHour = gameHourNow();
+  for (const id of DIG_SPOTS) world.iceSite.setSpotReady(id, spotReady(ice, id, nowHour));
+  world.iceSite.update(frameDt);
+  if (running) stepIceOven((dt * TIME.SCALE) / 3600);
+  world.iceOven.update(frameDt, Boolean(ice.oven));
+  if (ice.oven && running && (iceSaveIn -= frameDt) <= 0) {
+    iceSaveIn = 5;
+    saveIce(); // keep the oven's progress if the tab is closed
+  }
+
   const report = stepGauges(gauges, dt, {
     pressurized: zoneId !== 'outside',
     sunVisibility: sun.visibility,
     alignment: alignment * supply.solarOutputFactor, // 1 when healthy; less after a micrometeorite hit
+    extraLoadKw: coldTrapLoadKw(coldTrap), // suit heaters + lamp, recharged by the base
   });
   if (running) reactToGauges(report, sun);
   farming.update(frameDt, dt, { lit: report.hasPower });
@@ -785,7 +861,8 @@ renderer.setAnimationLoop(() => {
   stormFx.update(frameDt, running ? exposureLevel(radiation, playerPlace(), station.wallKg) : 0);
   world.habitat.waterWall.setWaterLevel(station.wallKg / RADIATION.WALL_CAPACITY_KG);
   const stormMarker = radiation.phase !== 'calm' && playerPlace() !== 'shelter' ? shelterMarkerTarget(zoneId) : null;
-  tourMarker.setTarget(stormMarker ?? (assistant.tourActive ? tourTargetPosition(assistant.tourStep?.target, zoneId) : null));
+  const carryMarker = ice.bagKg > 0 && !ice.oven && !coldTrap ? ovenMarkerTarget(zoneId) : null;
+  tourMarker.setTarget(stormMarker ?? (assistant.tourActive ? tourTargetPosition(assistant.tourStep?.target, zoneId) : carryMarker));
   tourMarker.update(frameDt, zoneId);
   voltBubble.update(frameDt, camera, volt.headPosition(voltHead), mode === 'playing');
   // the Sun is off indoors, so skip re-rendering its shadow map there
@@ -801,6 +878,8 @@ renderer.setAnimationLoop(() => {
     station,
     radiation: radiationHud(),
     sun,
+    ice,
+    carry: ice.bagKg > 0 ? `Icy soil ${Math.round(ice.bagKg)} kg → Ice Oven` : ice.oven ? 'Ice Oven baking…' : '',
   };
   hud.update(lastHudState);
 
@@ -881,5 +960,5 @@ if (import.meta.env.DEV) {
       greenhouse: ['greenhouse', 1.4, 30, 90, -0.08],
     },
   };
-  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, voltBubble, voltVoice, get radiation() { return radiation; }, get sun() { return sun; }, playerPlace, sunReady };
+  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, voltBubble, voltVoice, get radiation() { return radiation; }, get sun() { return sun; }, playerPlace, sunReady, ice, helmetLamp };
 }

@@ -216,6 +216,30 @@
       "text": "A radio message takes about 1.3 seconds to travel between the Moon and Earth, because nothing goes faster than light.",
       "value": "384,400 km ÷ 299,792.458 km/s = 1.28 s one way (supply terminal)",
       "source": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html"
+    },
+    {
+      "id": "cold-trap-temperature",
+      "text": "Some crater floors near the Moon's poles never see the Sun and are colder than −230 °C.",
+      "value": "LRO Diviner: below about 35 K (−238 °C) in parts of these craters",
+      "source": "https://svs.gsfc.nasa.gov/4043"
+    },
+    {
+      "id": "lcross-ice-share",
+      "text": "In Cabeus crater, about 5.6% of the soil's mass was water ice.",
+      "value": "5.6 ± 2.9 % by mass (LCROSS, 2009)",
+      "source": "https://www.science.org/doi/10.1126/science.1186986"
+    },
+    {
+      "id": "isru",
+      "text": "Using things found on the Moon instead of shipping them from Earth is called in-situ resource utilization (ISRU).",
+      "value": "NASA ISRU overview",
+      "source": "https://www.nasa.gov/overview-in-situ-resource-utilization/"
+    },
+    {
+      "id": "hydrogen-scan",
+      "text": "NASA's Lunar Prospector found extra hydrogen near the Moon's poles in 1998 by counting neutrons, a clue that ice is there.",
+      "value": "Lunar Prospector neutron spectrometer, 1998",
+      "source": "https://ntrs.nasa.gov/citations/20230012260"
     }
   ]
 }
