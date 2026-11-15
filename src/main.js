@@ -454,6 +454,8 @@ function trainingSpot(target) {
       return guideRef(findIt('ice-oven'), 'oven');
     case 'water-walls':
       return guideRef(findIt('water-walls'), 'water-walls');
+    case 'telescope':
+      return guideRef(findIt('telescope'), 'telescope');
     case 'shelter': {
       const sp = world.habitat.shelterSpawn;
       return { zone: 'habitat', x: sp.x, z: sp.z, kind: 'shelter' };
@@ -528,6 +530,8 @@ const instances = createInstanceManager(uiRoot, {
       if (result.bestStreak > (loadSettings().iceBestStreak ?? 0)) saveSettings({ iceBestStreak: result.bestStreak });
       stormLog(`Drilled ${result.soilKg.toFixed(0)} kg of icy soil (about ${result.waterKg.toFixed(1)} kg of water in it). Bag: ${result.bagKg.toFixed(0)} kg — bake it in the Ice Oven.`);
     }
+    // Training Day: leaving the telescope (found a star or not) ends its step — the storm drill comes next
+    if (id === 'telescope') assistant.notify('telescope-used');
     if (id === 'telescope' && result.completed) {
       const t = TARGETS.find((x) => x.id === result.id);
       stormLog(`Telescope: found ${t?.name ?? result.id} (${result.stars} stars).${result.isNew ? ' New card in your Star Album!' : ''}`);

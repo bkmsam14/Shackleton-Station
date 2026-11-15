@@ -28,6 +28,7 @@ const MARKS = {
   crate: { up: 2.4, ring: 0.7 },
   pad: { up: 3, ring: 3.4, size: 1.6, centred: true }, // the whole landing pad
   ice: { up: 1.9, ring: 0.7 },
+  telescope: { up: 2.7, ring: 0.7 },
   default: { up: 2.2, ring: 0.6 },
 };
 

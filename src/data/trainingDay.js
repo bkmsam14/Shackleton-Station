@@ -153,12 +153,24 @@ export const TRAINING_DAY = [
     target: 'oven',
     done: { event: 'ice-oven-started' },
   },
+  // ---------------------------------------------------------------- stars (telescope)
+  {
+    id: 'telescope',
+    chapter: 'sky',
+    text: 'Break time: let’s look at the stars! Walk to the telescope.',
+    long: 'With no air to scatter sunlight, the Moon’s sky is black even in daytime, so we can see stars. Follow the arrow to the telescope north-east of the habitat, press E and find a constellation.',
+    mood: 'happy',
+    target: 'telescope',
+    done: { event: 'telescope-used' },
+  },
   // ---------------------------------------------------------------- storm drill (normal speed)
+  // It starts as soon as you leave the telescope: you are far from the shelter, like a real
+  // surprise. The real warning time (about 48 s of play) is enough to get back inside.
   {
     id: 'storm',
     chapter: 'storm',
-    text: 'Solar flare! Fast particles are coming. Run to the storm shelter!',
-    long: 'Storm drill! This replays a real solar flare. Fast particles from the Sun are on their way. Go to the storm shelter in the sleeping nook (follow the arrow). The chip shows how long you have.',
+    text: 'Solar flare! Fast particles are coming. Hurry back to the storm shelter!',
+    long: 'Storm drill! This replays a real solar flare. Fast particles from the Sun are on their way. Go back into the habitat, to the storm shelter in the sleeping nook (follow the arrow). The chip shows how long you have.',
     mood: 'wow',
     target: 'shelter',
     trigger: 'storm-drill',
@@ -208,6 +220,7 @@ export const TRAINING_CHAPTERS = [
   { id: 'delivery', title: 'Delivery', learned: 'Cargo lands on thrusters, not parachutes' },
   { id: 'solar', title: 'Solar Fix', learned: 'Sunlight frees electrons: that is electricity' },
   { id: 'ice', title: 'Moon ice', learned: 'Dark craters hold ice we can turn into water' },
+  { id: 'sky', title: 'Stars', learned: 'No air: the Moon’s sky is black even by day' },
   { id: 'storm', title: 'Storm drill', learned: 'Mass and water shield you from particles' },
   { id: 'harvest', title: 'Harvest', learned: 'Plant one potato, harvest more' },
 ];
@@ -215,6 +228,6 @@ export const TRAINING_CHAPTERS = [
 export const TRAINING_DONE = {
   id: 'tour-done',
   text: 'Training day done! From now on, you’re in charge.',
-  long: 'Training day done! You made oxygen, ordered supplies, grew food, fixed the solar array, mined Moon ice and got through a solar storm. From now on time runs at normal speed and you’re in charge. Press E on me any time for a tip.',
+  long: 'Training day done! You made oxygen, ordered supplies, grew food, fixed the solar array, mined Moon ice, looked at the stars and got through a solar storm. From now on time runs at normal speed and you’re in charge. Press E on me any time for a tip.',
   mood: 'cheer',
 };

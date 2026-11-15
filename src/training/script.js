@@ -8,7 +8,7 @@ import { TRAINING } from '../config/gameplay.js';
 export const TRIGGERS = ['micrometeorite', 'rush-delivery', 'storm-drill', 'ripen'];
 
 /** Places the cyan arrow can point to (resolved to positions in main.js). */
-export const TARGETS = ['electrolysis', 'terminal', 'airlock', 'greenhouse', 'pots', 'array', 'pad', 'ice', 'oven', 'shelter', 'water-walls'];
+export const TARGETS = ['electrolysis', 'terminal', 'airlock', 'greenhouse', 'pots', 'array', 'pad', 'ice', 'oven', 'telescope', 'shelter', 'water-walls'];
 
 /** Base-clock speed: slower while training (a step can override it), normal otherwise. */
 export function trainingPace(step, active) {
