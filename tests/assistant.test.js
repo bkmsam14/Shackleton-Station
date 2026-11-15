@@ -66,7 +66,7 @@ test('full Training Day: every step in order → tour done, saved, reported once
 test('a "watch" step completes on its own after a few seconds', () => {
   const i = LINES.TOUR.findIndex((s) => s.done.after !== undefined);
   assert.ok(i >= 0);
-  const a = createAssistant({ store: memoryStore({ volt: { tourIndex: i } }) });
+  const a = createAssistant({ store: memoryStore({ volt: { tourIndex: i, tourVersion: LINES.TOUR_VERSION } }) });
   a.startIfNeeded();
   assert.equal(runUntilLine(a).id, LINES.TOUR[i].id);
   for (let t = 0; t < LINES.TOUR[i].done.after - 1; t += 0.5) a.step(0.5, play());
@@ -102,7 +102,7 @@ test('skip and replay', () => {
 });
 
 test('returning player gets a welcome, not the tour', () => {
-  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true } }) });
+  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true, tourVersion: LINES.TOUR_VERSION } }) });
   a.startIfNeeded();
   assert.equal(a.tourActive, false);
   assert.equal(runUntilLine(a).id, 'welcome-back');
@@ -115,7 +115,7 @@ test('silent while not playing (menus, PDA, mini-games)', () => {
 });
 
 test('cooldown blocks a second news line, but warnings skip it', () => {
-  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true } }) });
+  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true, tourVersion: LINES.TOUR_VERSION } }) });
   a.notify('sun-down');
   assert.equal(a.step(0.1, play()).id, 'sun-down');
   a.notify('sun-up');
@@ -125,14 +125,14 @@ test('cooldown blocks a second news line, but warnings skip it', () => {
 });
 
 test('warnings beat facts and news in priority', () => {
-  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true } }) });
+  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true, tourVersion: LINES.TOUR_VERSION } }) });
   a.notify('sun-down');
   a.notify('food-low');
   assert.equal(a.step(0.1, play()).id, 'food-low');
 });
 
 test('quiet mode drops facts and news but keeps warnings', () => {
-  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true } }) });
+  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true, tourVersion: LINES.TOUR_VERSION } }) });
   a.setChattiness('quiet');
   assert.equal(a.notify('sun-down'), false); // main.js falls back to a caption
   assert.equal(a.notify('zone:outside'), false);
@@ -142,20 +142,20 @@ test('quiet mode drops facts and news but keeps warnings', () => {
 });
 
 test('chatty mode shares an idle fact after the interval', () => {
-  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true } }) });
+  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true, tourVersion: LINES.TOUR_VERSION } }) });
   assert.equal(runUntilLine(a, play(), ASSISTANT.FACT_EVERY_S - 5), null);
   const l = runUntilLine(a, play(), 20);
   assert.equal(l.kind, 'fact');
 });
 
 test('first visit to a place is said once', () => {
-  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true } }) });
+  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true, tourVersion: LINES.TOUR_VERSION } }) });
   assert.equal(a.notify('zone:greenhouse'), true);
   assert.equal(a.notify('zone:greenhouse'), false);
 });
 
 test('talk gives the most useful tip for right now', () => {
-  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true } }) });
+  const a = createAssistant({ store: memoryStore({ volt: { tourDone: true, tourVersion: LINES.TOUR_VERSION } }) });
   assert.equal(a.talk(play({ oxygen: 20 })).id, 'talk-oxygen');
   assert.equal(a.talk(play({ oxygen: 20, zoneId: 'outside' })).id, 'talk-oxygen-out');
   assert.equal(a.talk(play({ power: 10 })).id, 'talk-power');
@@ -242,11 +242,25 @@ test('storm drill: the gentlest real storm, moved to now, real warning time kept
 
 test('doing a step a moment before Volt says it still counts (no getting stuck)', () => {
   const i = LINES.TOUR.findIndex((s) => s.done.event === 'eat-tried');
-  const a = createAssistant({ store: memoryStore({ volt: { tourIndex: i } }) });
+  const a = createAssistant({ store: memoryStore({ volt: { tourIndex: i, tourVersion: LINES.TOUR_VERSION } }) });
   a.startIfNeeded();
   assert.equal(a.notify('eat-tried'), true); // pressed F before the line
   assert.equal(a.tourStep.id, 'eat'); // the kid still hears the step…
   assert.equal(runUntilLine(a).id, 'eat');
   a.step(0.1, play()); // …and it completes right after
   assert.equal(a.tourStep.id, LINES.TOUR[i + 1].id);
+});
+
+test('players who finished the OLD tour still get the Training Day once', () => {
+  // a save from before the Training Day: tour done, no version
+  const store = memoryStore({ volt: { tourDone: true, chattiness: 'helpful', tourIndex: 5 } });
+  const a = createAssistant({ store });
+  a.startIfNeeded();
+  assert.equal(a.tourActive, true);
+  assert.equal(a.tourStep.id, LINES.TOUR[0].id); // from the start, not the old step 5
+  assert.equal(a.chattiness, 'helpful'); // other settings kept
+  a.skipTour();
+  const b = createAssistant({ store }); // skipped/finished the new tour → not again
+  b.startIfNeeded();
+  assert.equal(b.tourActive, false);
 });

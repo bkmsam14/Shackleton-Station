@@ -9,6 +9,8 @@
 // target: where the 3D marker goes (resolved to a position in main.js)
 // The first-day tour is the guided Training Day (src/data/trainingDay.js).
 export { TRAINING_DAY as TOUR, TRAINING_DONE as TOUR_DONE } from './trainingDay.js';
+// Bump when the tour changes, so players who finished an older tour get the new one once.
+export const TOUR_VERSION = 2; // 1 = the old 7-step tour, 2 = the Training Day
 export const TOUR_SKIPPED = {
   id: 'tour-skipped',
   text: 'Okay! Press E on me any time for a tip.',
