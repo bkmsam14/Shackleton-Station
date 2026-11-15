@@ -6,6 +6,7 @@
 //    (real life: one synodic month, ~29.5 days).
 
 import { TIME, SKY } from '../config/gameplay.js';
+import { skyTurnDeg, sunEclipticLon } from './skyMath.js';
 
 export function wrapDeg(a) {
   return ((a % 360) + 360) % 360;
@@ -57,7 +58,9 @@ export function skipGameHours(state, hours) {
 }
 
 export function sunAzimuthDeg(state, sky = SKY) {
-  return wrapDeg(sky.SUN_START_AZIMUTH_DEG + (360 * state.sunRealSeconds) / sky.GAME_SUN_LOOP_REAL_SECONDS);
+  // The sky turns counter-clockwise seen from above at the lunar south pole → azimuth goes DOWN
+  // (the Moon spins the same way as Earth; see skyMath.js).
+  return wrapDeg(sky.SUN_START_AZIMUTH_DEG - (360 * state.sunRealSeconds) / sky.GAME_SUN_LOOP_REAL_SECONDS);
 }
 
 /** Sun info for this moment. */
@@ -67,6 +70,8 @@ export function getSun(state, sky = SKY) {
     azimuthDeg: azimuth,
     elevationDeg: sky.SUN_ELEVATION_DEG,
     visibility: sunVisibility(azimuth, sky),
+    // how far the starry sky has turned (azimuth of anything on the sky = λ + skyTurnDeg)
+    skyTurnDeg: skyTurnDeg(azimuth, sunEclipticLon(state.sunRealSeconds, sky)),
   };
 }
 

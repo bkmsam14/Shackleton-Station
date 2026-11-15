@@ -103,6 +103,25 @@ export const SKY = {
   SKY_DISC_SCALE: 1.6, // GAME BALANCE (not real data) — drawn a bit bigger for small screens
   EARTH_AZIMUTH_DEG: 150, // GAME BALANCE (not real data) — Earth's fixed direction
   EARTH_ELEVATION_DEG: 4, // GAME BALANCE (not real data) — low on horizon (libration ±6.7°)
+  // Real stars (src/systems/skyMath.js). The Moon spins the same way as Earth, so seen from the
+  // south pole the whole sky turns COUNTER-clockwise when viewed from above (azimuth goes down).
+  // The Sun's place among the stars on the first day: ecliptic longitude ≈ 48° is where the
+  // Sun is around 8 May (the Stormy Sun replay date). It creeps ~1° per day (one lap a year).
+  SUN_ECLIPTIC_LON_START_DEG: 48, // ≈ 8 May (from the vernal equinox, 20 March, + ~49 days)
+  STAR_MAX_MAG: 5.5, // faintest stars drawn (about the naked-eye limit with no light pollution)
+};
+
+// ---------------------------------------------------------------------------
+// TELESCOPE — Star Hunt mini-game (src/instances/telescope/)
+// ---------------------------------------------------------------------------
+export const TELESCOPE = {
+  SUN_GLARE_DEG: 25, // GAME BALANCE (not real data) — the sun shutter closes this close to the Sun
+  ZOOM_FOV_DEG: [70, 36, 16], // GAME BALANCE (not real data) — finder → normal → close
+  LOCK_SECONDS: 1, // GAME BALANCE (not real data) — hold the target in the crosshair this long
+  LOCK_RADIUS_DEG: 6, // GAME BALANCE (not real data) — "in the crosshair" (at normal zoom)
+  ROUND_SECONDS: 90, // GAME BALANCE (not real data) — find + draw the constellation
+  PAN_DEG_PER_S: 40, // GAME BALANCE (not real data) — keyboard panning speed at normal zoom
+  STAR_SECONDS: 45, // GAME BALANCE (not real data) — finish under this for the 2nd star
 };
 
 // ---------------------------------------------------------------------------
