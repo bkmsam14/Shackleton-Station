@@ -63,6 +63,17 @@ How the game uses them (ratios stay real, amounts are scaled):
 - NASA is developing tall **vertical solar arrays** (VSAT project) that can follow the low Sun. *Source: NASA VSAT annual review, 2023 — https://ntrs.nasa.gov/api/citations/20230012849/downloads/GCD%20Annual%20Review%20VSAT%20September%202023%20Final.pdf*
 - During dark periods, a base needs stored energy (batteries or regenerative fuel cells).
 
+### Solar cells (used by the Solar Fix repair lesson)
+- **Photons free electrons:** sunlight is made of photons; only photons the cell absorbs make electricity; absorbed energy knocks electrons loose from the material's atoms. → This is the **photovoltaic effect**. *Source: U.S. EIA — https://www.eia.gov/energyexplained/solar/photovoltaics-and-electricity.php*
+- **Like a battery:** the freed electrons collect on one side, making a voltage "similar to the negative and positive terminals of a battery"; when the cell is connected to an outside circuit, electricity flows. PV cells make **direct current (DC)**, which can charge batteries. *Source: U.S. EIA (same page)*
+- **One-way gate:** the cell is processed to form a **diode**, which lets current flow in only one direction; metal contacts (the grid lines) carry the current out. Most cells are **silicon**. *Source: U.S. DOE, PV Cells 101 — https://www.energy.gov/eere/solar/articles/pv-cells-101-primer-solar-photovoltaic-cell*
+- **Chains of cells:** cells are connected **in series** in a module to raise the voltage; "shading one cell causes the current in the string of cells to fall to the level of the shaded cell". Real modules add **bypass diodes** to isolate a bad cell. *Source: PVEducation (Honsberg & Bowden), Shading — https://www.pveducation.org/pvcdrom/modules-and-arrays/shading*
+- **Game simplifications (details left out):** no p–n junction, band gap or bypass diodes on screen; a "cracked" cell in the lesson makes no electricity, so its whole row goes dark (in a real module a bypass diode would limit the loss to its group). The array's 5 rows with 3 dark match the game's damaged output (40 %, game balance). Micrometeorite damage to the array, how often it happens and how much power it costs are **game balance**; the real basis is only that micrometeoroids strike the Moon.
+
+### Supply deliveries (supply terminal + cargo pad)
+- **Light delay:** one way = distance ÷ speed of light = 384,400 km ÷ 299,792.458 km/s ≈ **1.28 s** (matches "about 1.3 seconds" in Communication below); round trip ≈ 2.56 s. Shown in real seconds, **not sped up**. *Sources: NASA Moon Fact Sheet (distance); speed of light exact by SI definition.*
+- **Game simplifications:** Mission Control's review, packing time and the cargo flight time are **game balance** (the flight is shortened and the game says so); no real flight time is shown until a source is added. The crate lands on thrusters (no air, so no parachutes) and the dust it throws up flies in arcs and falls straight back (no air to make a cloud). The landing "sound" is the pad's radio beacon (sound can't travel through vacuum).
+
 ### Radiation and shielding
 - The Moon has no thick atmosphere and no global magnetic field, so particles from the Sun and from deep space reach the surface.
 - Solar flares can be followed by **solar particle events**, bursts of fast particles that are dangerous for astronauts.

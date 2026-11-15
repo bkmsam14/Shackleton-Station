@@ -186,6 +186,36 @@
       "text": "NASA engineers have studied \"water walls\": habitat walls of water bags that block radiation and help clean water and air.",
       "value": "NASA NIAC Water Walls concept",
       "source": "https://www.nasa.gov/general/water-walls-highly-reliable-and-massively-redundant-life-support-architecture"
+    },
+    {
+      "id": "solar-photons",
+      "text": "Sunlight is made of tiny packets of energy called photons. When a solar cell absorbs one, it knocks an electron loose.",
+      "value": "Photovoltaic effect (Solar Fix lesson, step 1)",
+      "source": "https://www.eia.gov/energyexplained/solar/photovoltaics-and-electricity.php"
+    },
+    {
+      "id": "solar-circuit-dc",
+      "text": "A solar cell pushes loose electrons to one side like a battery; connect a wire and they flow one way round the circuit: direct current (DC).",
+      "value": "Solar Fix lesson, step 2; the cell works like a diode (one-way gate)",
+      "source": "https://www.eia.gov/energyexplained/solar/photovoltaics-and-electricity.php"
+    },
+    {
+      "id": "solar-cell-diode",
+      "text": "A solar cell is built like a diode, which lets current flow in only one direction.",
+      "value": "Solar Fix lesson, Go deeper card",
+      "source": "https://www.energy.gov/eere/solar/articles/pv-cells-101-primer-solar-photovoltaic-cell"
+    },
+    {
+      "id": "solar-chain",
+      "text": "Solar cells are joined in chains (in series). A cell that makes no electricity holds back its whole chain.",
+      "value": "'shading one cell causes the current in the string of cells to fall to the level of the shaded cell' (Solar Fix lesson, step 3)",
+      "source": "https://www.pveducation.org/pvcdrom/modules-and-arrays/shading"
+    },
+    {
+      "id": "light-delay-moon",
+      "text": "A radio message takes about 1.3 seconds to travel between the Moon and Earth, because nothing goes faster than light.",
+      "value": "384,400 km ÷ 299,792.458 km/s = 1.28 s one way (supply terminal)",
+      "source": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html"
     }
   ]
 }
