@@ -1330,7 +1330,7 @@ renderer.setAnimationLoop(() => {
     camera.lookAt(4, 3, 14);
   }
   const viewZone = mode === 'start' ? 'outside' : player.zoneId;
-  music.setMood(mode === 'start' ? (menus.demoPlaying() ? 'off' : 'menu') : mode === 'instance' || mode === 'paused' || mode === 'pda' || dayEnding ? 'lesson' : viewZone === 'outside' ? 'outside' : 'inside');
+  music.setMood(mode === 'start' ? 'menu' : mode === 'instance' || mode === 'paused' || mode === 'pda' || dayEnding ? 'lesson' : viewZone === 'outside' ? 'outside' : 'inside');
   music.update(frameDt);
   const sun = getSun(day);
   const alignment = world.update(dt, camera, player.position, sun, (day.gameSeconds / 86400) * Math.PI * 2, viewZone);

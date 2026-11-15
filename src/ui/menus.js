@@ -45,60 +45,6 @@ const CREDITS = `
       (<a href="https://opengameart.org/content/blue-moon-beach" target="_blank" rel="noopener">Blue Moon Beach</a>). Thank you!</p>
   </div>`;
 
-const DEMO_VIDEO = `${import.meta.env.BASE_URL}video/demo.mp4`;
-
-/** Full-screen player for the demo video. Returns { open(), close(), isOpen() }. */
-function createDemoPlayer(root, { onClose }) {
-  const box = document.createElement('div');
-  box.className = 'demo-player';
-  box.hidden = true;
-  box.setAttribute('role', 'dialog');
-  box.setAttribute('aria-label', 'Shackleton Station demo video');
-  box.innerHTML = `
-    <video class="demo-video" controls playsinline preload="none"></video>
-    <p class="demo-error" hidden>Sorry, the demo video couldn't load.</p>
-    <button type="button" class="mm-btn demo-back"><span class="mm-ic">${MI.back}</span>Back to menu</button>`;
-  root.appendChild(box);
-  const video = box.querySelector('video');
-  const error = box.querySelector('.demo-error');
-  let open = false;
-
-  function close() {
-    if (!open) return;
-    open = false;
-    video.pause();
-    video.removeAttribute('src');
-    video.load(); // stop downloading
-    box.hidden = true;
-    onClose?.();
-  }
-  video.addEventListener('ended', close);
-  video.addEventListener('error', () => {
-    if (open && video.getAttribute('src')) error.hidden = false;
-  });
-  box.querySelector('.demo-back').addEventListener('click', close);
-  box.addEventListener('keydown', (e) => {
-    if (e.code === 'Escape') {
-      e.stopPropagation();
-      close();
-    }
-  });
-
-  return {
-    open() {
-      open = true;
-      error.hidden = true;
-      box.hidden = false;
-      video.src = DEMO_VIDEO;
-      video.currentTime = 0;
-      video.play().catch(() => {}); // a click started this, so sound is allowed; if not, the controls are there
-      box.querySelector('.demo-back').focus();
-    },
-    close,
-    isOpen: () => open,
-  };
-}
-
 /** Music volume (main menu + pause). */
 function musicRow() {
   return `<div class="menu-row"><label class="label" for="music-volume">Music</label>
@@ -195,7 +141,6 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
         <div class="mm-buttons">
           <button type="button" class="mm-btn mm-btn-main" data-action="start"><span class="mm-ic">${MI.play}</span><span data-play-label>Play</span></button>
           <button type="button" class="mm-btn mm-btn-alt" data-action="new" hidden><span class="mm-ic">${MI.star}</span>New mission</button>
-          <button type="button" class="mm-btn" data-action="demo"><span class="mm-ic">${MI.film}</span>Watch demo</button>
           <button type="button" class="mm-btn" data-panel="settings"><span class="mm-ic">${MI.gear}</span>Settings</button>
           <button type="button" class="mm-btn" data-panel="how"><span class="mm-ic">${MI.book}</span>How to play</button>
           <button type="button" class="mm-btn" data-panel="credits"><span class="mm-ic">${MI.heart}</span>Credits</button>
@@ -393,23 +338,7 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
   start.querySelector('[data-action="start"]').addEventListener('click', onStart);
   pause.querySelector('[data-action="resume"]').addEventListener('click', onResume);
 
-  // "Watch demo": plays our demo video full screen, then comes back to the main menu
-  // (when it ends, or with "Back to menu" / Esc). The file only downloads when asked for.
-  const demo = createDemoPlayer(root, {
-    onClose: () => {
-      start.hidden = false;
-      start.querySelector('[data-action="demo"]').focus();
-    },
-  });
-  start.querySelector('[data-action="demo"]').addEventListener('click', () => {
-    if (!panel.hidden) closePanel();
-    start.hidden = true;
-    demo.open();
-  });
-
   return {
-    /** True while the demo video is on screen (the menu music stays quiet). */
-    demoPlaying: () => demo.isOpen(),
     showStart(v) {
       start.hidden = !v;
       if (v) syncMission();

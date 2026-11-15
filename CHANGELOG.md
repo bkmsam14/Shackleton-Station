@@ -5,9 +5,6 @@
 Merged after the 0.11.0 balance pass; `package.json` still says 0.11.0.
 
 ### Gameplay
-- **Watch demo (main menu):** plays our demo video (`public/video/demo.mp4`, 55 MB, 31 s) full
-  screen, then returns to the main menu when it ends (or with "Back to menu" / Esc). The menu music
-  goes quiet while it plays; the file only downloads when the button is pressed.
 - **Volt's airlock facts:** while the airlock cycles there's a 50 % chance Volt explains one
   thing about it: why two doors, depressurizing (air pushes on a 1 m² hatch like 150 grown-ups),
   saving the air, the pure-oxygen prebreathe, the gold visor, repressurizing, sticky Moon dust.
