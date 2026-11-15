@@ -123,10 +123,10 @@ test('Day 1 always starts with the Training Day, even after finishing or skippin
   assert.equal(b.tourStep.id, LINES.TOUR[0].id);
 });
 
-test('Day 1 with a half-done Training Day carries on from its step', () => {
+test('Day 1 after a reload starts the Training Day over, even if it was half-done', () => {
   const a = createAssistant({ store: memoryStore({ volt: { tourDone: false, tourVersion: LINES.TOUR_VERSION, tourIndex: 3 } }) });
   a.startIfNeeded({ day: 1 });
-  assert.equal(a.tourStep.id, LINES.TOUR[3].id);
+  assert.equal(a.tourStep.id, LINES.TOUR[0].id);
 });
 
 test('a later day after the Training Day: welcome back, no tour', () => {
