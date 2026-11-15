@@ -9,7 +9,9 @@ import './ui/ui.css';
 import './ui/hud.css';
 
 import * as THREE from 'three';
-import { UI, RECOVERY, TIME, POWER, ASSISTANT, RADIATION, SKY, AIRLOCK } from './config/gameplay.js';
+import { UI, RECOVERY, TIME, POWER, ASSISTANT, RADIATION, SKY, AIRLOCK, DAYS, FARMING } from './config/gameplay.js';
+import { shiftInfo, createMission, serializeMission, addRescue, stepMission, plantsGrowTonight, dayStars, endDay as endMissionDay, overnightRefill, fmtCountdown, dayStartSeconds } from './systems/days.js';
+import { replayDay1Ms } from './systems/spaceWeather.js';
 import { createWorld, QUALITY } from './world/World.js';
 import { createPostFX } from './world/postfx.js';
 import { LAYOUT } from './world/layout.js';
@@ -105,6 +107,14 @@ let airlockRun = null; // { cycle, resolve }
 setVolume(loadSettings().sfxVolume ?? 0.8);
 const player = createPlayerController(camera, document.body, world, input);
 const day = createDayCycle();
+// The mission: DAYS.COUNT work shifts to survive (systems/days.js). A saved mission continues
+// at the START of its saved day (oxygen, power and water full; hunger as it was).
+const savedMission = loadSettings().mission ?? null;
+const mission = createMission(savedMission?.won ? null : savedMission);
+if (mission.day > 1) {
+  day.gameSeconds = dayStartSeconds(mission.day);
+  day.sunRealSeconds = (mission.day - 1) * TIME.REAL_SECONDS_PER_GAME_DAY;
+}
 
 const uiRoot = document.createElement('div');
 uiRoot.className = 'ui-root';
@@ -234,7 +244,8 @@ const voltHead = new THREE.Vector3();
 const two = (n) => String(n).padStart(2, '0');
 feedback.setClock(() => {
   const c = getClock(day);
-  return 'Day ' + c.day + ' ' + two(c.hour) + ':' + two(c.minute);
+  const left = shiftInfo(day.gameSeconds).secondsLeft;
+  return `Day ${c.day}/${DAYS.COUNT} · ${two(c.hour)}:${two(c.minute)} · ${fmtCountdown(left / training.pace())} left`;
 });
 let earthHiddenSaid = false;
 let lastHudState = null; // latest gauge snapshot (used by the PDA)
@@ -299,6 +310,8 @@ function enterPlay() {
   menus.showPause(false);
   feedback.setCrosshairVisible(true);
   if (mode === 'start') {
+    if (savedMission && !savedMission.won && mission.day > 1 && Number.isFinite(savedMission.food)) gauges.food = savedMission.food;
+    saveMission();
     hud.showLocation('habitat');
     // Volt runs the first-day tour (it points at the gauge rings in step 2), or says hello.
     volt.hopTo(player);
@@ -812,6 +825,7 @@ async function gentleFailure(reason) {
   await feedback.fadeTo(true, RECOVERY.FADE_SECONDS);
 
   const radiationRest = reason === 'radiation';
+  addRescue(mission); // the day goes on; the rescue shows on the day card
   // carrying icy soil? some spills on the way back (the rest stays in the bag)
   const spilledKg = ice.bagKg > 0 ? spillBag(ice) : 0;
   if (spilledKg > 0) saveIce();
@@ -839,7 +853,7 @@ async function gentleFailure(reason) {
   feedback.showFadeCard(`
     <h2>Phew — you are safe!</h2>
     <p>${why}</p>
-    <p class="small">You rested for ${RECOVERY.REST_GAME_HOURS} hours. Time passed: you used food and oxygen, and the base kept using power.${radiationRest ? ' The radiation dose you got stays on your record (dose adds up — it does not heal).' : ''}</p>
+    <p class="small">You rested for ${RECOVERY.REST_GAME_HOURS} hour. The day goes on: survive until ${DAYS.END_HOUR}:00! (This rescue shows on your day card.)${radiationRest ? ' The radiation dose you got stays on your record (dose adds up — it does not heal).' : ''}</p>
     ${spilledKg > 0 ? `<p class="small">Some icy soil spilled on the way: you lost ${spilledKg.toFixed(0)} kg and kept ${ice.bagKg.toFixed(0)} kg in your bag.</p>` : ''}
     <p class="small">${tip}</p>`);
   await wait(5200);
@@ -848,8 +862,8 @@ async function gentleFailure(reason) {
   player.frozen = false;
   if (mode === 'busy') mode = 'playing';
   else pausedFromBusy = false;
-  feedback.notify('Rested ' + RECOVERY.REST_GAME_HOURS + ' hours', {
-    long: why + ' You lost ' + RECOVERY.REST_GAME_HOURS + ' hours resting. ' + tip,
+  feedback.notify('Rested ' + RECOVERY.REST_GAME_HOURS + ' hour', {
+    long: why + ' The day goes on. ' + tip,
   });
   assistant.notify('recovered'); // the tour (if running) simply carries on from its step
 }
@@ -1092,6 +1106,99 @@ const training = createTraining({
   },
 });
 
+// ---------------------------------------------------------------- days (survive the shift)
+let dayEnding = false;
+function saveMission() {
+  saveSettings({ mission: { ...serializeMission(mission), food: gauges.food } });
+}
+/** "9 May 2024" for a replay day (null for Live or before the data loads). */
+function replayDateFor(n) {
+  if (!sun?.data?.replayStart || sun.live) return null;
+  const d = new Date(replayDay1Ms(sun.data.replayStart) + (n - 1) * 86400000);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+const starRow = (n) => '★'.repeat(n) + '☆'.repeat(3 - n);
+
+/**
+ * The shift is over: congratulations card → the night passes (you sleep in the nook, which is
+ * the storm shelter; the Ice Oven keeps baking; plants grow) → "Day N" → fade in.
+ */
+async function finishDay() {
+  dayEnding = true;
+  voltVoice.stop();
+  mode = 'busy';
+  player.frozen = true;
+  feedback.setPrompt(null);
+  const done = mission.day;
+  const stars = dayStars(mission, done);
+  const rescues = mission.rescues[done - 1] ?? 0;
+  const lit = plantsGrowTonight(mission, FARMING.LIGHT_SHARE_TO_GROW);
+  const r = endMissionDay(mission);
+  await feedback.fadeTo(true, RECOVERY.FADE_SECONDS);
+  if (r.won) {
+    saveMission();
+    showMissionComplete();
+    return;
+  }
+  // the night: base clock to the next morning, in 1-second steps (storms, oven, Sun)
+  const nightEvents = [];
+  const nightSeconds = ((dayStartSeconds(mission.day) - day.gameSeconds) * 1) / TIME.SCALE;
+  for (let t = 0; t < nightSeconds; t += 1) {
+    const step = Math.min(1, nightSeconds - t);
+    stepDayCycle(day, step);
+    stepIceOven((step * TIME.SCALE) / 3600);
+    nightEvents.push(...stepRadiation(radiation, gameHourNow(), (step * TIME.SCALE) / 3600, { place: 'shelter', wallKg: station.wallKg }));
+  }
+  day.gameSeconds = dayStartSeconds(mission.day);
+  for (const e of nightEvents) if (e.type !== 'limit') handleRadiationEvent(e, { quiet: true });
+  const nightStorm = nightEvents.some((e) => e.type === 'storm-start' || e.type === 'storm-end');
+  const added = overnightRefill(gauges, station);
+  const ready = farming.growOvernight({ lit });
+  saveMission();
+  const sp = world.habitat.shelterSpawn; // you wake up in your bunk in the sleeping nook
+  player.placeAt('habitat', sp.x, sp.z, sp.yawDeg);
+  volt.hopTo(player);
+  const readyNames = [...new Set(ready)].map((c) => ({ potato: 'potatoes', lettuce: 'lettuce', radish: 'radishes' })[c] ?? c);
+  feedback.showFadeCard(`
+    <h2>🎉 Day ${done} complete!</h2>
+    <p class="day-stars" aria-label="${stars} of 3 stars">${starRow(stars)}</p>
+    <p>You kept the base going for a whole ${DAYS.SHIFT_HOURS}-hour shift${rescues ? ` (Volt had to rescue you ${rescues === 1 ? 'once' : `${rescues} times`})` : ', with no rescues'}.</p>
+    <p class="small">Overnight the oxygen, power and water were filled back up. That's a game rule: a real base has to make them.${added.o2Kg > 0.001 ? ` Making ${added.o2Kg.toFixed(2)} kg of oxygen would really take ${(added.o2Kg * 1.125).toFixed(2)} kg of water.` : ''}</p>
+    ${readyNames.length ? `<p class="small">🌱 Ready to harvest: ${readyNames.join(', ')}!</p>` : lit ? '' : '<p class="small">🌑 The grow lights were off for most of the day, so the plants could not grow tonight.</p>'}
+    ${nightStorm ? '<p class="small">☀️ A particle storm came in the night. You were asleep in the sleeping nook, which is the storm shelter.</p>' : ''}
+    <p class="small">Your hunger and your food carry over to tomorrow.</p>`);
+  await wait(5200);
+  const date = replayDateFor(mission.day);
+  feedback.showFadeCard(`<div class="day-title"><span>Day ${mission.day}</span>${date ? `<small>${date} · replay of real space weather</small>` : ''}</div>`);
+  await wait(DAYS.TITLE_SECONDS * 1000);
+  feedback.showFadeCard('');
+  await feedback.fadeTo(false, RECOVERY.FADE_SECONDS);
+  player.frozen = false;
+  mode = 'playing';
+  dayEnding = false;
+  feedback.notify(`Day ${mission.day}: survive until ${DAYS.END_HOUR}:00`, {
+    long: `Day ${mission.day} of ${DAYS.COUNT}. Keep oxygen, food and power going until ${DAYS.END_HOUR}:00 (${fmtCountdown(DAYS.SHIFT_REAL_SECONDS)} minutes).`,
+  });
+}
+
+/** All days survived. */
+function showMissionComplete() {
+  const rows = Array.from({ length: DAYS.COUNT }, (_, i) => `<li>Day ${i + 1} <b>${starRow(dayStars(mission, i + 1))}</b></li>`).join('');
+  feedback.showFadeCard(`
+    <h2>🚀 Mission complete!</h2>
+    <p>You survived ${DAYS.COUNT} days at Shackleton Crater, on the Moon's south pole.</p>
+    <ul class="day-summary">${rows}</ul>
+    <p class="small">You made oxygen from water, grew food, fixed the base and hid from real solar storms, just like a real lunar crew will have to.</p>
+    <button type="button" class="day-again">Play a new mission</button>`);
+  document.querySelector('.day-again')?.addEventListener('click', () => startNewMission());
+}
+
+/** Forget the saved mission (farm, deliveries, damage, ice…) and start again on Day 1. */
+function startNewMission() {
+  saveSettings({ mission: null, farm: null, supply: null, solarDamage: null, impacts: null, habitatLeak: null, ice: null });
+  location.reload();
+}
+
 // ---------------------------------------------------------------- loop
 const timer = new THREE.Timer();
 timer.connect(document);
@@ -1179,6 +1286,8 @@ renderer.setAnimationLoop(() => {
     voltEvent('earth-hidden', 'Earth is below the horizon right now', 'Right now Earth is below the horizon at the south pole. It bobs up and down every month (libration), so radio links need it above the horizon — or a relay satellite.');
   }
   farming.update(frameDt, simDt, { lit: report.hasPower && growLightsOn });
+  if (running) stepMission(mission, simDt, { lightsOn: report.hasPower && growLightsOn });
+  if (mode === 'playing' && !dayEnding && !instances.isOpen && shiftInfo(day.gameSeconds).over) finishDay();
   supply.update(frameDt, dt, zoneId, { pace });
   leak.update(frameDt, simDt, zoneId, { training: training.active }); // random hits: array or habitat
   if (mode === 'playing' && (report.oxygenEmpty || report.foodEmpty)) {
@@ -1239,6 +1348,11 @@ renderer.setAnimationLoop(() => {
     sun,
     zone: zoneId === 'outside' ? { id: 'outside' } : { id: zoneId, name: world.zones[zoneId].name },
     clock: getClock(day),
+    shift: (() => {
+      const info = shiftInfo(day.gameSeconds);
+      const left = info.secondsLeft / training.pace();
+      return { count: DAYS.COUNT, left: fmtCountdown(left), ending: left < 30 };
+    })(),
     station,
     radiation: radiationHud(),
     sun,

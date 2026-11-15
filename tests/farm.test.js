@@ -6,7 +6,8 @@ import {
   plantSeed,
   addCover,
   addWater,
-  stepGrowth,
+  growOvernight,
+  nightsLeft,
   cutLeaf,
   serializeFarm,
   growthStage,
@@ -20,7 +21,7 @@ function growToReady(s, id) {
   assert.ok(plantSeed(s, id));
   addCover(s, id, FARMING.COVER_LOADS);
   addWater(s, id, FARMING.WATER_NEEDED);
-  stepGrowth(s, FARMING.GROW_REAL_SECONDS + 1);
+  for (let n = 0; n < FARMING.GROW_NIGHTS; n++) growOvernight(s);
   assert.equal(s.pots[id].stage, STAGE.READY);
 }
 
@@ -64,17 +65,19 @@ test('watering needs enough drops on the soil', () => {
   assert.equal(s.pots.a.stage, STAGE.GROWING);
 });
 
-test('plants grow only with the grow lights on, through visual stages', () => {
+test('a potato grows overnight: planted on day 1, ready on day 3; no light, no growth', () => {
   const s = fresh();
   plantSeed(s, 'a');
   addCover(s, 'a', FARMING.COVER_LOADS);
   addWater(s, 'a', FARMING.WATER_NEEDED);
   assert.equal(growthStage(s.pots.a), 0);
-  stepGrowth(s, 100, { lit: false });
+  assert.equal(nightsLeft(s.pots.a), 2);
+  growOvernight(s, { lit: false }); // grow lights off too long: nothing grows tonight
   assert.equal(s.pots.a.growth, 0);
-  stepGrowth(s, FARMING.GROW_REAL_SECONDS * 0.5);
+  growOvernight(s); // night 1 → day 2
   assert.equal(growthStage(s.pots.a), 1);
-  const ready = stepGrowth(s, FARMING.GROW_REAL_SECONDS);
+  assert.equal(nightsLeft(s.pots.a), 1);
+  const ready = growOvernight(s); // night 2 → day 3
   assert.deepEqual(ready, ['a']);
   assert.equal(growthStage(s.pots.a), 3);
 });
@@ -114,7 +117,7 @@ test('save → load keeps pots and inventory; bad saves fall back to empty pots'
   plantSeed(s, 'a');
   addCover(s, 'a', FARMING.COVER_LOADS);
   addWater(s, 'a', FARMING.WATER_NEEDED);
-  stepGrowth(s, 30);
+  growOvernight(s);
   const loaded = createFarmState(['a', 'b'], JSON.parse(JSON.stringify(serializeFarm(s))));
   assert.deepEqual(loaded.pots, s.pots);
   assert.deepEqual(loaded.inventory.items, s.inventory.items);
@@ -127,15 +130,14 @@ import { eatPotato, canEat } from '../src/farming/farmState.js';
 import { createGauges, addFood, RATES } from '../src/systems/gauges.js';
 import { BVAD, TIME } from '../src/config/gameplay.js';
 
-test('potato food value is derived from grow time, hunger rate and spare potatoes', () => {
-  const eatenPerCycle = (BVAD.FOOD_KG_PER_DAY_DRY * FARMING.CYCLE_REAL_SECONDS) / TIME.REAL_SECONDS_PER_GAME_DAY;
-  const spare = FARMING.POT_COUNT * (FARMING.HARVEST_YIELD - 1);
-  assert.ok(Math.abs(FARMING.FOOD_KG_PER_POTATO * spare - FARMING.FARM_FOOD_COVERAGE * eatenPerCycle) < 1e-12);
-  // a full farm's spare potatoes refill exactly what the food gauge drains (inside) in one cycle
-  const g = createGauges({ food: 50 });
-  for (let i = 0; i < spare; i++) addFood(g, FARMING.FOOD_KG_PER_POTATO);
-  const drained = RATES.foodInside * FARMING.CYCLE_REAL_SECONDS;
-  assert.ok(Math.abs(g.food - 50 - FARMING.FARM_FOOD_COVERAGE * drained) < 1e-9);
+test('one potato fills half the food gauge; the gauge holds one day of BVAD food', () => {
+  const g = createGauges({ food: 0 });
+  addFood(g, FARMING.FOOD_KG_PER_POTATO);
+  assert.ok(Math.abs(g.food - 50) < 1e-9);
+  // resting inside, a 12-hour shift uses half the gauge (12 of 24 hours of BVAD food)
+  const drained = RATES.foodInside * ((12 * 3600) / TIME.SCALE);
+  assert.ok(Math.abs(drained - 50) < 1e-9);
+  assert.ok(Math.abs(BVAD.FOOD_KG_PER_DAY_DRY - FARMING.FOOD_KG_PER_POTATO * 2) < 1e-12);
 });
 
 test('eating can never overfill the food gauge', () => {

@@ -5,18 +5,22 @@
 // It reuses the real systems (gauges, day cycle, electrolysis, ice oven, solar damage, radiation),
 // so the numbers here can't drift away from what the game does. Simplifications (said honestly):
 //  - mini-games, pot tending and repairs pause the world in the game, so here they take no time;
+//  - the day structure is the game's: shifts with skipped nights, an overnight refill of oxygen,
+//    power and water (game rule), hunger carried over, plants growing one step per lit night;
 //  - the solar array always faces the Sun (it tracks it); micrometeoroid hits are random (seeded):
 //    each one cracks the array OR opens a habitat air leak (never both at once), like the game;
 //  - a bot that repairs patches a leak the next time it is inside (the repair's hour is not simulated);
 //  - storms are checked separately with stormTable() (dose per storm, per place).
 //
-// Balance targets (docs/SCIENCE.md "Game balance"), for one 20-min lunar day:
-//  idle    — does nothing: first failure after 5–8 real min;
-//  sloppy  — reacts late, half-uses the farm, grow lights always on: survives ≥ 18 min;
-//  skilled — keeps every loop going: no failure, ends with a surplus.
-import { TIME, FOOD, FARMING, SUPPLY, ICE, RECOVERY, SKY, POWER, SOLAR_DAMAGE } from '../config/gameplay.js';
+// Balance targets (docs/SCIENCE.md "Game balance"), for the 4-day mission (4 × 6-min shifts):
+//  idle    — does nothing: first rescue during Day 1;
+//  sloppy  — reacts late, half-uses the farm, grow lights always on: Day 1 without a rescue,
+//            only a few rescues in the whole mission;
+//  skilled — keeps every loop going: no rescue at all.
+import { TIME, FOOD, FARMING, SUPPLY, ICE, RECOVERY, POWER, SOLAR_DAMAGE, DAYS } from '../config/gameplay.js';
+import { overnightRefill } from './days.js';
 import { createGauges, stepGauges, addFood, applyRecovery, powerPercent } from './gauges.js';
-import { createDayCycle, stepDayCycle, skipGameHours, getSun } from './daycycle.js';
+import { createDayCycle, stepDayCycle, getSun } from './daycycle.js';
 import { createElectrolysisState, checkAfford, applyBatch } from './electrolysis.js';
 import { createIceState, loadOven, stepOven, checkOven } from './iceMining.js';
 import { expectedStormDose } from './radiation.js';
@@ -41,9 +45,9 @@ export function seededRandom(seed) {
 
 /** How each crop grows and what one harvest gives (from gameplay.js, like farmState.js). */
 const CROP = {
-  potato: { grow: FARMING.GROW_REAL_SECONDS, items: FARMING.HARVEST_YIELD, seed: 'potato' },
+  potato: { nights: FARMING.GROW_NIGHTS, items: FARMING.HARVEST_YIELD, seed: 'potato', replant: 1 },
   ...Object.fromEntries(
-    Object.entries(FARMING.GREENS).map(([id, c]) => [id, { grow: c.growSeconds, items: c.cuts * c.perCut, seed: `${id}-seed` }]),
+    Object.entries(FARMING.GREENS).map(([id, c]) => [id, { nights: c.growNights, items: c.cuts * c.perCut, seed: `${id}-seed`, replant: 0 }]),
   ),
 };
 
@@ -79,19 +83,25 @@ export const BOTS = {
     outsideShare: 0.3,
     makeO2At: 60,
     batch: 'medium',
-    eatAt: 70,
-    pots: ['potato', 'potato', 'potato', 'radish'],
+    eatAt: 55,
+    pots: ['potato', 'potato', 'potato', 'lettuce'],
     lightsOffAtNight: true,
     seedsAt: 3,
-    mineIceAt: 3,
+    mineIceAt: 1,
     wallKg: 2,
     spareKit: true,
     repairs: true,
   },
 };
 
-/** Run one bot for `seconds` real seconds (1 s steps). Returns a report. */
-export function simulate(bot, { seconds = SKY.GAME_SUN_LOOP_REAL_SECONDS, blockSeconds = 100, seed = 1, damage = true } = {}) {
+const FOOD_ITEMS = ['lettuce', 'radish', 'potato', 'space-meal'];
+
+/**
+ * Play one bot through the whole mission: DAYS.COUNT shifts of DAYS.SHIFT_REAL_SECONDS
+ * (1 s steps), with the night in between (refill, plants grow, the Sun moves on).
+ * A failure is a rescue (gentle failure): gauges partly restored, the day goes on.
+ */
+export function simulate(bot, { blockSeconds = 100, seed = 1, damage = true } = {}) {
   const rand = seededRandom(seed);
   const g = createGauges();
   const day = createDayCycle();
@@ -107,16 +117,17 @@ export function simulate(bot, { seconds = SKY.GAME_SUN_LOOP_REAL_SECONDS, blockS
 
   const inv = {
     potato: FARMING.START_SEED_POTATOES,
+    'space-meal': FARMING.START_SPACE_MEALS,
     'lettuce-seed': FARMING.START_SEEDS.lettuce,
     'radish-seed': FARMING.START_SEEDS.radish,
     lettuce: 0,
     radish: 0,
     kits: SOLAR_DAMAGE.START_KITS,
   };
-  const pots = bot.pots.map((want) => ({ want, crop: null, growth: 0 }));
-  const orders = []; // { at, item }
+  const pots = bot.pots.map((want) => ({ want, crop: null, nights: 0 }));
+  const orders = []; // { at, item } — at: play seconds
   const ordered = (item) => orders.some((o) => o.item === item);
-  const failures = [];
+  const failures = []; // { t, day, cause }
   let blackoutSeconds = 0;
   let damagedSeconds = 0;
   let hits = 0;
@@ -124,131 +135,149 @@ export function simulate(bot, { seconds = SKY.GAME_SUN_LOOP_REAL_SECONDS, blockS
   let leakSeconds = 0;
   let o2Made = 0;
   let iceBags = 0;
-  let eaten = { potato: 0, lettuce: 0, radish: 0 };
+  const eaten = Object.fromEntries(FOOD_ITEMS.map((f) => [f, 0]));
   const lowest = { oxygen: 100, food: 100, power: 100, tankKg: station.tankKg };
+  let play = 0; // play seconds since the start (nights not counted)
 
   const plant = (pot) => {
     const order = [pot.want, ...Object.keys(CROP).filter((c) => c !== pot.want)];
     for (const c of order) {
+      // keep the last seed potato only if a potato is already growing somewhere
       if ((inv[CROP[c].seed] ?? 0) > 0) {
         inv[CROP[c].seed]--;
         pot.crop = c;
-        pot.growth = 0;
+        pot.nights = 0;
         return;
       }
     }
     pot.crop = null;
   };
-  pots.forEach(plant);
-
-  for (let t = 0; t < seconds; t++) {
-    const sun = getSun(day);
-    const sunUp = sun.visibility > 0.5;
-    const lightsOn = !(bot.lightsOffAtNight && !sunUp);
-    const outside = t % blockSeconds < bot.outsideShare * blockSeconds;
-    const hit = damage ? stepImpacts(impacts, 1, { busy: solar.damaged || leak.leaking, rand }) : null;
-    if (hit === 'solar') damageSolar(solar);
-    else if (hit === 'habitat') startLeak(leak);
-    if (hit) hits++;
-    if (hit === 'habitat') leakHits++;
-    if (solar.damaged) damagedSeconds++;
-    if (leak.leaking) leakSeconds++;
-    const r = stepGauges(g, 1, {
-      pressurized: !outside,
-      sunVisibility: sun.visibility,
-      alignment: solarOutputFactor(solar),
-      growLightsOn: lightsOn,
-      extraOxygenKgPerGameHour: leakO2KgPerGameHour(leak),
-    });
-    stepDayCycle(day, 1);
-    if (!r.hasPower) blackoutSeconds++;
-
-    // deliveries
-    for (let i = orders.length - 1; i >= 0; i--) {
-      if (t < orders[i].at) continue;
-      const item = orders[i].item;
-      if (item === 'solar-repair-kit') inv.kits += 1;
-      else inv[SUPPLY.ITEMS[item] && item.replace('-seeds', '-seed')] += SUPPLY.ITEMS[item].seeds;
-      orders.splice(i, 1);
-    }
-
-    // farm: plants grow only with light; a harvest is collected and the pot replanted at once
+  const harvestReady = () => {
     for (const pot of pots) {
-      if (!pot.crop) {
-        if (!outside) plant(pot);
-        continue;
+      if (pot.crop && pot.nights >= CROP[pot.crop].nights) {
+        inv[pot.crop] += CROP[pot.crop].items; // the replanted seed potato is one of them
+        pot.crop = null;
       }
-      if (lightsOn && r.hasPower) pot.growth += 1;
-      if (pot.growth >= CROP[pot.crop].grow && !outside) {
-        inv[pot.crop] += CROP[pot.crop].items;
-        plant(pot);
-      }
+      if (!pot.crop) plant(pot);
     }
+  };
+  const canEat = (id) => {
+    if ((inv[id] ?? 0) <= 0) return false;
+    if (id !== 'potato') return true;
+    return inv.potato > 1 || pots.some((p) => p.crop); // never eat the very last seed potato
+  };
+  const eatOne = () => {
+    const space = ((100 - g.food) / 100) * FOOD.CAPACITY_KG;
+    let pick = FOOD_ITEMS.slice(0, 2).find(canEat); // fresh greens first
+    if (!pick) {
+      const opts = ['potato', 'space-meal'].filter(canEat);
+      const fits = opts.filter((id) => FARMING.FOOD_KG_PER_ITEM[id] <= space + 1e-9).sort((a, b) => FARMING.FOOD_KG_PER_ITEM[b] - FARMING.FOOD_KG_PER_ITEM[a]);
+      pick = fits[0] ?? opts.sort((a, b) => FARMING.FOOD_KG_PER_ITEM[a] - FARMING.FOOD_KG_PER_ITEM[b])[0];
+    }
+    if (!pick) return false;
+    inv[pick]--;
+    eaten[pick]++;
+    addFood(g, FARMING.FOOD_KG_PER_ITEM[pick]);
+    return true;
+  };
 
-    if (ice.oven && g.batteryKwh > 0.01) stepOven(ice, station, TIME.GAME_HOURS_PER_REAL_SECOND);
+  for (let d = 1; d <= DAYS.COUNT; d++) {
+    let lightSeconds = 0;
+    harvestReady(); // the morning: pick what's ready, replant
+    for (let t = 0; t < DAYS.SHIFT_REAL_SECONDS; t++, play++) {
+      const sun = getSun(day);
+      const sunUp = sun.visibility > 0.5;
+      const lightsOn = !(bot.lightsOffAtNight && !sunUp);
+      const outside = t % blockSeconds < bot.outsideShare * blockSeconds;
+      const hit = damage ? stepImpacts(impacts, 1, { busy: solar.damaged || leak.leaking, rand }) : null;
+      if (hit === 'solar') damageSolar(solar);
+      else if (hit === 'habitat') startLeak(leak);
+      if (hit) hits++;
+      if (hit === 'habitat') leakHits++;
+      if (solar.damaged) damagedSeconds++;
+      if (leak.leaking) leakSeconds++;
+      const r = stepGauges(g, 1, {
+        pressurized: !outside,
+        sunVisibility: sun.visibility,
+        alignment: solarOutputFactor(solar),
+        growLightsOn: lightsOn,
+        extraOxygenKgPerGameHour: leakO2KgPerGameHour(leak),
+      });
+      stepDayCycle(day, 1);
+      if (!r.hasPower) blackoutSeconds++;
+      if (lightsOn && r.hasPower) lightSeconds++;
 
-    if (outside) {
-      // repair on the way past the array
-      if (bot.repairs && solar.damaged && inv.kits > 0) {
-        inv.kits--;
-        solar.damaged = false;
-        if (bot.spareKit && !ordered('solar-repair-kit')) orders.push({ at: t + orderSeconds('solar-repair-kit'), item: 'solar-repair-kit' });
+      // deliveries
+      for (let i = orders.length - 1; i >= 0; i--) {
+        if (play < orders[i].at) continue;
+        const item = orders[i].item;
+        if (item === 'solar-repair-kit') inv.kits += 1;
+        else inv[item.replace('-seeds', '-seed')] += SUPPLY.ITEMS[item].seeds;
+        orders.splice(i, 1);
       }
-    } else {
-      if (bot.repairs && leak.leaking) fixLeak(leak); // patch the hole at the life-support rack
-      while (g.oxygen < bot.makeO2At && checkAfford(g, station, bot.batch).ok) {
-        applyBatch(g, station, bot.batch);
-        o2Made += 1;
-      }
-      // food: fresh greens first, then potatoes (keeping one to plant if a potato pot is empty)
-      const eat = (id) => {
-        addFood(g, FARMING.FOOD_KG_PER_ITEM[id]);
-        inv[id]--;
-        eaten[id]++;
-      };
-      while (g.food < bot.eatAt) {
-        if (inv.lettuce > 0) eat('lettuce');
-        else if (inv.radish > 0) eat('radish');
-        else if (inv.potato > 1) eat('potato');
-        else break;
-      }
-      // orders from the supply terminal
-      if (bot.repairs && solar.damaged && inv.kits === 0 && !ordered('solar-repair-kit')) {
-        orders.push({ at: t + orderSeconds('solar-repair-kit'), item: 'solar-repair-kit' });
-      }
-      for (const c of ['lettuce', 'radish']) {
-        if (bot.seedsAt >= 0 && inv[`${c}-seed`] <= bot.seedsAt && !ordered(`${c}-seeds`)) {
-          orders.push({ at: t + orderSeconds(`${c}-seeds`), item: `${c}-seeds` });
+
+      if (ice.oven && g.batteryKwh > 0.01) stepOven(ice, station, TIME.GAME_HOURS_PER_REAL_SECOND);
+
+      if (outside) {
+        // repair on the way past the array
+        if (bot.repairs && solar.damaged && inv.kits > 0) {
+          inv.kits--;
+          solar.damaged = false;
+          if (bot.spareKit && !ordered('solar-repair-kit')) orders.push({ at: play + orderSeconds('solar-repair-kit'), item: 'solar-repair-kit' });
+        }
+      } else {
+        if (bot.repairs && leak.leaking) fixLeak(leak); // patch the hole at the life-support rack
+        while (g.oxygen < bot.makeO2At && checkAfford(g, station, bot.batch).ok) {
+          applyBatch(g, station, bot.batch);
+          o2Made += 1;
+        }
+        while (g.food < bot.eatAt && eatOne());
+        if (bot.repairs && solar.damaged && inv.kits === 0 && !ordered('solar-repair-kit')) {
+          orders.push({ at: play + orderSeconds('solar-repair-kit'), item: 'solar-repair-kit' });
+        }
+        for (const c of ['lettuce', 'radish']) {
+          if (bot.seedsAt >= 0 && inv[`${c}-seed`] <= bot.seedsAt && !ordered(`${c}-seeds`)) {
+            orders.push({ at: play + orderSeconds(`${c}-seeds`), item: `${c}-seeds` });
+          }
+        }
+        // water: one bag of icy soil (dug on the next trip outside), baked in the oven
+        if (station.tankKg < bot.mineIceAt && !ice.oven) {
+          ice.bagKg = ICE.BAG_MAX_KG;
+          if (checkOven(ice, g).ok) {
+            loadOven(ice, g);
+            iceBags++;
+          } else ice.bagKg = 0;
         }
       }
-      // water: one bag of icy soil (dug on the next trip outside), baked in the oven
-      if (station.tankKg < bot.mineIceAt && !ice.oven) {
-        ice.bagKg = ICE.BAG_MAX_KG;
-        if (checkOven(ice, g).ok) {
-          loadOven(ice, g);
-          iceBags++;
-        } else {
-          ice.bagKg = 0;
-        }
+
+      lowest.oxygen = Math.min(lowest.oxygen, g.oxygen);
+      lowest.food = Math.min(lowest.food, g.food);
+      lowest.power = Math.min(lowest.power, powerPercent(g));
+      lowest.tankKg = Math.min(lowest.tankKg, station.tankKg);
+
+      if (r.oxygenEmpty || r.foodEmpty) {
+        failures.push({ t: play, day: d, cause: r.oxygenEmpty ? 'oxygen' : 'food' });
+        applyRecovery(g, { oxygen: RECOVERY.OXYGEN_RESTORE_PERCENT, food: RECOVERY.FOOD_RESTORE_PERCENT });
+        const rest = Math.round(realSecondsForGameHours(RECOVERY.REST_GAME_HOURS));
+        stepDayCycle(day, rest);
+        t += rest;
+        play += rest;
       }
     }
-
-    lowest.oxygen = Math.min(lowest.oxygen, g.oxygen);
-    lowest.food = Math.min(lowest.food, g.food);
-    lowest.power = Math.min(lowest.power, powerPercent(g));
-    lowest.tankKg = Math.min(lowest.tankKg, station.tankKg);
-
-    if (r.oxygenEmpty || r.foodEmpty) {
-      failures.push({ t, cause: r.oxygenEmpty ? 'oxygen' : 'food' });
-      applyRecovery(g, { oxygen: RECOVERY.OXYGEN_RESTORE_PERCENT, food: RECOVERY.FOOD_RESTORE_PERCENT });
-      t += Math.round(skipGameHours(day, RECOVERY.REST_GAME_HOURS));
-    }
+    if (d === DAYS.COUNT) break;
+    // the night: plants grow if they had light, the Sun moves on, then the refill (game rule)
+    const lit = lightSeconds / DAYS.SHIFT_REAL_SECONDS >= FARMING.LIGHT_SHARE_TO_GROW;
+    if (lit) for (const pot of pots) if (pot.crop) pot.nights = Math.min(CROP[pot.crop].nights, pot.nights + 1);
+    stepDayCycle(day, realSecondsForGameHours(DAYS.NIGHT_HOURS));
+    if (ice.oven) stepOven(ice, station, DAYS.NIGHT_HOURS);
+    overnightRefill(g, station);
   }
 
   return {
     seed,
     failures,
     firstFailure: failures[0] ?? null,
+    rescuesByDay: Array.from({ length: DAYS.COUNT }, (_, i) => failures.filter((f) => f.day === i + 1).length),
     blackoutSeconds,
     damagedSeconds,
     hits,
@@ -258,11 +287,11 @@ export function simulate(bot, { seconds = SKY.GAME_SUN_LOOP_REAL_SECONDS, blockS
     iceBags,
     eaten,
     lowest,
-    end: { oxygen: g.oxygen, food: g.food, power: powerPercent(g), tankKg: station.tankKg, potatoes: inv.potato, kits: inv.kits },
+    end: { oxygen: g.oxygen, food: g.food, power: powerPercent(g), tankKg: station.tankKg, potatoes: inv.potato, meals: inv['space-meal'], kits: inv.kits },
   };
 }
 
-/** Run a bot over many random seeds (micrometeorite luck). */
+/** Run a bot over many random seeds (micrometeoroid luck). */
 export function simulateMany(bot, runs = 200, opts = {}) {
   const results = Array.from({ length: runs }, (_, i) => simulate(bot, { ...opts, seed: i + 1 }));
   const firsts = results.map((r) => (r.firstFailure ? r.firstFailure.t : Infinity));
@@ -289,15 +318,21 @@ export function stormTable(storms, wallKgs = [0, 2, 4, 6]) {
   }));
 }
 
-/** The base's night: how much energy it needs, with and without the grow lights. */
+/**
+ * The longest stretch with the Sun hidden DURING a shift (nights are skipped and the battery
+ * is refilled each morning), and what the base needs to get through it.
+ */
 export function nightBudget() {
   const day = createDayCycle();
   let longest = 0;
-  let run = 0;
-  for (let t = 0; t < SKY.GAME_SUN_LOOP_REAL_SECONDS * 2; t++) {
-    run = getSun(day).visibility < 0.5 ? run + 1 : 0;
-    longest = Math.max(longest, run);
-    stepDayCycle(day, 1);
+  for (let d = 1; d <= DAYS.COUNT; d++) {
+    let run = 0;
+    for (let t = 0; t < DAYS.SHIFT_REAL_SECONDS; t++) {
+      run = getSun(day).visibility < 0.5 ? run + 1 : 0;
+      longest = Math.max(longest, run);
+      stepDayCycle(day, 1);
+    }
+    stepDayCycle(day, realSecondsForGameHours(DAYS.NIGHT_HOURS));
   }
   const hours = longest * TIME.GAME_HOURS_PER_REAL_SECOND;
   return {
@@ -309,11 +344,11 @@ export function nightBudget() {
   };
 }
 
-/** Food each crop gives per pot per real minute of growing (for the balance table). */
+/** Food per harvest of each crop, and how many nights it needs (for the balance table). */
 export function cropTable() {
   return Object.entries(CROP).map(([id, c]) => {
-    const edible = id === 'potato' ? c.items - 1 : c.items; // one potato is planted again
-    const perHarvest = (edible * FARMING.FOOD_KG_PER_ITEM[id] * 100) / FOOD.CAPACITY_KG;
-    return { id, growSeconds: c.grow, perItemPct: (FARMING.FOOD_KG_PER_ITEM[id] * 100) / FOOD.CAPACITY_KG, perHarvestPct: perHarvest, pctPerMinute: (perHarvest * 60) / c.grow };
+    const edible = c.items - c.replant; // one potato is planted again
+    const perItemPct = (FARMING.FOOD_KG_PER_ITEM[id] * 100) / FOOD.CAPACITY_KG;
+    return { id, nights: c.nights, perItemPct, perHarvestPct: edible * perItemPct, pctPerDay: (edible * perItemPct) / c.nights };
   });
 }

@@ -626,3 +626,15 @@
 .pda-alert {
   color: #ff9b85;
 }
+
+/* the last 30 s of a day: the countdown glows warm (you're nearly there!) */
+.hud-time.is-ending {
+  color: #ffd27a;
+  animation: hud-time-pulse 1s ease-in-out infinite;
+}
+@keyframes hud-time-pulse {
+  50% { opacity: 0.6; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-time.is-ending { animation: none; }
+}

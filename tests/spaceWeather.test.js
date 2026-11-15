@@ -85,7 +85,7 @@ test('intensity: log scale, clamped, default when unknown', () => {
 test('schedule keeps real spacing; short real warnings get the minimum (and say so)', () => {
   const s = scheduleStorms(buildStorms(data), '2024-05-08T12:00:00Z');
   assert.equal(s.length, 2);
-  assert.ok(Math.abs(s[0].arriveGameHour - 25.983) < 0.01); // 9 May 13:59 − 8 May 12:00
+  assert.ok(Math.abs(s[0].arriveGameHour - 30.983) < 0.01); // 9 May 13:59 − Day 1 start (8 May 07:00 UTC) → Day 2, 13:59
   assert.equal(s[1].extraWarning, true); // real lead 0.78 h < minimum
   assert.ok(Math.abs(s[1].arriveGameHour - s[1].warnGameHour - RADIATION.MIN_WARNING_GAME_HOURS) < 1e-9);
 });

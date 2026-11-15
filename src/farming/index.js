@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { LAYOUT } from '../world/layout.js';
 import { createSign } from '../world/signs.js';
 import { loadSettings, saveSettings } from '../systems/save.js';
-import { createFarmState, serializeFarm, stepGrowth, growthStage, coverFraction, waterFraction, STAGE } from './farmState.js';
+import { createFarmState, serializeFarm, growOvernight, ripenAll, nightsLeft, growthStage, coverFraction, waterFraction, STAGE } from './farmState.js';
 import { createStand, createPot, createPlant, POT, STAND, SOIL_DRY, SOIL_WET } from './farmModels.js';
 import { createFarmView } from './farmView.js';
 import { createInventoryPanel } from './inventoryPanel.js';
@@ -114,7 +114,10 @@ export function createFarming({ world, camera, renderer, root, feedback, gauges,
 
   function potPrompt(pot) {
     if (pot.stage === STAGE.READY) return 'Press E to harvest';
-    if (pot.stage === STAGE.GROWING) return `${CROP_NAME[pot.crop]} growing · ${Math.floor(pot.growth * 20) * 5}%`;
+    if (pot.stage === STAGE.GROWING) {
+      const n = nightsLeft(pot);
+      return `${CROP_NAME[pot.crop]} growing · ready ${n <= 1 ? 'tomorrow' : `in ${n} days`}`;
+    }
     return 'Press E to interact';
   }
 
@@ -139,7 +142,7 @@ export function createFarming({ world, camera, renderer, root, feedback, gauges,
     save, // other features that add to the inventory (supply crates) save it with this
     /** Training Day: every growing plant is ready now (the script says it was sped up). */
     ripenAll() {
-      const ready = stepGrowth(state, 1e9, { lit: true });
+      const ready = ripenAll(state);
       ready.forEach(sync);
       if (ready.length) save();
       return ready.length;
@@ -171,35 +174,27 @@ export function createFarming({ world, camera, renderer, root, feedback, gauges,
       const pot = state.pots[potId];
       if (pot.stage === STAGE.GROWING) {
         const name = CROP_NAME[pot.crop].toLowerCase();
-        feedback.notify(lit ? 'Still growing' : 'Growing paused: no light', {
-          long: lit
-            ? `This ${name} plant is still growing under the red and blue grow lights. Come back when it is ready to harvest.`
-            : `The grow lights are off (switched off, or base power ran out), so the ${name} plant has stopped growing for now.`,
+        const n = nightsLeft(pot);
+        feedback.notify(`Ready ${n <= 1 ? 'tomorrow' : `in ${n} days`}`, {
+          long: `This ${name} plant grows overnight under the red and blue grow lights. It will be ready ${n <= 1 ? 'tomorrow morning' : `in ${n} days`}. Keep the grow lights on for most of the day, or it can't grow tonight.${lit ? '' : ' (The grow lights are off right now.)'}`,
         });
         return;
       }
       view.open(potId);
     },
-    /** frameDt: real frame time (animations). dt: game time step (0 while paused). */
+    /**
+     * A night passed (days.js). lit: the grow lights were on for enough of the day.
+     * Returns the crops that are ready now (for the morning card).
+     */
+    growOvernight({ lit: hadLight = true } = {}) {
+      const ready = growOvernight(state, { lit: hadLight });
+      Object.keys(pots).forEach(sync);
+      save();
+      return ready.map((id) => state.pots[id].crop);
+    },
+    /** frameDt: real frame time (animations). */
     update(frameDt, dt, { lit: lightsOn = true } = {}) {
       lit = lightsOn;
-      if (dt > 0) {
-        const ready = stepGrowth(state, dt, { lit });
-        for (const [id, pot] of Object.entries(state.pots)) {
-          if (pot.stage === STAGE.GROWING || ready.includes(id)) sync(id);
-        }
-        if (ready.length) {
-          save();
-          const crop = CROP_NAME[state.pots[ready[0]].crop];
-          feedback.notify(`${crop} ready to harvest`, {
-            long: `A ${crop.toLowerCase()} plant in the greenhouse is ready to harvest. Bring the cutters!`,
-          });
-        }
-        if (Object.values(state.pots).some((p) => p.stage === STAGE.GROWING)) {
-          saveTimer += dt;
-          if (saveTimer > 5) save();
-        }
-      }
       view.update(frameDt);
       panel.update();
     },

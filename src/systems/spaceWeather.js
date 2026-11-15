@@ -8,7 +8,7 @@
 //    storm day, divided by the quiet level before the storms (a real ratio).
 //  - Timeline: real hours after the replay start = game hours after the game start (the
 //    same 360× sped-up clock as life support), so the real spacing between storms is kept.
-import { RADIATION } from '../config/gameplay.js';
+import { RADIATION, DAYS } from '../config/gameplay.js';
 
 const HOUR_MS = 3600 * 1000;
 
@@ -105,13 +105,22 @@ export function intensityFromRatio(ratio, cfg = RADIATION) {
   return Math.min(1, Math.max(cfg.MIN_INTENSITY, t));
 }
 
+/** The real moment game Day 1 starts: replayStart's date at DAYS.START_HOUR (UTC). */
+export function replayDay1Ms(replayStart, startHour = DAYS.START_HOUR) {
+  const d = new Date(replayStart);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), startHour);
+}
+
 /**
- * Put storms on the game clock. Real hours after replayStart = game hours after the game
- * start. The warning comes when the flare was seen; kids always get at least
- * MIN_WARNING_GAME_HOURS (more than reality for fast storms — the game says so).
+ * Put storms on the game clock, day by day: game Day 1 = the replay's first date (UTC),
+ * Day 2 = the next date, … and the clock time is the real UTC time. So real hours after
+ * Day 1's start = game hours after the game start (nights included: a storm that really
+ * came at night happens while you sleep in the shelter). The warning comes when the flare
+ * was seen; kids always get at least MIN_WARNING_GAME_HOURS (more than reality for fast
+ * storms — the game says so).
  */
 export function scheduleStorms(storms, replayStart, cfg = RADIATION) {
-  const t0 = Date.parse(replayStart);
+  const t0 = replayDay1Ms(replayStart);
   return storms
     .map((s) => {
       const arriveH = (Date.parse(s.arrival) - t0) / HOUR_MS;

@@ -22,7 +22,7 @@ import { createInventory, countOf } from '../src/farming/inventory.js';
 const targets = () => ({
   inventory: createInventory({ potato: 1 }),
   station: { tankKg: 10 },
-  gauges: { batteryKwh: 40 },
+  gauges: { batteryKwh: 20 },
 });
 /** run the clock in small steps until the order reaches `stage` (or give up) */
 function runUntil(state, order, stage, max = 10000) {
@@ -122,7 +122,7 @@ test('collecting moves each unit once into the existing inventory / tank / batte
   assert.equal(countOf(t.inventory, 'solar-repair-kit'), 2);
   assert.equal(countOf(t.inventory, 'potato'), 1 + SUPPLY.ITEMS['seed-potatoes'].potatoes);
   assert.equal(t.station.tankKg, 10 + SUPPLY.ITEMS.water.waterKg);
-  assert.equal(t.gauges.batteryKwh, 40 + SUPPLY.ITEMS['battery-pack'].kwh);
+  assert.equal(t.gauges.batteryKwh, 20 + SUPPLY.ITEMS['battery-pack'].kwh);
   assert.equal(o.stage, 'collected');
   assert.equal(p.stage, 'collected');
   // collecting again gives nothing (no duplicates)

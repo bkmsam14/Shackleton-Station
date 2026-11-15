@@ -38,7 +38,7 @@ test('addOxygen hook (future electrolysis) stores kg and never overfills', () =>
 });
 
 test('power charges in sunlight and drains in the dark', () => {
-  const g = createGauges();
+  const g = createGauges({ batteryKwh: 20 });
   const p0 = powerPercent(g);
   stepGauges(g, 10, { pressurized: false, ...sunny });
   assert.ok(powerPercent(g) > p0);

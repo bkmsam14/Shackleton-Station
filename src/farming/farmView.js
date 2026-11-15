@@ -223,8 +223,8 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     if (s === 'watered')
       text =
         crop === 'potato'
-          ? 'Watered! Now the potato grows under the grow lights. Come back later.'
-          : `Watered! In real life ${crop} takes about ${REAL_DAYS[crop]} days to grow. Here it is sped up: come back soon.`;
+          ? `Watered! The potato grows overnight under the grow lights: ready in ${FARMING.GROW_NIGHTS} days. (Real potatoes take months.)`
+          : `Watered! Ready tomorrow morning. In real life ${crop} takes about ${REAL_DAYS[crop]} days to grow: here it is sped up.`;
     if (s === 'harvest') {
       if (crop === 'lettuce')
         text = tool === 'cutters' ? 'Cut the lettuce at its base: the whole head is the food!' : 'Ready! Take the cutters and cut the lettuce head.';

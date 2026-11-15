@@ -4,7 +4,8 @@
 //   plant   : drag a seed potato into the soil (uses 1 from the inventory)
 //   cover   : drag soil over it (FARMING.COVER_LOADS handfuls)
 //   water   : pour until FARMING.WATER_NEEDED drops have landed on the soil
-//   grow    : only while the grow lights have power
+//   grow    : overnight, one step per night (potato 2 nights, greens 1), if the grow lights
+//             were on for enough of the day (days.js plantsGrowTonight)
 //   harvest : cut FARMING.CUTS_TO_HARVEST leafy stems, then the potato goes to the inventory
 // New crops = a new entry in CROPS (numbers in gameplay.js → FARMING).
 import { FARMING, SOLAR_DAMAGE } from '../config/gameplay.js';
@@ -15,7 +16,7 @@ export const CROPS = {
     seedItem: 'potato', // a harvested potato is planted again as a "seed potato"
     harvestItem: 'potato',
     perStem: FARMING.POTATOES_PER_STEM, // every cut stem brings up its own potato
-    growSeconds: FARMING.GROW_REAL_SECONDS,
+    growNights: FARMING.GROW_NIGHTS,
     coverLoads: FARMING.COVER_LOADS,
     waterNeeded: FARMING.WATER_NEEDED,
     cutsToHarvest: FARMING.CUTS_TO_HARVEST,
@@ -28,7 +29,7 @@ export const CROPS = {
         seedItem: `${id}-seed`,
         harvestItem: id,
         perStem: c.perCut,
-        growSeconds: c.growSeconds,
+        growNights: c.growNights,
         coverLoads: c.coverLoads,
         waterNeeded: c.waterNeeded,
         cutsToHarvest: c.cuts,
@@ -39,18 +40,21 @@ export const CROPS = {
 export const CROP_IDS = Object.keys(CROPS);
 /** Fresh greens you can eat (eaten before potatoes, which keep well). */
 export const GREEN_IDS = Object.keys(FARMING.GREENS);
+/** Everything F can eat, smallest first: greens, then potato and the packaged space meal. */
+export const FOOD_IDS = [...GREEN_IDS, 'potato', 'space-meal'];
 
 const START_INVENTORY = {
   potato: FARMING.START_SEED_POTATOES,
   ...Object.fromEntries(Object.entries(FARMING.START_SEEDS).map(([id, n]) => [`${id}-seed`, n])),
   'solar-repair-kit': SOLAR_DAMAGE.START_KITS,
+  'space-meal': FARMING.START_SPACE_MEALS,
 };
 
 export const STAGE = { EMPTY: 'empty', SEEDED: 'seeded', COVERED: 'covered', GROWING: 'growing', READY: 'ready' };
 const STAGES = Object.values(STAGE);
 
 function emptyPot() {
-  return { stage: STAGE.EMPTY, crop: null, cover: 0, water: 0, growth: 0, cuts: 0 };
+  return { stage: STAGE.EMPTY, crop: null, cover: 0, water: 0, growth: 0, nights: 0, cuts: 0 };
 }
 
 export function createFarmState(potIds, saved = null) {
@@ -104,21 +108,47 @@ export function addWater(state, potId, drops = 1) {
   if (pot.water >= need) {
     pot.stage = STAGE.GROWING;
     pot.growth = 0;
+    pot.nights = 0;
   }
   return pot.stage === STAGE.GROWING;
 }
 
-/** Grow every watered pot. Plants only grow while the grow lights are on. Returns ids that just became ready. */
-export function stepGrowth(state, dt, { lit = true } = {}) {
+/**
+ * One night passes. Every watered plant grows one step if it had light today (lit = false:
+ * the grow lights were off too long, so nothing grows tonight). Returns ids that are now ready.
+ */
+export function growOvernight(state, { lit = true } = {}) {
   const ready = [];
-  if (!lit || !(dt > 0)) return ready;
+  if (!lit) return ready;
   for (const [id, pot] of Object.entries(state.pots)) {
     if (pot.stage !== STAGE.GROWING) continue;
-    pot.growth = Math.min(1, pot.growth + dt / cropOf(pot).growSeconds);
-    if (pot.growth >= 1) {
+    const need = cropOf(pot).growNights;
+    pot.nights = Math.min(need, (pot.nights ?? 0) + 1);
+    pot.growth = pot.nights / need;
+    if (pot.nights >= need) {
       pot.stage = STAGE.READY;
       ready.push(id);
     }
+  }
+  return ready;
+}
+
+/** Nights still needed before a growing plant is ready (0 when ready). */
+export function nightsLeft(pot) {
+  if (pot.stage === STAGE.READY) return 0;
+  if (pot.stage !== STAGE.GROWING) return null;
+  return cropOf(pot).growNights - (pot.nights ?? 0);
+}
+
+/** Training Day: every growing plant is ready now (the script says so). */
+export function ripenAll(state) {
+  const ready = [];
+  for (const [id, pot] of Object.entries(state.pots)) {
+    if (pot.stage !== STAGE.GROWING) continue;
+    pot.nights = cropOf(pot).growNights;
+    pot.growth = 1;
+    pot.stage = STAGE.READY;
+    ready.push(id);
   }
   return ready;
 }
@@ -127,7 +157,7 @@ export function stepGrowth(state, dt, { lit = true } = {}) {
 export function growthStage(pot) {
   if (pot.stage === STAGE.READY) return 3;
   if (pot.stage !== STAGE.GROWING) return -1;
-  return pot.growth < 0.3 ? 0 : pot.growth < 0.65 ? 1 : 2;
+  return pot.growth < 0.3 ? 0 : pot.growth < 0.75 ? 1 : 2;
 }
 
 export const coverFraction = (pot) => (pot.crop ? pot.cover / cropOf(pot).coverLoads : 0);
@@ -149,10 +179,20 @@ export function canEat(state, item = 'potato') {
   return { ok: true, reason: null };
 }
 
-/** What F eats next: fresh greens first (they don't keep), then a potato. null = nothing. */
-export function nextFood(state) {
+/**
+ * What F eats next. With the hunger gauge (%) given, the biggest food that fits without
+ * wasting any is picked; if nothing fits, the smallest one. Fresh greens go first anyway
+ * (they don't keep). null = nothing to eat.
+ * foodKg: the food value of one item (gameplay.js FARMING.FOOD_KG_PER_ITEM); spaceKg: room left.
+ */
+export function nextFood(state, { foodKg = null, spaceKg = Infinity } = {}) {
   for (const id of GREEN_IDS) if (countOf(state.inventory, id) > 0) return id;
-  return canEat(state, 'potato').ok ? 'potato' : null;
+  const options = ['potato', 'space-meal'].filter((id) => canEat(state, id).ok);
+  if (!options.length) return null;
+  if (!foodKg) return options[0];
+  const fits = options.filter((id) => foodKg[id] <= spaceKg + 1e-9).sort((a, b) => foodKg[b] - foodKg[a]);
+  if (fits.length) return fits[0];
+  return options.sort((a, b) => foodKg[a] - foodKg[b])[0];
 }
 
 /** Remove one potato (or other food item) to eat it. Returns true if it was eaten. */

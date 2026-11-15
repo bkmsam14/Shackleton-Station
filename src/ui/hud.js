@@ -127,7 +127,11 @@ export function createHud(root) {
       const hh = String(s.clock.hour).padStart(2, '0');
       const mm = String(s.clock.minute).padStart(2, '0');
       // Live mode: the sky is the real sky right now (the life-support clock stays the game clock)
-      set('time', `Day ${s.clock.day} · ${hh}:${mm}${s.sun?.live ? ' · LIVE SKY' : ''}`, (v) => (el.time.textContent = v));
+      // the day is a shift to survive: show how long is left (s.shift from main.js)
+      const left = s.shift ? ` · ⏳ ${s.shift.left}` : '';
+      const of = s.shift ? `/${s.shift.count}` : '';
+      set('time', `Day ${s.clock.day}${of} · ${hh}:${mm}${left}${s.sun?.live ? ' · LIVE SKY' : ''}`, (v) => (el.time.textContent = v));
+      el.time.classList.toggle('is-ending', Boolean(s.shift?.ending));
 
       const o2 = setRing('oxygen', g.oxygen);
       const food = setRing('food', g.food);

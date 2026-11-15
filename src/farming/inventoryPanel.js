@@ -1,7 +1,7 @@
 // inventoryPanel.js — small always-on inventory panel (bottom-right) + F to eat.
-// F eats fresh greens first (lettuce, radish: they don't keep), then a potato (potatoes store
-// well, and one is always kept to plant again). Food values: gameplay.js → FARMING.FOOD_KG_PER_ITEM
-// (USDA kcal × the same game harvest mass per pot).
+// F eats fresh greens first (lettuce, radish: they don't keep), then the potato or packaged
+// space meal that fits your hunger best (one potato is always kept to plant again).
+// Food values: gameplay.js → FARMING.FOOD_KG_PER_ITEM (USDA kcal; a potato = a plant's crop).
 import { FARMING, FOOD, BVAD } from '../config/gameplay.js';
 import { addFood } from '../systems/gauges.js';
 import { countOf, removeItem } from './inventory.js';
@@ -9,9 +9,10 @@ import { canEat, nextFood } from './farmState.js';
 import { sfx } from './sfx.js';
 
 const FOODS = [
-  { id: 'potato', label: 'Potatoes', one: 'a potato' },
+  { id: 'potato', label: 'Potatoes', one: 'a potato harvest (about 2 kg of potatoes)' },
+  { id: 'space-meal', label: 'Space meals', one: 'a packaged space meal' },
   { id: 'lettuce', label: 'Lettuce', one: 'a lettuce head' },
-  { id: 'radish', label: 'Radishes', one: 'a radish' },
+  { id: 'radish', label: 'Radishes', one: 'a handful of radishes' },
 ];
 
 export function createInventoryPanel({ root, state, gauges, feedback, getMode, isViewOpen, save, onEvent = () => {} }) {
@@ -42,11 +43,11 @@ export function createInventoryPanel({ root, state, gauges, feedback, getMode, i
 
   function eat() {
     onEvent('eat-tried'); // the Training Day only asks you to try (you may be told to keep it)
-    const food = nextFood(state);
+    const food = nextFood(state, { foodKg: FARMING.FOOD_KG_PER_ITEM, spaceKg: ((100 - gauges.food) / 100) * FOOD.CAPACITY_KG });
     if (!food) {
       const potatoes = countOf(state.inventory, 'potato');
       if (potatoes === 0) {
-        feedback.notify('No food to eat', { long: 'You have no potatoes, lettuce or radishes. Grow some in the greenhouse pots.' });
+        feedback.notify('No food to eat', { long: 'You have no food left. Grow potatoes, lettuce or radishes in the greenhouse pots.' });
       } else if (canEat(state).reason === 'last-seed') {
         feedback.notify('Keep this one to plant!', {
           long: 'This is your last potato and nothing is growing. Plant it in a greenhouse pot so you can grow more.',
@@ -73,7 +74,9 @@ export function createInventoryPanel({ root, state, gauges, feedback, getMode, i
     const why =
       food === 'potato'
         ? 'Potatoes are full of starch, so they give lots of food energy.'
-        : 'Leafy greens and radishes are mostly water: few calories, but fresh vitamins.';
+        : food === 'space-meal'
+          ? 'Packaged food from Earth: about a third of what an astronaut eats in a day (NASA BVAD).'
+          : 'Leafy greens and radishes are mostly water: they grow fast but give little energy.';
     feedback.notify(`Ate ${name} · +${Math.max(1, Math.round(pct))}% food`, {
       long: `You ate ${name}: about ${kcal} kcal (USDA FoodData Central), +${pct.toFixed(1)} % food ≈ ${hours.toFixed(1)} hours for an astronaut at rest (NASA BVAD). ${why}`,
     });

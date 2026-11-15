@@ -69,7 +69,7 @@ test('mission dose only grows, even after a storm ends', () => {
 });
 
 test('water walls: moving water shields the shelter but the tank can no longer use it for oxygen', () => {
-  const g = createGauges({ oxygen: 40 });
+  const g = createGauges({ oxygen: 10 });
   const st = { ...createElectrolysisState({ tankKg: 10 }), wallKg: 0 };
   const r = moveWater(st, g, 6);
   assert.equal(r.movedKg, 6);
@@ -79,7 +79,7 @@ test('water walls: moving water shields the shelter but the tank can no longer u
   moveWater(st, g, -3);
   assert.equal(st.wallKg, 3);
   assert.equal(st.tankKg, 7);
-  const st2 = { tankKg: 1, wallKg: 6 };
+  const st2 = { tankKg: 0.1, wallKg: 6 };
   assert.equal(checkAfford(g, st2, 'big').reason, 'water');
 });
 

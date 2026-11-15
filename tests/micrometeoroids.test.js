@@ -2,7 +2,7 @@
 // the new repair mini-games (pure logic only).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LEAK, BVAD, MICROMETEOROIDS } from '../src/config/gameplay.js';
+import { LEAK, BVAD, MICROMETEOROIDS, TIME } from '../src/config/gameplay.js';
 import {
   GRACE_SECONDS,
   createImpactState,
@@ -75,7 +75,7 @@ test('leak state: start, count the lost oxygen, fix', () => {
   assert.equal(leakO2KgPerGameHour(l), 0);
   assert.equal(startLeak(l), true);
   assert.equal(startLeak(l), false);
-  stepLeak(l, 10); // 10 real s = 1 game h
+  stepLeak(l, 3600 / TIME.SCALE); // real seconds in 1 game hour
   assert.ok(Math.abs(l.o2LostKg - LEAK.O2_KG_PER_GAME_HOUR) < 1e-9);
   assert.equal(fixLeak(l), true);
   assert.equal(l.repairs, 1);
