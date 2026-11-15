@@ -507,9 +507,13 @@ export const AIRLOCK = {
   OPEN_S: 0.9, // GAME BALANCE (not real data) — lights go green, the far hatch opens
   PUMP_STOP_FRACTION: 0.12, // GAME BALANCE (not real data) — air left when the pumps stop
   SKIP_SPEED: 6, // GAME BALANCE (not real data) — E/Space fast-forwards after the first cycle
-  O2_LOSS_KG: 0.03, // GAME BALANCE (not real data) — oxygen lost with the vented air (1 % of the supply)
+  O2_LOSS_KG: 0.0035, // GAME BALANCE (not real data) — oxygen lost with the vented air (1 % of the 0.35 kg supply)
   GAME_MINUTES: 15, // GAME BALANCE (not real data) — time the cycle takes on the base clock
   VOLT_LESSONS: 3, // Volt explains "sound needs air" the first 3 cycles
+  // Volt's airlock fact cards (data/airlockFacts.js): the chance of one on a cycle, each fact
+  // once per mission, and how long the card stays up.
+  FACT_CHANCE: 0.5, // GAME BALANCE (not real data)
+  FACT_SECONDS: 14, // GAME BALANCE (not real data)
 };
 
 // ---------------------------------------------------------------------------

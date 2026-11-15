@@ -13,6 +13,9 @@ import { UI, RECOVERY, TIME, POWER, ASSISTANT, RADIATION, SKY, AIRLOCK, DAYS, FA
 import { shiftInfo, createMission, serializeMission, addRescue, stepMission, plantsGrowTonight, dayStars, endDay as endMissionDay, overnightRefill, fmtCountdown, dayStartSeconds } from './systems/days.js';
 import { replayDay1Ms } from './systems/spaceWeather.js';
 import { missionPatch, MI, starRow as drawnStars } from './ui/menuArt.js';
+import { AIRLOCK_FACTS } from './data/airlockFacts.js';
+import { pickAirlockFact } from './systems/airlockFacts.js';
+import { createAirlockFactCard } from './ui/airlockFactCard.js';
 import { createWorld, QUALITY } from './world/World.js';
 import { createPostFX } from './world/postfx.js';
 import { LAYOUT } from './world/layout.js';
@@ -714,6 +717,20 @@ async function useDoor(action) {
   onZoneEntered(action.to);
 }
 
+// Volt's airlock fact cards: sometimes, while the airlock cycles, he explains one thing about
+// it (once per mission each). Never during a particle storm: then the shelter comes first.
+let airlockFactCard = null;
+function maybeAirlockFact(direction) {
+  if (radiation?.phase && radiation.phase !== 'calm') return;
+  const fact = pickAirlockFact(AIRLOCK_FACTS, mission.airlockFacts, direction);
+  if (!fact) return;
+  airlockFactCard ??= createAirlockFactCard(uiRoot, { voice: voltVoice });
+  mission.airlockFacts.push(fact.id);
+  // keep the rest of the day-start save as it is (a continue restarts the day from its morning)
+  saveSettings({ mission: { ...(loadSettings().mission ?? serializeMission(mission)), airlockFacts: mission.airlockFacts } });
+  setTimeout(() => airlockFactCard.show(fact), 700); // once the hatch has closed
+}
+
 /** Door with an airlock: fade → cycle in the airlock room → fade → arrive. Costs a little air. */
 async function useAirlock(action) {
   const goingOut = action.to === 'outside';
@@ -722,6 +739,7 @@ async function useAirlock(action) {
   await feedback.fadeTo(true, UI.DOOR_FADE_SECONDS);
   const cycleDone = runAirlockCycle(goingOut ? 'out' : 'in', moduleName);
   await feedback.fadeTo(false, UI.DOOR_FADE_SECONDS);
+  maybeAirlockFact(goingOut ? 'out' : 'in');
   await cycleDone;
   await wait(450);
   await feedback.fadeTo(true, UI.DOOR_FADE_SECONDS);

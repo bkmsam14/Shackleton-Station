@@ -114,7 +114,7 @@ public/
   audio/blue-moon-beach.ogg    # CC0 music, outside on the Moon (Tsorthan Grove, OpenGameArt)
   textures/  CREDITS.md
 scripts/               # fetch-lola, fetch-space-weather, fetch-stars, balance-sim
-tests/                 # node --test (186 tests)
+tests/                 # node --test (189 tests)
 docs/
   HANDOFF.md  GAME_DESIGN.md  SCIENCE.md  PERFORMANCE.md  screenshots/
 ```
@@ -150,7 +150,7 @@ Demo 0 is long done; see `CHANGELOG.md` for every version. What the game has now
 - **Gauges (rules that still hold):**
   - **Oxygen:** one shared supply for habitat + greenhouse + suit. It drains faster outside
     (BVAD spacewalk rate) and is refilled **only** by Electrolysis, which costs water and power.
-    Each airlock cycle loses 0.03 kg.
+    Each airlock cycle loses 1 % of it (0.0035 kg); Volt sometimes explains the airlock (fact cards).
   - **Food:** one day of BVAD food; drains faster outside; **carries over between days**. Potato = 50 %,
     space meal 33 % (2 at the start), lettuce/radish small (honest USDA kcal). F picks what fits.
   - **Base power:** shown separately, top-centre. It's large inside modules and smaller outside.

@@ -402,6 +402,36 @@
       "text": "Sound needs air. Outside on the Moon you can't hear your steps through the air, only feel them through your boots and suit.",
       "value": "the Moon has no real atmosphere (NASA Moon Fact Sheet)",
       "source": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html"
+    },
+    {
+      "id": "airlock-two-doors",
+      "text": "An airlock is a small room with two doors. Only one opens at a time, so the base's air never rushes out into space.",
+      "value": "ISS Quest airlock: the crew lock is depressurized and repressurized",
+      "source": "https://www.nasa.gov/international-space-station/quest-airlock/"
+    },
+    {
+      "id": "airlock-hatch-push",
+      "text": "Air pushes hard on a hatch: on a door 1 metre square, as hard as about 150 grown-ups pushing. It only opens once the pressures match.",
+      "value": "101 kPa × 1 m² ≈ 101 kN ≈ 150 × 70 kg × 9.81 m/s²",
+      "source": "https://www.grc.nasa.gov/www/k-12/airplane/pressure.html"
+    },
+    {
+      "id": "airlock-prebreathe",
+      "text": "Before a spacewalk, astronauts breathe pure oxygen to wash nitrogen out of their blood, so no bubbles form when the suit pressure drops.",
+      "value": "NASA suits at 29.7 kPa (4.3 psi), close to 100 % O₂",
+      "source": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-037-decompression-sickness.pdf"
+    },
+    {
+      "id": "visor-gold",
+      "text": "The helmet's sun visor has a very thin layer of real gold that filters the Sun's harsh rays.",
+      "value": "thin gold coating on the EVA sun visor",
+      "source": "https://www.nasa.gov/humans-in-space/what-is-a-spacesuit/"
+    },
+    {
+      "id": "moondust-smell",
+      "text": "Apollo astronauts said Moon dust smelled like spent gunpowder.",
+      "value": "Apollo 11, 15, 16 crew reports",
+      "source": "https://www.nasa.gov/space-science-and-astrobiology-at-ames/interesting-fact-of-the-month-current/interesting-fact-of-the-month-2021/"
     }
   ]
 }

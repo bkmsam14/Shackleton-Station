@@ -15,7 +15,7 @@ new Solar Fix mini-games" (see `CHANGELOG.md` → Unreleased).
 ```bash
 npm install          # if registry.npmjs.org fails: npm install --registry=https://registry.yarnpkg.com
 npm run dev          # http://localhost:5173
-npm test             # 186 pure-logic tests, all must pass
+npm test             # 189 pure-logic tests, all must pass
 npm run balance      # bots play a lunar day on the real rules
 ```
 
@@ -121,6 +121,7 @@ Full list: `CLAUDE.md` → "Current state", plus `CHANGELOG.md`.
 | Crops: potato 2 nights, greens 1 night, need grow light half the day | Owner's design; keeps the grow-lights power trade-off |
 | Gentle failure = 1-hour rest + a counted rescue (stars) | With a countdown, a long rest would help the player |
 | Storms mapped by calendar day | Real dates stay honest; night storms are dosed in the shelter (you sleep in it) |
+| Airlock fact cards, 50 % chance, once per mission, never in a storm | Owner: explain the airlock (depressurization etc.) with pictures, no mini-game, no repeats in a playthrough |
 | CC0 music: "Outer Space Loop" (wipics) in the menu + inside; "Blue Moon Beach" (Tsorthan Grove) outside | Owner: the space track for menu/habitat only, a serene moon-vibe track outside (FF14's "Mare Lamentorum" as the feel, not copied) |
 
 ---

@@ -9,7 +9,7 @@ on `main`, see `CHANGELOG.md`).
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # pure-logic unit tests (186)
+npm test         # pure-logic unit tests (189)
 npm run balance  # bots play a lunar day on the real rules (balance check)
 npm run build    # production build in dist/ (base path /Shackleton-Station/)
 ```

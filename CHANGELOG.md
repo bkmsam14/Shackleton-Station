@@ -5,6 +5,12 @@
 Merged after the 0.11.0 balance pass; `package.json` still says 0.11.0.
 
 ### Gameplay
+- **Volt's airlock facts:** while the airlock cycles there's a 50 % chance Volt explains one
+  thing about it: why two doors, depressurizing (air pushes on a 1 m² hatch like 150 grown-ups),
+  saving the air, the pure-oxygen prebreathe, the gold visor, repressurizing, sticky Moon dust.
+  Each is a small card with a looping picture and two lines, never repeated in a mission, never
+  during a storm. Also: an airlock cycle now costs 1 % of the oxygen supply again (it had become
+  8.6 % when the supply shrank).
 - **Days: survive 4 shifts (FNAF-style).** Each day runs 07:00 → 19:00 on the base clock, 6 real
   minutes (time 120× real life), with a countdown in the HUD. Survive it → "Day N complete!" card
   with stars → the night is skipped → "Day N + 1" (with the replay's real date) → fade in, waking in

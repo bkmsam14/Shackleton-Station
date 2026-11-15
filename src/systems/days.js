@@ -54,11 +54,12 @@ export function createMission(saved = null) {
     lightSeconds: 0, // grow lights on (with power) today, real seconds of play
     shiftSeconds: 0, // real seconds of play today
     won: Boolean(saved?.won),
+    airlockFacts: Array.isArray(saved?.airlockFacts) ? saved.airlockFacts.filter((x) => typeof x === 'string') : [], // explained once per mission
   };
 }
 
 export function serializeMission(m) {
-  return { day: m.day, rescues: m.rescues, won: m.won };
+  return { day: m.day, rescues: m.rescues, won: m.won, airlockFacts: m.airlockFacts };
 }
 
 /** A gentle failure happened today. */

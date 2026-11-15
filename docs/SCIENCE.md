@@ -168,6 +168,16 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **Game additions on the real terrain:** the levelled base pad (a real base would grade a pad), the small cold-trap crater for ice mining, the telescope mound, tiny craters < 6 m and bumps smaller than the 5 m map can show.
 - **Earth stays in view in game mode:** the real horizon toward Earth (lon 0) is ~0.9° high; game Earth sits at 4°.
 
+### Airlock facts (Volt's cards while the airlock cycles; each once per mission, 50 % chance)
+- **Two doors:** an airlock is a small room with two hatches; only one is open at a time. The ISS Quest crew lock is the part that is depressurized and repressurized. *Source: NASA, Quest Airlock — https://www.nasa.gov/international-space-station/quest-airlock/*
+- **Depressurizing / the push on a hatch:** pressure = force ÷ area (NASA Glenn, Gas Pressure — https://www.grc.nasa.gov/www/k-12/airplane/pressure.html). Cabin air ≈ 101 kPa on 1 m² ≈ 101 kN ≈ the weight of ≈ 150 people of 70 kg (150 × 70 kg × 9.81 m/s² ≈ 103 kN). The outer hatch can only open once the pressures on both sides match (vacuum).
+- **Saving the air:** pumps move most of the air back into the cabin; the last bit is vented. *Source: NASA NTRS 20080013418 (above)*
+- **Prebreathe:** NASA suits run at 29.7 kPa (4.3 psi), close to 100 % oxygen (less than a third of 101 kPa); astronauts breathe oxygen-rich air before a spacewalk to flush nitrogen out and avoid decompression sickness. *Sources: NASA-STD-3001 Technical Brief, Decompression Sickness — https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-037-decompression-sickness.pdf ; NASA, Modeling a 15-min EVA prebreathe protocol — https://www.nasa.gov/wp-content/uploads/2023/03/abercromby-8.2-34-atm-2015.pdf*
+- **Gold visor:** the helmet's sun visor has a thin gold coating that filters the Sun's harsh rays. *Source: NASA, What Is a Spacesuit? — https://www.nasa.gov/humans-in-space/what-is-a-spacesuit/*
+- **Repressurizing:** air flows back in until the airlock matches the cabin, then the inner hatch opens. *Source: NASA Quest Airlock (above)*
+- **Moon dust:** sharp and clingy; Apollo astronauts compared its smell to spent gunpowder. *Sources: NASA Ames, Interesting Fact of the Month 2021 — https://www.nasa.gov/space-science-and-astrobiology-at-ames/interesting-fact-of-the-month-current/interesting-fact-of-the-month-2021/ ; NASA HRP lunar dust evidence report — https://humanresearchroadmap.nasa.gov/evidence/reports/lunar%20dust.pdf*
+- **Game simplification:** our base's airlock is not a two-chamber Quest airlock and the game's suit isn't modelled at 4.3 psi; the cards describe real NASA practice. Each cycle loses 1 % of the oxygen supply (0.0035 kg, game balance).
+
 ### Footsteps and the suit (sound)
 - **No air, no sound through the air:** outside, footsteps can't be heard through the vacuum; the game plays a soft, low crunch you'd feel through your boots and suit (vibration travels through solids, like the airlock pump "through your boots"). Inside, steps are normal sounds in the cabin air. The suit breathing gets faster when you move outside: working in a spacesuit uses ≈ 2× more oxygen (BVAD).
 

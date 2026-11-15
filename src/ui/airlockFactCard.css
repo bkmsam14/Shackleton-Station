@@ -1,0 +1,137 @@
+/* airlockFactCard.css — Volt's airlock fact card ("toy flight console" style, like the menus).
+   Body text ≥ 16 px, the button ≥ 44 px, ink on cream/gold ≥ 9:1, white on navy ≥ 12:1. */
+.af-card {
+  position: absolute;
+  left: clamp(12px, 3vw, 32px);
+  top: 50%;
+  z-index: 8;
+  width: min(330px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding: 14px 16px 12px;
+  border: 3px solid #10182c;
+  border-radius: 22px;
+  background: #16214a;
+  box-shadow: inset 0 0 0 3px #2d3c72, 0 8px 0 rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translate(-30px, -50%);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+.af-card.is-on {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+.af-card[hidden] {
+  display: none;
+}
+.af-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.af-head svg {
+  flex: 0 0 auto;
+  width: 50px;
+  height: 50px;
+}
+.af-kicker {
+  margin: 0;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #9fe8ff;
+}
+.af-card h3 {
+  margin: 0;
+  font-family: var(--font-head);
+  font-size: 24px;
+  color: #ffc94a;
+  text-shadow: 2px 0 0 #10182c, -2px 0 0 #10182c, 0 2px 0 #10182c, 0 -2px 0 #10182c, 0 4px 0 #10182c;
+}
+.af-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 2px 0 8px;
+}
+.af-line {
+  margin: 4px 0;
+  font-size: 17px;
+  line-height: 1.4;
+}
+.af-line b {
+  color: #ffc94a;
+}
+.af-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+.af-src {
+  font-size: 12px;
+  line-height: 1.3;
+  color: #c9d4e8;
+}
+.af-src a {
+  color: #9fe8ff;
+}
+.af-ok {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 3px solid #10182c;
+  border-radius: 12px;
+  background: #ffb547;
+  color: #10182c;
+  font: 700 18px var(--font-head);
+  box-shadow: 0 4px 0 #10182c;
+  cursor: pointer;
+}
+.af-ok:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #10182c;
+}
+
+/* ---- picture loops ---- */
+.af-art * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.af-door-a { animation: af-door-a 4s ease-in-out infinite; }
+.af-door-b { animation: af-door-b 4s ease-in-out infinite; }
+.af-leave { animation: af-leave 3.2s ease-in infinite; animation-delay: var(--d, 0s); }
+.af-enter { animation: af-enter 3.2s ease-out infinite; animation-delay: var(--d, 0s); }
+.af-push { animation: af-push 3.2s ease-in infinite; }
+.af-fall { transform-origin: 50% 100%; animation: af-fall 3.2s ease-in-out infinite; }
+.af-rise { transform-origin: 50% 100%; animation: af-rise 3.2s ease-in-out infinite; }
+.af-flow { animation: af-dash 0.6s linear infinite; }
+.af-puff { animation: af-puff 2.4s ease-out infinite; }
+.af-n2 { animation: af-n2 2.4s ease-in infinite; animation-delay: var(--d, 0s); }
+.af-o2 { animation: af-o2 2.4s ease-in-out infinite; }
+.af-ray, .af-bounce { animation: af-blink 1.6s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.af-speck { animation: af-speck 3s ease-in infinite; animation-delay: var(--d, 0s); }
+.af-brush { animation: af-brush 1.5s ease-in-out infinite; }
+@keyframes af-door-a { 0%, 45% { transform: scaleY(1); } 55%, 95% { transform: scaleY(0.12); } }
+@keyframes af-door-b { 0%, 5% { transform: scaleY(0.12); } 15%, 45% { transform: scaleY(1); } 50%, 100% { transform: scaleY(1); } }
+@keyframes af-leave { 0% { opacity: 1; } 100% { opacity: 0; transform: translate(-30px, 0); } }
+@keyframes af-enter { 0% { opacity: 0; transform: translate(-30px, 0); } 100% { opacity: 1; } }
+@keyframes af-push { 0%, 40% { opacity: 1; } 90%, 100% { opacity: 0; } }
+@keyframes af-fall { 0%, 15% { transform: rotate(60deg); } 85%, 100% { transform: rotate(-60deg); } }
+@keyframes af-rise { 0%, 15% { transform: rotate(-60deg); } 85%, 100% { transform: rotate(60deg); } }
+@keyframes af-dash { to { stroke-dashoffset: -18; } }
+@keyframes af-puff { 0% { opacity: 0; transform: translate(-14px, 0) scale(0.5); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(12px, 0) scale(1.4); } }
+@keyframes af-n2 { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(26px); } }
+@keyframes af-o2 { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-8px); } }
+@keyframes af-blink { 50% { opacity: 0.25; } }
+@keyframes af-speck { 0%, 30% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(-10px, 16px); } }
+@keyframes af-brush { 0%, 100% { transform: translateX(0) rotate(-8deg); } 50% { transform: translateX(-34px) rotate(8deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .af-art * { animation: none !important; }
+  .af-card { transition: none; }
+}
