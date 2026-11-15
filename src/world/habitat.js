@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { MAT, FABRIC } from './materials.js';
 import { LAYOUT } from './layout.js';
+import { airlockColliders } from './ground.js';
 import { createSign } from './signs.js';
 import { planarUV } from './textures.js';
 import {
@@ -117,13 +118,13 @@ function buildExterior(group) {
   const stripe = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.12), hazardStripeMaterial());
   stripe.position.set(A.x, FY - 0.03, A.zEnd + 0.13);
   group.add(stripe);
-  const steps = 6;
+  const steps = H.stairs.steps;
   const rise = alBottom / steps;
-  const run = 0.33;
+  const run = H.stairs.run;
   for (let i = 0; i < steps; i++) {
     const top = (i + 1) * rise;
     const z = A.zEnd + run * (steps - i - 0.5);
-    group.add(mesh(planarUV(new THREE.BoxGeometry(1.8, top, run), 'xz', 1), MAT.floor(), A.x, top / 2, z));
+    group.add(mesh(planarUV(new THREE.BoxGeometry(H.stairs.width, top, run), 'xz', 1), MAT.floor(), A.x, top / 2, z));
   }
   for (const sx of [-1, 1]) {
     const x = A.x + sx * 0.98;
@@ -155,7 +156,7 @@ function buildInteriorShell(group) {
   // soft warm floor in the living areas (grating stays in the work bay)
   const livingLen = H.bulkheadX + (L - 0.3) / 2;
   const livingX = -(L - 0.3) / 2 + livingLen / 2;
-  group.add(mesh(rbox(livingLen, 0.03, hw * 2 - 0.02, 0.01), MAT.painted(0x8e8579), livingX, FY + 0.012, 0, { cast: false }));
+  group.add(mesh(rbox(livingLen, 0.03, hw * 2 - 0.02, 0.01), MAT.floorPlates(Math.round(livingLen / 2), Math.round(hw)), livingX, FY + 0.012, 0, { cast: false }));
   // soft painted wall lining in the living areas (the metal plates stay in the work bay)
   const soft = mesh(new THREE.CylinderGeometry(RI - 0.03, RI - 0.03, livingLen, 56, 1, true), MAT.livingWall(), livingX, AX, 0, { cast: false });
   soft.rotation.z = Math.PI / 2;
@@ -167,7 +168,7 @@ function buildInteriorShell(group) {
   }
   // lowered ceiling over the living areas with warm light coves
   const cw = wallZ(LOUNGE_CEILING) * 2 - 0.1;
-  group.add(mesh(rbox(livingLen, 0.08, cw, 0.03), MAT.painted(0xf1ece3), livingX, LOUNGE_CEILING + 0.04, 0, { cast: false }));
+  group.add(mesh(rbox(livingLen, 0.08, cw, 0.03), MAT.floorPlates(Math.round(livingLen / 2.4), Math.round(cw / 2.4), 0xf8f9fb), livingX, LOUNGE_CEILING + 0.04, 0, { cast: false }));
   for (const sz of [-1, 1]) {
     group.add(mesh(new THREE.BoxGeometry(livingLen - 0.6, 0.04, 0.08), MAT.glow(0xffd29a, 2.4), livingX, LOUNGE_CEILING - 0.03, sz * (cw / 2 - 0.15), { cast: false }));
   }
@@ -513,8 +514,8 @@ export function createHabitat() {
     },
     outdoorColliders: [
       { type: 'box', minX: H.x - L / 2 - 0.9, maxX: H.x + L / 2 + 0.9, minZ: H.z - R, maxZ: H.z + R },
-      // airlock + stairs
-      { type: 'box', minX: H.x + A.x - 1.45, maxX: H.x + A.x + 1.45, minZ: H.z + A.zStart, maxZ: H.z + A.zEnd + 1.95 },
+      // airlock module + the handrails (the stairs themselves can be climbed: world/ground.js)
+      ...airlockColliders(),
     ],
     zone: {
       id: 'habitat',
@@ -557,7 +558,8 @@ export function createHabitat() {
         zone: 'outside',
         x: H.x + H.outerDoor.x,
         z: H.z + H.outerDoor.z,
-        y: 1.0,
+        y: FY + 1.0,
+        reach: H.outerDoorReach, // only at the hatch, not from the bottom of the stairs
         prompt: 'Press E to enter the Habitat',
         action: { type: 'door', to: 'habitat', arrive: toWorld(H.insideArrive), via: 'airlock' },
       },

@@ -174,7 +174,7 @@ export function createGreenhouseModel() {
     dummy.scale.set(s, s * (0.8 + rand() * 0.3), s);
     dummy.updateMatrix();
     plants.setMatrixAt(i, dummy.matrix);
-    col.setHSL(0.25 + rand() * 0.06, 0.35, 0.78 + rand() * 0.15, THREE.SRGBColorSpace); // gentle tint over the leaf gradient
+    col.setHSL(0.27 + rand() * 0.06, 0.5, 0.86 + rand() * 0.1, THREE.SRGBColorSpace); // gentle tint over the leaf gradient
     plants.setColorAt(i, col);
   });
   plants.instanceMatrix.needsUpdate = true;
@@ -223,8 +223,10 @@ export function createGreenhouse() {
   const model = createGreenhouseModel();
   const L = G.length;
   const lights = [];
+  // Graphics overhaul: a softer, lighter pink-purple so the grow light glows on the plants
+  // without turning the whole room purple (the fill light keeps the room neutral).
   for (const lx of [4.5, 11.5]) {
-    const p = new THREE.PointLight(LED_PINK, 16, 9, 2);
+    const p = new THREE.PointLight(0xe0a6ff, 11, 9, 2);
     p.position.set(lx, G.floorY + 2.4, 0);
     model.group.add(p);
     lights.push(p);
@@ -232,7 +234,7 @@ export function createGreenhouse() {
   let powered = true;
   let active = false;
   const applyLights = () => {
-    for (const p of lights) p.intensity = active ? (powered ? 16 : 1.5) : 0;
+    for (const p of lights) p.intensity = active ? (powered ? 11 : 1.2) : 0;
   };
   applyLights();
   const lightSwitch = createLightSwitch();

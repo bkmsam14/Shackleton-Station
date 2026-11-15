@@ -46,7 +46,8 @@ export function rosetteGeometry({ leaves = 10, length = 0.3, width = 0.14, tilt 
   const c = new THREE.Color();
   for (let i = 0; i < p.count; i++) {
     const d = Math.min(1, Math.hypot(p.getX(i), p.getY(i), p.getZ(i)) / length);
-    c.setRGB(0.75 - d * 0.3, 0.95 - d * 0.25, 0.6 - d * 0.35, THREE.SRGBColorSpace);
+    // natural, vibrant green (graphics overhaul): fresh lime at the base, deep leaf green at the tips
+    c.setRGB(0.66 - d * 0.42, 0.93 - d * 0.3, 0.42 - d * 0.28, THREE.SRGBColorSpace);
     col.set([c.r, c.g, c.b], i * 3);
   }
   merged.setAttribute('color', new THREE.BufferAttribute(col, 3));

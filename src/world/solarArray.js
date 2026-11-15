@@ -3,36 +3,10 @@
 // can replace it later without touching the tracking logic.
 import * as THREE from 'three';
 import { MAT } from './materials.js';
+import { procSet } from './proceduralTextures.js';
 import { LAYOUT } from './layout.js';
 import { SOLAR_ARRAY } from '../config/gameplay.js';
 import { deltaDeg, wrapDeg } from '../systems/daycycle.js';
-
-function cellTexture() {
-  const cv = document.createElement('canvas');
-  cv.width = 128;
-  cv.height = 256;
-  const ctx = cv.getContext('2d');
-  ctx.fillStyle = '#1b356c';
-  ctx.fillRect(0, 0, 128, 256);
-  ctx.strokeStyle = '#8fa6d1';
-  ctx.lineWidth = 2;
-  for (let x = 0; x <= 128; x += 32) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, 256);
-    ctx.stroke();
-  }
-  for (let y = 0; y <= 256; y += 32) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(128, y);
-    ctx.stroke();
-  }
-  const tex = new THREE.CanvasTexture(cv);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  return tex;
-}
 
 /** Builds the array mesh. Returns { group, head } — head is the part that rotates. */
 export function createSolarArrayModel() {
@@ -67,12 +41,15 @@ export function createSolarArrayModel() {
   // rotating head: panel + frame + motor
   const head = new THREE.Group();
   head.position.y = 0;
+  // Graphics overhaul: procedural cells (dark-blue cells, silver busbars, thin white gaps)
+  // with their own normal + roughness, so the glass catches the low Sun like real panels.
   const panelMat = new THREE.MeshStandardMaterial({
-    map: cellTexture(),
-    roughness: 0.3,
-    metalness: 0.35,
-    emissive: 0x0a1630,
-    flatShading: true,
+    color: 0xffffff,
+    roughness: 1,
+    metalness: 1,
+    emissive: 0x081226,
+    ...procSet('cells', { repeat: [2, 4] }),
+    normalScale: new THREE.Vector2(0.6, 0.6),
   });
   const panel = new THREE.Mesh(new THREE.BoxGeometry(L.panelWidth, L.panelHeight, 0.08), [
     MAT.metal(),

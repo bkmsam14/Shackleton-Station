@@ -34,6 +34,7 @@ import { createVoltBubble } from './ui/voltBubble.js';
 import { createSuitVisor } from './ui/suitVisor.js';
 import { createVoltVoice } from './ui/voltVoice.js';
 import { heightAt } from './world/heightfield.js';
+import { groundHeight } from './world/ground.js';
 import { createMastery } from './systems/mastery.js';
 import { createInstanceManager } from './instances/InstanceManager.js';
 import { createElectrolysisInstance } from './instances/electrolysis/index.js';
@@ -69,8 +70,8 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'hi
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, QUALITY[quality].pixelRatioCap));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-// AgX keeps bright lights from clipping to flat white (the old interiors blew out).
-renderer.toneMapping = THREE.AgXToneMapping;
+// ACES Filmic: filmic contrast + colour for the stylized look (postfx.setEnabled sets it too).
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 // Shader info logs (e.g. harmless ANGLE/D3D compiler warnings) only matter while developing.
@@ -86,7 +87,7 @@ postfx.setEnabled(quality === 'high');
 function renderFrame(dt = 0) {
   // during an airlock cycle we only draw the little airlock room (its own scene)
   if (airlockRun) {
-    renderer.render(airlockRoom.scene, camera);
+    postfx.renderPlain(airlockRoom.scene, camera); // tone-mapped like the rest (was untone-mapped on High)
     return;
   }
   postfx.setZone(player?.zoneId ?? 'habitat');
@@ -209,7 +210,7 @@ const walkable = createWalkable(world);
 const volt = createVolt(world, walkable);
 const guide = createGuide({
   walkable,
-  groundAt: (zone, x, z) => (zone === 'outside' ? heightAt(x, z) : world.zones[zone].floorY),
+  groundAt: (zone, x, z) => (zone === 'outside' ? groundHeight(x, z) : world.zones[zone].floorY),
 });
 world.scene.add(volt.object, guide.object);
 const voltBubble = createVoltBubble(uiRoot, { onNext: () => nextTourStep() });

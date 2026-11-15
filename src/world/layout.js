@@ -22,11 +22,14 @@ export const LAYOUT = {
     bulkheadDoorHalf: 1.0, // half-width of its doorway
     // starts at the hull (z 3.5) so it never pokes into the interior
     airlock: { x: 6.5, zStart: 3.5, zEnd: 6.0, width: 2.8, height: 2.9 },
+    // steps from the outer hatch down to the ground (+Z); walkable (world/ground.js)
+    stairs: { steps: 6, run: 0.33, width: 1.8 },
     spawn: { x: -3.2, z: 0.4, yawDeg: 90 }, // lounge, facing +X toward the work bay + airlock
     innerDoor: { x: 6.5, z: 2.95 },
     insideArrive: { x: 6.5, z: 1.7, yawDeg: 0 }, // after entering: facing −Z, into the bay
     outsideArrive: { x: 6.5, z: 8.9, yawDeg: 180 }, // after exiting: facing +Z, away from the hab
-    outerDoor: { x: 6.5, z: 8.0 },
+    outerDoor: { x: 6.5, z: 6.1 }, // the hatch at the top of the stairs
+    outerDoorReach: 0.8, // E works only on the top steps, right at the hatch
     // Storm shelter = the sleeping nook (−X end). Its +Z wall is lined with water tanks.
     // Being inside this rectangle during a particle storm counts as "in the shelter".
     shelter: { minX: -9.7, maxX: -5.6, minZ: -2.95, maxZ: 2.95, spawn: { x: -6.6, z: 0.4, yawDeg: 90 } },
