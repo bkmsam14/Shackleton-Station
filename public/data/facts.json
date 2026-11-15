@@ -294,6 +294,18 @@
       "text": "Shackleton crater is about 4 km deep and permanently dark inside.",
       "value": "LOLA: floor −2,868 m vs rim near the base +1,335 m (reference sphere 1,737.4 km)",
       "source": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm"
+    },
+    {
+      "id": "sound-vacuum",
+      "text": "Sound cannot travel in a vacuum: sound waves need molecules to compress.",
+      "value": "NASA Astrobiology — Ask an Astrobiologist",
+      "source": "https://webarchive.library.unt.edu/eot2008/20080920072225/http://astrobiology.nasa.gov/ask-an-astrobiologist/question/?id=78"
+    },
+    {
+      "id": "airlock-air-loss",
+      "text": "Airlocks pump most of their air back into the station, but a little is lost every cycle.",
+      "value": "NASA NTRS 20080013418",
+      "source": "https://ntrs.nasa.gov/citations/20080013418"
     }
   ]
 }

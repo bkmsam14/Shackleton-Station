@@ -319,3 +319,17 @@
 .sun-note {
   margin-top: 6px;
 }
+
+/* pause menu: sound effects volume */
+.menu-slider {
+  flex: 1;
+  min-width: 140px;
+  height: 44px; /* touch target */
+  accent-color: var(--cyan);
+  cursor: pointer;
+}
+.menu-slider-val {
+  min-width: 3.2em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

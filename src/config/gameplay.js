@@ -391,6 +391,25 @@ export const ICE = {
   FAIL_KEEP_FRACTION: 0.5, // GAME BALANCE (not real data) — gentle failure spills half the bag
 };
 
+// ---------------------------------------------------------------------------
+// AIRLOCK — the cycle between a module and the vacuum outside (src/systems/airlock.js)
+// Real airlocks pump most of the air back into the cabin, but some gas is lost every cycle
+// (NASA NTRS 20080013418). A US ISS airlock loses about 1 lb ≈ 0.45 kg of air per cycle
+// (University of Maryland spacecraft design course — see SCIENCE.md). Amounts here are game-sized.
+// ---------------------------------------------------------------------------
+export const AIRLOCK = {
+  // the steps of one cycle, in real seconds (sped up: real cycles take much longer)
+  CLOSE_S: 0.9, // GAME BALANCE (not real data) — the hatch behind you closes and seals
+  PUMP_S: 3.2, // GAME BALANCE (not real data) — pumps move the air (out: back into the cabin)
+  VENT_S: 0.6, // GAME BALANCE (not real data) — the last bit is vented to space / let in
+  OPEN_S: 0.9, // GAME BALANCE (not real data) — lights go green, the far hatch opens
+  PUMP_STOP_FRACTION: 0.12, // GAME BALANCE (not real data) — air left when the pumps stop
+  SKIP_SPEED: 6, // GAME BALANCE (not real data) — E/Space fast-forwards after the first cycle
+  O2_LOSS_KG: 0.03, // GAME BALANCE (not real data) — oxygen lost with the vented air (1 % of the supply)
+  GAME_MINUTES: 15, // GAME BALANCE (not real data) — time the cycle takes on the base clock
+  VOLT_LESSONS: 3, // Volt explains "sound needs air" the first 3 cycles
+};
+
 // Feature flags (later demos).
 export const FEATURES = {
   ENABLE_WATER_GAUGE: false,

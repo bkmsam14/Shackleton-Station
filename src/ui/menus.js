@@ -55,6 +55,13 @@ function voltRow() {
     <button type="button" class="link-btn" data-action="tour"></button></div>`;
 }
 
+/** One volume for all game sounds (airlock, suit, effects). Volt's voice has its own switch. */
+function soundRow() {
+  return `<div class="menu-row"><label class="label" for="sfx-volume">Sound effects</label>
+    <input id="sfx-volume" class="menu-slider" type="range" min="0" max="100" step="5" data-sfx-volume aria-label="Sound effects volume" />
+    <span class="menu-slider-val" data-sfx-val></span></div>`;
+}
+
 /** Names + lines of constellations you found, shown in the real sky outside. */
 function starNamesRow() {
   return `<div class="menu-row"><span class="label">Star names in the sky</span>
@@ -89,7 +96,7 @@ const SUN_NOTES = {
   live: 'The sky right now: the real Sun, Earth and stars over the Moon’s south pole, plus real NASA space weather from the last 7 days (needs internet).'
 };
 
-export function createMenus(root, { onStart, onResume, onQuality, getQuality, volt = null, sun = null, starNames = null }) {
+export function createMenus(root, { onStart, onResume, onQuality, getQuality, volt = null, sun = null, starNames = null, sound = null }) {
   const start = document.createElement('div');
   start.className = 'menu';
   start.innerHTML = `
@@ -118,6 +125,7 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
       ${qualityToggle('pause')}
       ${volt ? voltRow() : ''}
       ${volt?.voiceSupported ? voiceRow() : ''}
+      ${sound ? soundRow() : ''}
       ${starNames ? starNamesRow() : ''}
       ${CONTROLS}
       ${TIME_NOTE}
@@ -163,6 +171,18 @@ export function createMenus(root, { onStart, onResume, onQuality, getQuality, vo
       if (volt.tourActive()) volt.skipTour();
       else volt.replayTour();
       syncVolt();
+    });
+  }
+  // sound effects volume (pause menu)
+  if (sound) {
+    const slider = pause.querySelector('[data-sfx-volume]');
+    const val = pause.querySelector('[data-sfx-val]');
+    const show = () => (val.textContent = `${slider.value}%`);
+    slider.value = String(Math.round(sound.get() * 100));
+    show();
+    slider.addEventListener('input', () => {
+      sound.set(Number(slider.value) / 100);
+      show();
     });
   }
   // star names in the sky (pause menu)

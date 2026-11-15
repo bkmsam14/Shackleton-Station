@@ -1,5 +1,17 @@
 # Changelog — Shackleton Station
 
+## 0.10.0 — The airlock: hatches, pumps and the sound of air
+
+### Gameplay
+- Going out or in (habitat and greenhouse) now runs a short **airlock cycle** you see from inside:
+  the hatch behind you seals, a wall gauge shows the air pressure falling (or rising), the lights go
+  amber → green, and the far hatch opens. You can look around; E/Space fast-forwards after the first.
+- **Sound needs air:** the pump hiss gets quieter and duller as the air is pumped out, then near
+  silence; you still feel the pump through your boots. Outside you only hear your suit (breathing +
+  fan); inside, the module's air vents hum. Volt explains it the first few times.
+- **Never free:** each cycle loses a little air (0.03 kg of oxygen) and takes 15 base minutes.
+- **Sound effects volume** slider in the pause menu (saved).
+
 ## 0.9.0 — Real terrain: the Shackleton crater rim (NASA LOLA)
 
 ### Gameplay

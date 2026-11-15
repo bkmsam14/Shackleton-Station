@@ -155,6 +155,20 @@ export const EVENTS = {
     long: 'Right now Earth is below the horizon at the Moon’s south pole. Seen from here it slowly bobs up and down every month (libration), so it is not always in view.',
     mood: 'wow',
   },
+  // --- airlock (the first few cycles)
+  'airlock-quiet': {
+    kind: 'news',
+    text: 'Hear how quiet it got? Sound needs air, and there’s none out here!',
+    long: 'Sound travels by shaking air. In the airlock the pump noise faded as the air was pumped out, and outside in the vacuum there is no sound at all — you only hear your own suit: your breathing and its fan.',
+    mood: 'wow',
+    databank: 'sound-needs-air',
+  },
+  'airlock-loud': {
+    kind: 'news',
+    text: 'Air is back, so sounds are back! Hear the vents humming?',
+    mood: 'happy',
+    databank: 'sound-needs-air',
+  },
   // --- telescope
   'star-found': {
     kind: 'news',

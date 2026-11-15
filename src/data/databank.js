@@ -123,6 +123,14 @@ export const DATABANK = [
     url: 'https://heasarc.gsfc.nasa.gov/W3Browse/star-catalog/bsc5p.html',
   },
   {
+    id: 'sound-needs-air',
+    title: 'Why is it silent outside?',
+    core: 'Sound is air shaking. With almost no air on the Moon, sound can’t travel — outside you only hear your own suit: your breathing and its fan.',
+    deeper: 'In the airlock the pumps move most of the air back into the base, so the hiss gets quieter and more muffled until it is almost silent. You can still feel the pump through your boots, because vibrations travel through solid things. Real airlocks save most of the air, but a little is lost every cycle.',
+    source: 'NASA Astrobiology — Ask an Astrobiologist (sound in a vacuum); NASA NTRS 20080013418 (airlock gas losses)',
+    url: 'https://webarchive.library.unt.edu/eot2008/20080920072225/http://astrobiology.nasa.gov/ask-an-astrobiologist/question/?id=78',
+  },
+  {
     id: 'real-terrain',
     title: 'You are walking on the real Moon',
     core: 'The ground around the base is the real Shackleton crater rim near the south pole, measured by a laser on NASA’s Lunar Reconnaissance Orbiter.',

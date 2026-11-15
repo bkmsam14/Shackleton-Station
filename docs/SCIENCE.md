@@ -147,6 +147,12 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **Game additions on the real terrain:** the levelled base pad (a real base would grade a pad), the small cold-trap crater for ice mining, the telescope mound, tiny craters < 6 m and bumps smaller than the 5 m map can show.
 - **Earth stays in view in game mode:** the real horizon toward Earth (lon 0) is ~0.9° high; game Earth sits at 4°.
 
+### Airlock and sound (v0.10.0)
+- **Sound needs air:** sound waves are compression waves and need molecules to travel; there is no sound in a vacuum. *Source: NASA Astrobiology, Ask an Astrobiologist — https://webarchive.library.unt.edu/eot2008/20080920072225/http://astrobiology.nasa.gov/ask-an-astrobiologist/question/?id=78*
+- In the game the airlock hiss gets quieter and duller as the pressure drops (thin air carries less sound, high notes first); outside the world is silent and you only hear your suit (breathing + fan). The pump motor stays faintly audible "through your boots": vibrations travel through solids.
+- **Airlocks lose a little air each cycle:** pumps move most of the air back, the rest is lost; NASA studies ways to reduce these losses. *Source: NASA NTRS 20080013418 "Minimizing EVA Airlock Time and Depress Gas Losses" — https://ntrs.nasa.gov/citations/20080013418*. A US ISS airlock loses about 1 lb (≈ 0.45 kg) of air per cycle (University of Maryland ENAE 697 spacecraft design lecture — https://spacecraft.ssl.umd.edu/academics/697S23/697S23L22.airlocksx.pdf; academic, not NASA). Sources disagree on details, so the game only says "most of the air is pumped back, a little is lost each time".
+- **Game simplifications:** the cycle takes ~5.6 real seconds (real ones take much longer); pressure is shown as % of module air; the loss is 0.03 kg of oxygen (1 % of the supply) and 15 base minutes per cycle — all game balance.
+
 ### Dust
 - Lunar regolith is sharp, abrasive and sticky. It clings to suits and covers equipment.
 - **There is no wind, so there are no dust storms on the Moon.** Dust gets thrown up by rocket exhaust, rovers and walking.
