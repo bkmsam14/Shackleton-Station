@@ -51,6 +51,8 @@ export const MI = {
   moon: ic(`<path d="M15.5 3.5a8.5 8.5 0 1 0 5 13.5 7 7 0 0 1-5-13.5z" ${S}/>`),
   food: ic(`<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-2 2-2.5 5-2.5 8h3V21" ${S}/>`),
   refill: ic(`<path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4" ${S}/>`),
+  film: ic(`<rect x="3" y="5" width="18" height="14" rx="3" ${S}/><path d="M10 9.2v5.6l4.8-2.8z" fill="currentColor"/>`),
+  back: ic(`<path d="M10 6l-6 6 6 6M4 12h16" ${S}/>`),
 };
 
 /** A row of 3 drawn stars, `n` of them filled. */
