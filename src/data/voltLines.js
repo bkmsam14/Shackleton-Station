@@ -129,6 +129,12 @@ export const EVENTS = {
     long: 'A real solar flare was seen (based on NASA DONKI data). Fast particles may follow. Go to the storm shelter in the sleeping nook — follow the arrow.',
     mood: 'wow',
   },
+  'storm-warning-strong': {
+    kind: 'warning',
+    text: 'A BIG storm! Shelter, and pump water into the walls!',
+    long: 'A real solar flare was seen (based on NASA DONKI data), and this storm is a strong one: the shelter alone is not enough. Go to the storm shelter and pump water into the WATER WALLS panel. Water blocks particles.',
+    mood: 'wow',
+  },
   'storm-exposed': {
     kind: 'warning',
     text: 'The particles are here! Get into the shelter, quick!',

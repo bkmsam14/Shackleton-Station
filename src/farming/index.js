@@ -1,4 +1,4 @@
-// farming/index.js — optional potato-growing minigame in the greenhouse.
+// farming/index.js — optional growing minigame in the greenhouse (potato, lettuce, radish).
 // Adds two small pot stands (2 pots each) in the gap between the grow-rack runs, their
 // interactables, growth over time, save/load, and the close-up planting view.
 // Game rules: farmState.js (pure). Models: farmModels.js. Close-up view: farmView.js.
@@ -7,7 +7,7 @@ import { LAYOUT } from '../world/layout.js';
 import { createSign } from '../world/signs.js';
 import { loadSettings, saveSettings } from '../systems/save.js';
 import { createFarmState, serializeFarm, stepGrowth, growthStage, coverFraction, waterFraction, STAGE } from './farmState.js';
-import { createStand, createPot, createPotatoPlant, POT, STAND, SOIL_DRY, SOIL_WET } from './farmModels.js';
+import { createStand, createPot, createPlant, POT, STAND, SOIL_DRY, SOIL_WET } from './farmModels.js';
 import { createFarmView } from './farmView.js';
 import { createInventoryPanel } from './inventoryPanel.js';
 import './farm.css';
@@ -16,6 +16,7 @@ const G = LAYOUT.GREENHOUSE;
 const STAND_X = 8.0; // gap between the two rack runs (x 7.4 → 8.6, greenhouse-local)
 const STAND_Z = 1.75; // same line as the racks, on both sides of the aisle
 const POT_DX = 0.27;
+const CROP_NAME = { potato: 'Potato', lettuce: 'Lettuce', radish: 'Radish' };
 
 export function createFarming({ world, camera, renderer, root, feedback, gauges, getMode, hooks, onEvent = () => {} }) {
   const ox = G.x - G.length / 2; // world x of the greenhouse's west end
@@ -28,7 +29,7 @@ export function createFarming({ world, camera, renderer, root, feedback, gauges,
     const stand = createStand();
     stand.position.set(STAND_X, G.floorY, side * STAND_Z);
     group.add(stand);
-    const sign = createSign(['POTATO POTS'], 0.5, 0.11, { accent: '#7be0a0' });
+    const sign = createSign(['GROW POTS'], 0.5, 0.11, { accent: '#7be0a0' });
     sign.position.set(0, STAND.height - 0.08, -side * (STAND.depth / 2 + 0.003));
     if (side > 0) sign.rotation.y = Math.PI;
     stand.add(sign);
@@ -67,14 +68,21 @@ export function createFarming({ world, camera, renderer, root, feedback, gauges,
     v.hole.visible = (empty && v.dig) || (seeded && cf < 1);
     v.pile.visible = (empty && v.dig) || seeded;
     v.pile.scale.copy(v.pile.userData.base).multiplyScalar(empty ? 1 : Math.max(0.15, 1 - cf * 0.85));
-    v.seed.visible = seeded && cf < 0.67;
+    v.seed.visible = seeded && pot.crop === 'potato' && cf < 0.67;
+    v.seeds.visible = seeded && pot.crop !== 'potato' && cf < 1;
     const moundH = seeded ? cf * 0.035 : empty ? 0 : 0.035;
     v.mound.visible = moundH > 0;
     v.mound.scale.y = Math.max(0.001, moundH);
     v.soilMaterial.color.copy(SOIL_DRY).lerp(SOIL_WET, empty ? 0 : waterFraction(pot));
     const growing = pot.stage === STAGE.GROWING || pot.stage === STAGE.READY;
+    if (v.plant && v.plant.crop !== pot.crop) {
+      v.plant.group.removeFromParent();
+      v.plant.dispose();
+      v.plant = null;
+    }
     if (growing && !v.plant) {
-      v.plant = createPotatoPlant(id.charCodeAt(4) * 7 + id.charCodeAt(5));
+      v.plant = createPlant(pot.crop, id.charCodeAt(4) * 7 + id.charCodeAt(5));
+      v.plant.crop = pot.crop;
       v.plantAnchor.add(v.plant.group);
     } else if (!growing && v.plant) {
       v.plant.group.removeFromParent();
@@ -99,14 +107,14 @@ export function createFarming({ world, camera, renderer, root, feedback, gauges,
     sync,
     save,
     hooks,
-    onEvent, // 'potato-planted' | 'potato-watered' | 'potato-harvested' (the Training Day listens)
+    onEvent, // '<crop>-planted' | '<crop>-watered' | '<crop>-harvested' + 'crop-…' for any crop (the Training Day listens)
   });
 
   const panel = createInventoryPanel({ root, state, gauges, feedback, getMode, isViewOpen: () => view.isOpen, save, onEvent });
 
   function potPrompt(pot) {
     if (pot.stage === STAGE.READY) return 'Press E to harvest';
-    if (pot.stage === STAGE.GROWING) return `Potato growing · ${Math.floor(pot.growth * 20) * 5}%`;
+    if (pot.stage === STAGE.GROWING) return `${CROP_NAME[pot.crop]} growing · ${Math.floor(pot.growth * 20) * 5}%`;
     return 'Press E to interact';
   }
 
@@ -162,10 +170,11 @@ export function createFarming({ world, camera, renderer, root, feedback, gauges,
     interact(potId) {
       const pot = state.pots[potId];
       if (pot.stage === STAGE.GROWING) {
-        feedback.notify(lit ? 'Still growing' : 'Growing paused: no power', {
+        const name = CROP_NAME[pot.crop].toLowerCase();
+        feedback.notify(lit ? 'Still growing' : 'Growing paused: no light', {
           long: lit
-            ? 'This potato plant is still growing under the red and blue grow lights. Come back when it is ready to harvest.'
-            : 'The grow lights are off because base power ran out, so the potato plant has stopped growing for now.',
+            ? `This ${name} plant is still growing under the red and blue grow lights. Come back when it is ready to harvest.`
+            : `The grow lights are off (switched off, or base power ran out), so the ${name} plant has stopped growing for now.`,
         });
         return;
       }
@@ -181,8 +190,9 @@ export function createFarming({ world, camera, renderer, root, feedback, gauges,
         }
         if (ready.length) {
           save();
-          feedback.notify('Potato plant ready', {
-            long: 'A potato plant in the greenhouse is ready to harvest. Bring the cutters!',
+          const crop = CROP_NAME[state.pots[ready[0]].crop];
+          feedback.notify(`${crop} ready to harvest`, {
+            long: `A ${crop.toLowerCase()} plant in the greenhouse is ready to harvest. Bring the cutters!`,
           });
         }
         if (Object.values(state.pots).some((p) => p.stage === STAGE.GROWING)) {

@@ -53,6 +53,10 @@ How the game uses them (ratios stay real, amounts are scaled):
 ### Food and plants
 - NASA's **Veggie** system grew lettuce and other plants on the ISS under LED lights, using growing "pillows". *Source: NASA Veggie (add URL)*
 - Plants mainly use red and blue light for photosynthesis, which is why grow lights often look pink/purple. *Source: NASA Veggie VEG-04 (red:blue light study) — https://ntrs.nasa.gov/citations/20190033231*
+- **Red romaine lettuce on the ISS:** grown in Veggie and eaten by the crew on 10 Aug 2015 — about 33 days from seed to salad. *Source: Scientific American, "Astronauts Take First Bites of Lettuce Grown in Space" (2015) — https://www.scientificamerican.com/article/astronauts-take-first-bites-of-lettuce-grown-in-space/*
+- **Radishes on the ISS:** Plant Habitat-02 (PH-02) grew radishes in the Advanced Plant Habitat, harvested on 30 Nov 2020 after about 27 days; radishes were picked partly because they grow fast. *Source: NASA Kennedy blog, "Kennedy Harvests Radish Crop as Part of PH-02 Experiment" — https://blogs.nasa.gov/kennedy/2020/12/15/kennedy-harvests-radish-crop-as-part-of-ph-02-experiment*
+- **Food energy of crops (raw, per 100 g):** potato (flesh and skin) **77 kcal** (FDC 170026), romaine lettuce **17 kcal** (FDC 169247), radish **16 kcal** (FDC 169276). Leafy greens and radishes are mostly water: few calories, but fresh vitamins; potatoes are full of starch. *Source: USDA FoodData Central (SR Legacy), read through the FDC API — https://fdc.nal.usda.gov/*
+- Seeds are tiny and light, so flying seeds costs far less mass than flying the food they grow into. (Seed-packet mass in the game is game balance.)
 - Plants need light, water, warmth and nutrients, and they take time to grow. They also release some oxygen and take in CO₂.
 - ESA's **MELiSSA** project researches life-support loops including spirulina (an algae). *Source: ESA MELiSSA (add URL)*
 - CSA food production toolkit: https://www.asc-csa.gc.ca/eng/youth-educators/toolkits/food-production/ (an index page; use its linked articles "Food in space: the challenges" and "Growing healthy food in space and in remote areas")
@@ -185,6 +189,74 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **Stormy Sun:** May 2024. A period of very strong solar activity, including X-class flares on 14 May 2024 (confirm in the DONKI archive JSON before shipping).
 - **Calm Sun:** late 2019, around solar minimum (December 2019).
 
+## Game balance (how the numbers fit together) — v0.11.0
+
+These are **game-design** calculations, not facts to show kids. The real numbers come from the
+sections above; the sizes (gauge capacity, battery, tank, loads, storm length) are marked
+`GAME BALANCE` in `gameplay.js`. Run `npm run balance` to print it all again;
+`tests/balance.test.js` fails if a change breaks the targets.
+
+**Targets for one lunar day (20 real minutes), checked by three bots** (`src/systems/balanceSim.js`):
+
+Each bot plays **200 runs** with random micrometeorite hits on the solar array (≈ 1.5 hits per run).
+
+| Bot | What it does | Target | Result (v0.11.0) |
+|---|---|---|---|
+| idle | nothing | first failure after 5–8 min | oxygen runs out at 6:42 in every run |
+| sloppy | reacts at 25 %, 3 pots (potato, lettuce, radish), 40 % outside, grow lights always on, never mines ice, orders a repair kit only when needed | ≥ 18 min in ≥ 90 % of runs, never before 14 min | 94 % reach 18:24 (food runs out); unlucky runs with 2+ hits fail at 14:40–15:30 |
+| skilled | makes O₂ at 60 %, 3 potato + 1 radish pot, lights off at night, mines ice at 3 kg, 2 kg in walls, keeps a spare repair kit | no failure in any run | 0 / 200 fail; food dips to ≈ 23 %, ends O₂ ≥ 76 %, food ≥ 53 % |
+
+**Food (BVAD).** 12.778 MJ/day inside = 0.532 MJ/h; a spacewalk 1.062 MJ/h (≈ 2.0×). Full gauge = 3 days,
+so 1 % = 0.383 MJ ≈ 92 kcal. Inside: 33.3 %/game day = 8.3 %/real min (full → empty in 12 min);
+outside ≈ 16.6 %/real min (≈ 6 min). There is no food from Earth: everything you eat is grown here.
+
+**Crops.** `FARM_FOOD_COVERAGE` = 1.4: a full farm makes 1.4× what a resting astronaut eats, because
+you also work outside and may switch the lights off at night (without it the skilled bot starved at
+≈ 13:36). One potato = 0.105 kg dry food ≈ 400 kcal ≈ a big 0.5 kg raw potato (USDA 77 kcal/100 g).
+Every pot gives the same **game harvest mass** of food as a potato pot's two edible potatoes; the
+energy then follows the USDA kcal, so greens honestly give less:
+
+| Crop | Grows (game) | Real | One item | Per harvest | Food per pot per minute |
+|---|---|---|---|---|---|
+| potato | 150 s | (needs a source) | 4.4 % | 8.7 % (2 eaten + 1 replanted) | 3.5 %/min |
+| lettuce (1 head) | 50 s | ≈ 33 days | 1.9 % | 1.9 % | 2.3 %/min |
+| radish (3) | 41 s | ≈ 27 days | 0.6 % | 1.8 % | 2.7 %/min |
+
+Greens keep the real 27 : 33 day ratio, grow ≈ 3× faster than potato and fill gaps while potatoes
+grow, but potato stays the best food per minute. Greens come from seeds (start 4 + 4; packets of 6
+from Earth), potatoes from your own harvest.
+
+**Solar array damage.** A micrometeorite hit drops the array to 40 % (3.6 kW at best, below the 5 kW
+load, so the battery drains even in sunlight). Average one hit per 3 game days (≈ 12 real min), none
+in the first half day; you start with 1 spare repair kit; a new kit takes ≈ 75 real s to arrive.
+Real basis: micrometeoroids hit the Moon all the time; how often one breaks a panel is game balance.
+
+**Oxygen and water.** 0.895 kg O₂/day = 30 % of the 3 kg supply per game day (full → empty in 13.4 min
+inside, 5.8 min outside). Making 1 kg O₂ costs 1.125 kg water + 4.96 kWh (6 % of the battery). The
+6 kg tank makes ≈ 5.3 kg O₂ — about one lunar day for a busy kid; water in the shelter walls comes
+from the same tank, so a kid who shields must also mine ice (60 kg bag → 3.4 kg water) or order water.
+
+**Power.** The base's long night is 208 real s = 20.8 game h (plus a 14 s flicker). Loads: habitat 3 kW
++ grow lights 2 kW. Lights on: 5 × 20.8 ≈ 104 kWh > 80 kWh battery → blackout near sunrise.
+Lights off: 3 × 20.8 ≈ 62 kWh → fits. In a blackout the grow lights, potatoes, Electrolysis,
+Ice Oven and water pump stop; the airlock keeps working (it never traps you outside).
+
+**Radiation (May 2024 replay).** Storm strength = log₁₀(CRaTER dose ÷ quiet) ÷ log₁₀(300); dose per
+storm (% of the per-storm limit) = 70 %/h × strength × place factor × 5 h. Shelter factor 0.35,
+water walls halve it at 3 kg:
+
+| Storm (CRaTER day) | Strength | Outside | Habitat | Shelter, 0 / 2 / 4 / 6 kg water |
+|---|---|---|---|---|
+| 9 May (only ≈ 2× quiet → the minimum) | 0.25 | 88 % | 44 % | 31 / 18 / 13 / 10 % |
+| 10 May | 0.66 | 232 % | 116 % | 81 / 49 / 35 / 27 % |
+| 11 May | 0.93 | 327 % | 163 % | **114** / 69 / 49 / 38 % |
+| 13 May | 0.74 | 260 % | 130 % | 91 / 55 / 39 / 30 % |
+
+So the shelter is always needed, and the strongest storm also needs water in the walls (Volt says so in
+its warning). CRaTER is µGy in a detector and Chang'e 4 is µSv: never put them on one scale; the game's
+% is game-sized. CRaTER's highest day (14 May, ≈ 1,530 µGy/h) has no DONKI SEP record of its own in our
+archive, so the game's storms use the four SEP days above.
+
 ## Data sources (credit these in the game)
 **Required by the team:** BVAD (https://ntrs.nasa.gov/citations/20210024855), NASA BPS data hub (https://science.nasa.gov/biological-physical/data/), RadLab overview (https://visualization.osdr.nasa.gov/radlab/gui/overview/), DONKI (https://ccmc.gsfc.nasa.gov/donki/). See the table in CLAUDE.md for what each one is used for.
 
@@ -209,7 +281,7 @@ How the game uses them (ratios stay real, amounts are scaled):
 - Real spacesuit oxygen duration (xEMU / EMU) if we ever show suit-tank time.
 - BVAD exercise oxygen rates (Tables 3-23 / 3-25) if "sprinting drains oxygen faster" is added.
 - A Moon surface vs ISS dose comparison from a NASA source (for example Artemis I or LRO CRaTER results).
-- Real growth times for lettuce and potato in controlled-environment agriculture.
+- Real growth time for potato in controlled-environment agriculture (lettuce ≈ 33 days and radish ≈ 27 days are sourced above).
 - Exact source URLs for every "(add URL)" above.
 - Real efficiency of the ISS OGA (kWh per kg O₂ actually used), if we ever show more than the physics minimum.
 - The "4× more protection" Artemis I shelter figure (check the Nature 2024 paper, Stuart George et al.) before showing a number.

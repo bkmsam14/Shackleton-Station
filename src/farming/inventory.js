@@ -4,6 +4,10 @@
 
 export const ITEMS = {
   potato: { name: 'Potato', plural: 'Potatoes', seedName: 'Seed potato' },
+  lettuce: { name: 'Lettuce', plural: 'Lettuce' },
+  radish: { name: 'Radish', plural: 'Radishes' },
+  'lettuce-seed': { name: 'Lettuce seed', plural: 'Lettuce seeds' },
+  'radish-seed': { name: 'Radish seed', plural: 'Radish seeds' },
 };
 
 export function createInventory(saved = {}) {

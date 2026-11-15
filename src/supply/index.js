@@ -121,6 +121,7 @@ export function createSupply({ world, root, gauges, station, inventory, saveInve
         if (c.to === 'tank') return `+${n * c.perUnit} kg water`;
         if (c.to === 'battery') return `+${n * c.perUnit} kWh battery`;
         if (c.item === 'potato') return `+${n * c.perUnit} potatoes`;
+        if (c.item?.endsWith('-seed')) return `+${n * c.perUnit} ${c.item.replace('-seed', '')} seeds`;
         return `+${n} ${c.name}${n > 1 ? 's' : ''}`;
       });
       if (got.length) {

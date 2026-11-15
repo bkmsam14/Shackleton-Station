@@ -53,15 +53,18 @@ export const OXYGEN = {
   // Size of the full supply. Inside it lasts 3 / 0.0373 kg/h ≈ 80 game h ≈ 13 real min;
   // working outside it lasts 3 / 0.086 kg/h ≈ 35 game h ≈ 6 real min.
   CAPACITY_KG: 3, // GAME BALANCE (not real data)
-  // 60 % so the first-day tour can make oxygen at the Electrolysis unit right away.
-  START_PERCENT: 60, // GAME BALANCE (not real data)
+  // 50 %: a kid who does nothing runs out after ≈ 6.7 real min (the "idle" tier in
+  // docs/SCIENCE.md "Game balance"), and the tour still reaches the Electrolysis unit in time.
+  START_PERCENT: 50, // GAME BALANCE (not real data)
 };
 
 export const FOOD = {
   // A full food gauge holds this many days of food: 3 days × 0.8 kg = 2.4 kg dry food.
   // Drains in 3 × 240 s = 12 real minutes.
   CAPACITY_DAYS: 3, // GAME BALANCE (not real data)
-  START_PERCENT: 90, // GAME BALANCE (not real data)
+  // 80 %: food runs out ≈ 9.6 real min if you do nothing, after oxygen, so the two
+  // problems don't arrive at the same moment.
+  START_PERCENT: 80, // GAME BALANCE (not real data)
 };
 FOOD.CAPACITY_KG = FOOD.CAPACITY_DAYS * BVAD.FOOD_KG_PER_DAY_DRY;
 
@@ -73,9 +76,11 @@ export const WARNING_THRESHOLD_PERCENT = 25; // GAME BALANCE (not real data)
 export const POWER = {
   BATTERY_CAPACITY_KWH: 80, // GAME BALANCE (not real data) — a dark period can nearly empty it
   START_PERCENT: 70, // GAME BALANCE (not real data)
-  // Loads (always on unless the battery is empty).
+  // Loads (always on unless the battery is empty). The base's long night is ≈ 21 game h:
+  // with the grow lights ON it needs 5 kW × 21 h ≈ 104 kWh (more than the battery → blackout);
+  // with them OFF 3 kW × 21 h ≈ 62 kWh fits. The grow-lights switch makes that a choice.
   HABITAT_LOAD_KW: 3, // GAME BALANCE (not real data)
-  GREENHOUSE_LED_LOAD_KW: 2, // GAME BALANCE (not real data)
+  GREENHOUSE_LED_LOAD_KW: 2, // GAME BALANCE (not real data) — 0 while the grow lights are switched off
   // Solar array output when facing the Sun and fully lit.
   SOLAR_ARRAY_PEAK_KW: 9, // GAME BALANCE (not real data)
 };
@@ -178,7 +183,9 @@ export const ELECTROLYSIS = {
   // Real ISS Oxygen Generation Assembly, nominal rate (range 2.3–9.2 kg/day).
   ISS_O2_KG_PER_DAY_NOMINAL: 5.4, // NASA NTRS 20180006335 (range: NTRS 20080036243)
   // The station's own water tank (finite: ice mining / recycler come later).
-  TANK_START_KG: 10, // GAME BALANCE (not real data) — about 3 full oxygen refills
+  // 6 kg ≈ 5.3 kg of O₂: most of a first 20-min day. Filling the water walls for a storm
+  // uses the same water, so then you must mine ice or order water.
+  TANK_START_KG: 6, // GAME BALANCE (not real data)
   // Batches the player can choose (kg of oxygen made).
   BATCHES: [
     { id: 'small', label: 'Small', o2Kg: 0.5, zaps: 8 }, // GAME BALANCE (not real data)
@@ -276,7 +283,9 @@ export const RADIATION = {
     habitat: 0.5, // GAME BALANCE (not real data)
     // Artemis I: Orion's storm-shelter spot got much less dose than less-shielded spots (DLR /
     // Nature 2024, measured in Earth's radiation belts). The exact factor here is game balance.
-    shelter: 0.25, // GAME BALANCE (not real data)
+    // 0.35: the shelter alone is enough for the weaker May-2024 storms but not for the two
+    // strongest (11 + 14 May) — those need water in the walls (SCIENCE.md "Game balance").
+    shelter: 0.35, // GAME BALANCE (not real data)
   },
   // Water walls: more water between you and the Sun = less dose (mass shielding).
   WALL_CAPACITY_KG: 6, // GAME BALANCE (not real data) — real shelters would need tonnes
@@ -300,8 +309,10 @@ export const FARMING = {
   POT_COUNT: 4, // pots in the greenhouse (2 stands × 2) — level layout
   TENDING_REAL_SECONDS: 30, // time to plant, cover, water and harvest one pot — GAME BALANCE (not real data)
   // Share of the astronaut's food (resting inside) the greenhouse supplies when all pots
-  // are kept busy. 1 = a full farm exactly feeds you; less = you must also ration.
-  FARM_FOOD_COVERAGE: 1, // GAME BALANCE (not real data)
+  // are kept busy. 1 = a full farm exactly feeds you resting inside. 1.4 because you also work
+  // outside (≈ 2× hunger) and the lights may be off at night; with no food from Earth, the
+  // balance bots (npm run balance) need about this much to get through a lunar day.
+  FARM_FOOD_COVERAGE: 1.4, // GAME BALANCE (not real data)
   // Real potato plants take far longer. No real number is shown until SCIENCE.md has a
   // verified source ("Real growth times for lettuce and potato" is in Needs verification).
   GROW_REAL_SECONDS: 150, // GAME BALANCE (not real data)
@@ -314,13 +325,43 @@ FARMING.HARVEST_YIELD = FARMING.CUTS_TO_HARVEST * FARMING.POTATOES_PER_STEM; // 
 // Food value of one potato, DERIVED (not a free number). In one growing cycle the
 // astronaut eats (cycle ÷ day length) × the BVAD daily food; the full farm's spare
 // potatoes (pots × (yield − 1)) must cover FARM_FOOD_COVERAGE of that.
-// Today: 180 s ÷ 240 s × 0.8 kg = 0.6 kg per cycle ÷ 8 spare potatoes = 0.075 kg dry
-// ≈ 3 % of the food gauge ≈ 2 game hours of food per potato.
+// Today: 1.4 × 180 s ÷ 240 s × 0.8 kg = 0.84 kg per cycle ÷ 8 spare potatoes = 0.105 kg dry
+// ≈ 4.4 % of the food gauge ≈ 3 game hours of food (≈ 400 kcal, a big ~0.5 kg potato).
 FARMING.CYCLE_REAL_SECONDS = FARMING.GROW_REAL_SECONDS + FARMING.TENDING_REAL_SECONDS;
 FARMING.FOOD_KG_PER_POTATO =
   (FARMING.FARM_FOOD_COVERAGE * BVAD.FOOD_KG_PER_DAY_DRY * FARMING.CYCLE_REAL_SECONDS) /
   TIME.REAL_SECONDS_PER_GAME_DAY /
   (FARMING.POT_COUNT * (FARMING.HARVEST_YIELD - 1));
+
+// --- more crops: lettuce + radish (both really grown by NASA on the ISS; SCIENCE.md "Food and plants")
+// Food energy per 100 g, raw — USDA FoodData Central (SR Legacy):
+FARMING.KCAL_PER_100G = {
+  potato: 77, // "Potatoes, flesh and skin, raw", FDC 170026
+  lettuce: 17, // "Lettuce, cos or romaine, raw", FDC 169247
+  radish: 16, // "Radishes, raw", FDC 169276
+};
+// BVAD food: 12.778 MJ per 0.8 kg of dry food → the gauge counts food as "dry kg"; 1 kcal = 4184 J.
+FARMING.FOOD_KG_PER_KCAL = (4184 / 1e6) * (BVAD.FOOD_KG_PER_DAY_DRY / BVAD.FOOD_MJ_PER_DAY);
+// One game potato's energy → how big it is as a real raw potato (≈ 0.37 kg: a big one).
+FARMING.POTATO_FRESH_KG = FARMING.FOOD_KG_PER_POTATO / FARMING.FOOD_KG_PER_KCAL / (FARMING.KCAL_PER_100G.potato * 10);
+// Every pot gives the same "game harvest mass" of food to eat as a potato pot does
+// (its edible potatoes); the energy then follows from the real kcal per kg. GAME BALANCE.
+FARMING.EDIBLE_HARVEST_KG = (FARMING.HARVEST_YIELD - 1) * FARMING.POTATO_FRESH_KG;
+// Real growth: radish ≈ 27 days (NASA PH-02, 2020), lettuce ≈ 33 days seed to salad (Veggie, 2015).
+// Game times keep that 27 : 33 ratio. GAME BALANCE (not real data) for the seconds themselves.
+FARMING.GREENS = {
+  lettuce: { growSeconds: 50, coverLoads: 1, waterNeeded: 60, cuts: 1, perCut: 1, realDays: 33 },
+  radish: { growSeconds: 41, coverLoads: 1, waterNeeded: 60, cuts: 3, perCut: 1, realDays: 27 },
+};
+FARMING.START_SEEDS = { lettuce: 4, radish: 4 }; // GAME BALANCE (not real data)
+/** Food (gauge "dry kg") in ONE harvested item: a lettuce head, a radish. */
+FARMING.FOOD_KG_PER_ITEM = Object.fromEntries(
+  Object.entries(FARMING.GREENS).map(([id, c]) => [
+    id,
+    (FARMING.EDIBLE_HARVEST_KG / (c.cuts * c.perCut)) * FARMING.KCAL_PER_100G[id] * 10 * FARMING.FOOD_KG_PER_KCAL,
+  ]),
+);
+FARMING.FOOD_KG_PER_ITEM.potato = FARMING.FOOD_KG_PER_POTATO;
 
 // ---------------------------------------------------------------------------
 // SUPPLY REQUESTS — habitat supply terminal + cargo landing pad (src/supply/)
@@ -346,6 +387,9 @@ export const SUPPLY = {
     water: { massKg: 10, maxPerOrder: 3, deliveryGameHours: 8, waterKg: 10 }, // 10 kg container — GAME BALANCE (not real data)
     'seed-potatoes': { massKg: 2, maxPerOrder: 3, deliveryGameHours: 4, potatoes: 3 }, // bag of 3 — GAME BALANCE (not real data)
     'battery-pack': { massKg: 45, maxPerOrder: 1, deliveryGameHours: 10, kwh: 8 }, // GAME BALANCE (not real data)
+    // seeds are tiny and light — far cheaper to fly than food (GAME BALANCE amounts)
+    'lettuce-seeds': { massKg: 0.1, maxPerOrder: 2, deliveryGameHours: 4, seeds: 6 }, // GAME BALANCE (not real data)
+    'radish-seeds': { massKg: 0.1, maxPerOrder: 2, deliveryGameHours: 4, seeds: 6 }, // GAME BALANCE (not real data)
   },
 };
 // One-way light time Earth → Moon ≈ 1.28 s (SCIENCE.md: "about 1.3 seconds").
@@ -357,7 +401,8 @@ SUPPLY.ONE_WAY_DELAY_S = SUPPLY.EARTH_MOON_DISTANCE_KM / SUPPLY.SPEED_OF_LIGHT_K
 // Real basis: micrometeoroids constantly strike the Moon (SCIENCE.md). How often one
 // damages a panel, and how much power it costs, are game balance.
 export const SOLAR_DAMAGE = {
-  MEAN_GAME_DAYS_BETWEEN_HITS: 2, // average — GAME BALANCE (not real data)
+  MEAN_GAME_DAYS_BETWEEN_HITS: 3, // average (≈ 12 real min) — GAME BALANCE (not real data)
+  START_KITS: 1, // a spare kit in storage at the start — GAME BALANCE (not real data)
   GRACE_GAME_HOURS: 12, // no hits during the first half day — GAME BALANCE (not real data)
   DAMAGED_OUTPUT: 0.4, // a damaged array makes 40 % of its normal power — GAME BALANCE (not real data)
   KITS_PER_REPAIR: 1, // GAME BALANCE (not real data)

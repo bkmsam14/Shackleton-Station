@@ -1,12 +1,15 @@
 // farmModels.js — placeholder 3D models for the farming minigame, in the game's clean,
 // smooth-shaded style: pot stand, pot (soil, hole, soil pile, mound), seed potato,
-// potato plant (3 cuttable leafy stems), watering can and cutters.
+// potato plant (3 cuttable leafy stems), red romaine lettuce (1 head), radishes (3),
+// seed packets, watering can and cutters. createPlant(crop) picks the right plant.
+// In every plant each `stems` entry is what the player cuts; its child (or itself) named
+// 'harvest' is the food that flies into the bag.
 // Each builder returns plain THREE objects; swap for glTF models later.
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 import { MAT } from '../world/materials.js';
 import { rbox } from '../world/details.js';
-import { leafGeometry } from '../world/plants.js';
+import { leafGeometry, rosetteGeometry } from '../world/plants.js';
 import { mulberry32 } from '../world/heightfield.js';
 
 export const POT = { radius: 0.16, height: 0.24 };
@@ -27,6 +30,11 @@ const looseSoilMat = () => mat('looseSoil', () => new THREE.MeshStandardMaterial
 const holeMat = () => mat('hole', () => new THREE.MeshStandardMaterial({ color: 0x21170f, roughness: 1 }));
 const stemMat = () => mat('stem', () => new THREE.MeshStandardMaterial({ color: 0x4f8f3a, roughness: 0.7 }));
 const rootMat = () => mat('root', () => new THREE.MeshStandardMaterial({ color: 0xd9c49b, roughness: 0.9 }));
+const seedMat = () => mat('seed', () => new THREE.MeshStandardMaterial({ color: 0x3a2a1c, roughness: 0.8 }));
+const radishMat = () => mat('radish', () => new THREE.MeshStandardMaterial({ color: 0xd8344f, roughness: 0.45 }));
+const radishTipMat = () => mat('radishTip', () => new THREE.MeshStandardMaterial({ color: 0xf3ece4, roughness: 0.6 }));
+/** Seed-packet label colours. */
+export const CROP_COLOR = { potato: 0xc8a06a, lettuce: 0x9c3d4a, radish: 0xd8344f };
 export const LEAF_COLOR = 0x5aa845;
 export const LEAF_HOVER = 0x5c8f1c;
 
@@ -101,11 +109,24 @@ export function createPot() {
   const seed = new THREE.Mesh(potatoGeometry(7), potatoMat());
   seed.position.y = POT.soilY - 0.006;
 
+  // greens are sown as a few tiny seeds in the hole
+  const seeds = new THREE.Group();
+  const seedGeo = new THREE.SphereGeometry(0.0045, 8, 6);
+  for (let i = 0; i < 5; i++) {
+    const a = i * 2.4;
+    const d = 0.012 + (i % 2) * 0.012;
+    const m = new THREE.Mesh(seedGeo, seedMat());
+    m.position.set(Math.cos(a) * d, POT.soilY + 0.002, Math.sin(a) * d);
+    m.scale.set(1.3, 0.7, 1);
+    seeds.add(m);
+  }
+  seeds.visible = false;
+
   const plantAnchor = new THREE.Group();
   plantAnchor.position.y = POT.soilY;
 
-  g.add(body, band, soil, holeGroup, pile, mound, seed, plantAnchor);
-  return { group: g, soil, soilMaterial, hole: holeGroup, pile, mound, seed, plantAnchor };
+  g.add(body, band, soil, holeGroup, pile, mound, seed, seeds, plantAnchor);
+  return { group: g, soil, soilMaterial, hole: holeGroup, pile, mound, seed, seeds, plantAnchor };
 }
 
 /** Lumpy potato, about 9 cm long. */
@@ -192,7 +213,7 @@ function leafyStem(angle, rand) {
   const potato = new THREE.Mesh(potatoGeometry(Math.round(angle * 13) & 63, 0.8), potatoMat());
   potato.position.set(c * 0.036, -0.07, s * 0.036);
   potato.rotation.set(0.4, angle, 0.2);
-  potato.name = 'potato';
+  potato.name = 'harvest';
   mesh.add(rootMesh, potato);
   return mesh;
 }
@@ -265,6 +286,153 @@ export function createPotatoPlant(seed = 1) {
       });
     },
   };
+}
+
+// --------------------------------------------------------------- seeds + greens
+/** A small paper seed packet (what you drag to sow lettuce or radish). */
+export function createSeedPacket(crop) {
+  const g = new THREE.Group();
+  const paper = new THREE.Mesh(rbox(0.06, 0.008, 0.08, 0.003), MAT.painted(0xf4efe6));
+  const label = new THREE.Mesh(rbox(0.045, 0.002, 0.04, 0.001), MAT.painted(CROP_COLOR[crop] ?? 0x7be0a0));
+  label.position.set(0, 0.005, 0.008);
+  g.add(paper, label);
+  return g;
+}
+
+/** Colours a rosette: pale green heart → red-wine leaf tips (red romaine, like NASA's 'Outredgeous'). */
+function tintRomaine(geo, length) {
+  const p = geo.attributes.position;
+  const col = new Float32Array(p.count * 3);
+  const c = new THREE.Color();
+  const heart = new THREE.Color(0xa9d27a);
+  const tip = new THREE.Color(0x8c2f3e);
+  for (let i = 0; i < p.count; i++) {
+    const d = Math.min(1, Math.hypot(p.getX(i), p.getY(i), p.getZ(i)) / length);
+    c.copy(heart).lerp(tip, Math.min(1, d * 1.4));
+    col.set([c.r, c.g, c.b], i * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return geo;
+}
+
+/** Red romaine lettuce: one head, cut once at the base. */
+function createLettucePlant(seed = 1) {
+  const group = new THREE.Group();
+  const sprout = new THREE.Mesh(
+    tintRomaine(rosetteGeometry({ leaves: 4, length: 0.04, width: 0.02, tilt: 0.7, rings: 1, seed, cup: 0.004, segments: 5 }), 0.04),
+    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, side: THREE.DoubleSide }),
+  );
+  group.add(sprout);
+  const len = 0.15;
+  const head = new THREE.Mesh(
+    tintRomaine(rosetteGeometry({ leaves: 9, length: len, width: 0.06, tilt: 0.5, rings: 3, seed: seed + 3, cup: 0.012, segments: 6 }), len),
+    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, side: THREE.DoubleSide }),
+  );
+  head.name = 'harvest';
+  head.userData.tip = new THREE.Vector3(0.05, 0.1, 0.02);
+  group.add(head);
+  let grown = false;
+  return {
+    group,
+    stems: [head],
+    setGrowth(stage, growth) {
+      sprout.visible = stage === 0;
+      sprout.scale.setScalar(0.5 + growth * 2);
+      grown = stage >= 1;
+      head.visible = grown;
+      head.scale.setScalar(stage >= 3 ? 1 : Math.min(1, 0.35 + Math.max(0, growth - 0.3) * 1.5));
+    },
+    setCut(n) {
+      head.visible = grown && n < 1;
+    },
+    dispose() {
+      group.traverse((o) => {
+        if (o.isMesh) {
+          o.geometry.dispose();
+          o.material.dispose();
+        }
+      });
+    },
+  };
+}
+
+/** One radish: leaves on short stalks, and the red root with its shoulders out of the soil. */
+function radishStem(angle, rand) {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const at = new THREE.Vector3(c * 0.05, 0, s * 0.05);
+  const parts = [];
+  for (let i = 0; i < 4; i++) {
+    const a = angle + (i - 1.5) * 0.5 + (rand() - 0.5) * 0.3;
+    const dir = new THREE.Vector3(Math.cos(a) * 0.6, 1, Math.sin(a) * 0.6).normalize();
+    const stalk = new THREE.CatmullRomCurve3([at.clone(), at.clone().addScaledVector(dir, 0.05), at.clone().addScaledVector(dir, 0.09)]);
+    parts.push(new THREE.TubeGeometry(stalk, 6, 0.003, 5, false));
+    parts.push(placeLeaf(leafGeometry(0.075, 0.04, 0.008, 6), stalk.getPoint(1), dir));
+  }
+  const geo = BufferGeometryUtils.mergeGeometries(parts);
+  parts.forEach((g) => g.dispose());
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x5f9e3f, roughness: 0.6, side: THREE.DoubleSide }));
+  mesh.userData.tip = at.clone().add(new THREE.Vector3(c * 0.06, 0.12, s * 0.06));
+  const root = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), radishMat());
+  root.scale.set(0.022, 0.026, 0.022);
+  root.position.set(at.x, -0.008, at.z);
+  root.name = 'harvest';
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.25, 1.2, 8), radishTipMat());
+  tail.rotation.x = Math.PI; // the thin white taproot points down
+  tail.position.y = -1.3;
+  root.add(tail);
+  mesh.add(root);
+  return mesh;
+}
+
+function createRadishPlant(seed = 1) {
+  const rand = mulberry32(seed);
+  const group = new THREE.Group();
+  const sprout = new THREE.Group();
+  for (const a of [0, 2.1, 4.2]) {
+    sprout.add(
+      new THREE.Mesh(
+        placeLeaf(leafGeometry(0.025, 0.018, 0.004, 5), new THREE.Vector3(Math.cos(a) * 0.05, 0.02, Math.sin(a) * 0.05), new THREE.Vector3(Math.cos(a), 0.8, Math.sin(a))),
+        new THREE.MeshStandardMaterial({ color: 0x8fd16a, roughness: 0.6, side: THREE.DoubleSide }),
+      ),
+    );
+  }
+  group.add(sprout);
+  const stemsGroup = new THREE.Group();
+  const offset = rand() * Math.PI;
+  const stems = [0, 1, 2].map((i) => {
+    const m = radishStem(offset + (i / 3) * Math.PI * 2, rand);
+    stemsGroup.add(m);
+    return m;
+  });
+  group.add(stemsGroup);
+  return {
+    group,
+    stems,
+    setGrowth(stage, growth) {
+      sprout.visible = stage === 0;
+      stemsGroup.visible = stage >= 1;
+      stemsGroup.scale.setScalar(stage >= 3 ? 1 : Math.min(1, 0.35 + Math.max(0, growth - 0.3) * 1.5));
+    },
+    setCut(n) {
+      stems.forEach((st, i) => (st.visible = i >= n));
+    },
+    dispose() {
+      group.traverse((o) => {
+        if (o.isMesh) {
+          o.geometry.dispose();
+          if (![radishMat(), radishTipMat()].includes(o.material)) o.material.dispose();
+        }
+      });
+    },
+  };
+}
+
+/** The plant for this crop ('potato' | 'lettuce' | 'radish'). */
+export function createPlant(crop, seed = 1) {
+  if (crop === 'lettuce') return createLettucePlant(seed);
+  if (crop === 'radish') return createRadishPlant(seed);
+  return createPotatoPlant(seed);
 }
 
 // --------------------------------------------------------------- tools

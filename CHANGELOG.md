@@ -1,5 +1,32 @@
 # Changelog — Shackleton Station
 
+## 0.11.0 — Game balance: challenging, not crushing
+
+### Gameplay
+- **Grow-lights switch** by the greenhouse door. The base's long night (≈ 21 game hours) needs
+  104 kWh with the lights on — more than the 80 kWh battery, so the base blacks out before sunrise.
+  Switch them off and it needs only 62 kWh, but the potatoes stop growing: power vs food.
+- **Blackouts stop machines:** grow lights, potatoes, Electrolysis, the water pump and now the
+  Ice Oven pause until power is back. The airlock keeps working, so you never get stuck outside.
+- **Lettuce and radish** join the potato in the grow pots, both really grown by NASA on the ISS.
+  Pick a seed on the farm panel: potato (slow, lots of food) or lettuce / radish (≈ 3× faster, a
+  little food). Food follows real USDA calories. Cut a lettuce head once, or pull up 3 radishes.
+  You start with 4 + 4 seeds; order seed packets (6 seeds, very light) at the supply terminal.
+  F eats fresh greens first, then potatoes. Pots are now called GROW POTS.
+- **Solar array damage tuned:** a micrometeorite hit about every 3 game days (was 2), and you start
+  with 1 spare repair kit.
+- A full farm now makes 1.4× the food of a resting astronaut (was 1×), since there's no food from Earth.
+- **Tighter start:** oxygen 50 %, food 80 %, water tank 6 kg.
+- **Big storms need water walls:** the shelter now lets 35 of 100 particles through. Weaker
+  May-2024 storms are fine in the shelter; the strongest (11 May) also needs water in the walls,
+  and Volt's warning says so.
+
+### Under the hood
+- `src/systems/balanceSim.js` + `npm run balance`: three bots (idle / sloppy / skilled) play a
+  20-min lunar day on the real rules, 200 runs each with random array hits;
+  `tests/balance.test.js` locks the targets in. `tests/crops.test.js` covers the new crops.
+- SCIENCE.md "Game balance": every calculation (BVAD food and oxygen, night power budget, storm doses).
+
 ## 0.10.1 — Calmer Water Walls and Ice Oven screens
 
 - **Simpler for kids:** each screen now has one picture, one big number and one main button.

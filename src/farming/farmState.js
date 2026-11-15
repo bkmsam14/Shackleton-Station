@@ -6,8 +6,8 @@
 //   water   : pour until FARMING.WATER_NEEDED drops have landed on the soil
 //   grow    : only while the grow lights have power
 //   harvest : cut FARMING.CUTS_TO_HARVEST leafy stems, then the potato goes to the inventory
-// New crops = a new entry in CROPS.
-import { FARMING } from '../config/gameplay.js';
+// New crops = a new entry in CROPS (numbers in gameplay.js → FARMING).
+import { FARMING, SOLAR_DAMAGE } from '../config/gameplay.js';
 import { createInventory, addItem, removeItem, countOf } from './inventory.js';
 
 export const CROPS = {
@@ -20,6 +20,30 @@ export const CROPS = {
     waterNeeded: FARMING.WATER_NEEDED,
     cutsToHarvest: FARMING.CUTS_TO_HARVEST,
   },
+  // greens grow from seeds (sown shallow: one handful of soil), and every harvest is eaten
+  ...Object.fromEntries(
+    Object.entries(FARMING.GREENS).map(([id, c]) => [
+      id,
+      {
+        seedItem: `${id}-seed`,
+        harvestItem: id,
+        perStem: c.perCut,
+        growSeconds: c.growSeconds,
+        coverLoads: c.coverLoads,
+        waterNeeded: c.waterNeeded,
+        cutsToHarvest: c.cuts,
+      },
+    ]),
+  ),
+};
+export const CROP_IDS = Object.keys(CROPS);
+/** Fresh greens you can eat (eaten before potatoes, which keep well). */
+export const GREEN_IDS = Object.keys(FARMING.GREENS);
+
+const START_INVENTORY = {
+  potato: FARMING.START_SEED_POTATOES,
+  ...Object.fromEntries(Object.entries(FARMING.START_SEEDS).map(([id, n]) => [`${id}-seed`, n])),
+  'solar-repair-kit': SOLAR_DAMAGE.START_KITS,
 };
 
 export const STAGE = { EMPTY: 'empty', SEEDED: 'seeded', COVERED: 'covered', GROWING: 'growing', READY: 'ready' };
@@ -36,12 +60,14 @@ export function createFarmState(potIds, saved = null) {
     const ok = s && STAGES.includes(s.stage) && (s.stage === STAGE.EMPTY || CROPS[s.crop]);
     pots[id] = ok ? { ...emptyPot(), ...s } : emptyPot();
   }
-  const inventory = createInventory(saved?.inventory ?? { potato: FARMING.START_SEED_POTATOES });
+  const inventory = createInventory(saved?.inventory ?? START_INVENTORY);
+  // a save from before lettuce + radish (v < 2) gets the starting seeds once
+  if (saved && !(saved.v >= 2)) for (const [id, n] of Object.entries(FARMING.START_SEEDS)) addItem(inventory, `${id}-seed`, n);
   return { pots, inventory };
 }
 
 export function serializeFarm(state) {
-  return { pots: JSON.parse(JSON.stringify(state.pots)), inventory: { ...state.inventory.items } };
+  return { v: 2, pots: JSON.parse(JSON.stringify(state.pots)), inventory: { ...state.inventory.items } };
 }
 
 const cropOf = (pot) => CROPS[pot.crop];
@@ -117,12 +143,19 @@ export const cutsNeeded = (pot) => (pot.crop ? cropOf(pot).cutsToHarvest : 0);
 export function canEat(state, item = 'potato') {
   const n = countOf(state.inventory, item);
   if (n <= 0) return { ok: false, reason: 'none' };
+  if (item !== 'potato') return { ok: true, reason: null }; // greens are never planted again
   const somethingPlanted = Object.values(state.pots).some((p) => p.stage !== STAGE.EMPTY);
   if (n === 1 && !somethingPlanted) return { ok: false, reason: 'last-seed' };
   return { ok: true, reason: null };
 }
 
-/** Remove one potato to eat it. Returns true if it was eaten. */
+/** What F eats next: fresh greens first (they don't keep), then a potato. null = nothing. */
+export function nextFood(state) {
+  for (const id of GREEN_IDS) if (countOf(state.inventory, id) > 0) return id;
+  return canEat(state, 'potato').ok ? 'potato' : null;
+}
+
+/** Remove one potato (or other food item) to eat it. Returns true if it was eaten. */
 export function eatPotato(state, item = 'potato') {
   if (!canEat(state, item).ok) return false;
   return removeItem(state.inventory, item, 1);

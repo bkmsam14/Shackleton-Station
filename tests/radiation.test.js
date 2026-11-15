@@ -30,9 +30,11 @@ test('shelter + water walls block more than the habitat, which blocks more than 
   assert.equal(wallFactor(RADIATION.WALL_HALF_KG), 0.5);
 });
 
-test('a strong storm outside reaches the limit; in the shelter it does not', () => {
+test('the strongest storm: outside and the bare shelter reach the limit; water walls save you', () => {
   assert.ok(expectedStormDose(storm(), 'outside') >= 100);
-  assert.ok(expectedStormDose(storm(), 'shelter') < 100);
+  assert.ok(expectedStormDose(storm(), 'shelter') >= 100); // GAME BALANCE: walls needed (SCIENCE.md)
+  assert.ok(expectedStormDose(storm(), 'shelter', 2) < 100);
+  assert.ok(expectedStormDose(storm({ intensity: 0.7 }), 'shelter') < 100); // weaker storms: shelter alone
   assert.ok(doseRate(storm({ intensity: 0.25 }), 'outside') < doseRate(storm(), 'outside'));
 });
 
@@ -42,12 +44,12 @@ test('storm phases: calm → warning → storm → calm, with a summary', () => 
   assert.deepEqual(types, []);
   assert.deepEqual(run(s, 9.9, 10.1, { place: 'habitat', wallKg: 0 }), ['warning']);
   assert.ok(Math.abs(hoursToArrival(s, 12) - 2) < 1e-9);
-  const rest = run(s, 10.1, 14 + RADIATION.STORM_GAME_HOURS + 0.2, { place: 'shelter', wallKg: 0 });
+  const rest = run(s, 10.1, 14 + RADIATION.STORM_GAME_HOURS + 0.2, { place: 'shelter', wallKg: 3 });
   assert.deepEqual(rest, ['storm-start', 'storm-end']);
   assert.equal(s.phase, 'calm');
   assert.equal(s.history.length, 1);
   assert.ok(s.history[0].shelteredShare > 0.95);
-  assert.ok(Math.abs(s.history[0].dose - expectedStormDose(storm(), 'shelter')) < 1);
+  assert.ok(Math.abs(s.history[0].dose - expectedStormDose(storm(), 'shelter', 3)) < 1);
 });
 
 test('staying outside in a strong storm hits the limit once', () => {
@@ -68,7 +70,7 @@ test('mission dose only grows, even after a storm ends', () => {
 
 test('water walls: moving water shields the shelter but the tank can no longer use it for oxygen', () => {
   const g = createGauges({ oxygen: 40 });
-  const st = { ...createElectrolysisState(), wallKg: 0 };
+  const st = { ...createElectrolysisState({ tankKg: 10 }), wallKg: 0 };
   const r = moveWater(st, g, 6);
   assert.equal(r.movedKg, 6);
   assert.equal(st.tankKg, 4);

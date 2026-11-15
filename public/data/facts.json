@@ -306,6 +306,24 @@
       "text": "Airlocks pump most of their air back into the station, but a little is lost every cycle.",
       "value": "NASA NTRS 20080013418",
       "source": "https://ntrs.nasa.gov/citations/20080013418"
+    },
+    {
+      "id": "lettuce-iss",
+      "text": "Astronauts grew red romaine lettuce on the ISS and ate it in 2015. It took about 33 days from seed to salad.",
+      "value": "≈ 33 days (Veggie, eaten 10 Aug 2015)",
+      "source": "https://www.scientificamerican.com/article/astronauts-take-first-bites-of-lettuce-grown-in-space/"
+    },
+    {
+      "id": "radish-iss",
+      "text": "Radishes grew on the ISS in the Advanced Plant Habitat and were harvested after about 27 days.",
+      "value": "≈ 27 days (PH-02, harvested 30 Nov 2020)",
+      "source": "https://blogs.nasa.gov/kennedy/2020/12/15/kennedy-harvests-radish-crop-as-part-of-ph-02-experiment"
+    },
+    {
+      "id": "crop-calories",
+      "text": "Potatoes are full of starch and give lots of food energy; lettuce and radishes are mostly water: few calories, but fresh vitamins.",
+      "value": "per 100 g raw: potato 77 kcal (FDC 170026), romaine 17 kcal (FDC 169247), radish 16 kcal (FDC 169276)",
+      "source": "https://fdc.nal.usda.gov/"
     }
   ]
 }

@@ -88,11 +88,11 @@ export const TRAINING_DAY = [
   {
     id: 'plant',
     chapter: 'grow',
-    text: 'Find the potato pots. Plant, cover and water a potato!',
-    long: 'Find the POTATO POTS between the grow racks and press E. Drag a seed potato into the soil, cover it, then tilt the watering can until the soil is wet. It grows under the red and blue lights.',
+    text: 'Find the grow pots. Plant, cover and water a seed!',
+    long: 'Find the GROW POTS between the grow racks and press E. Pick a seed: a potato (slow, lots of food) or lettuce or radish (fast, a little food). Drag it into the soil, cover it, then tilt the watering can until the soil is wet. It grows under the red and blue lights.',
     mood: 'happy',
     target: 'pots',
-    done: { event: 'potato-watered' },
+    done: { event: 'crop-watered' },
   },
   // ---------------------------------------------------------------- micrometeorite
   {
@@ -188,12 +188,12 @@ export const TRAINING_DAY = [
   {
     id: 'harvest',
     chapter: 'harvest',
-    text: 'Your potato plant is ready! Go harvest it in the greenhouse.',
-    long: 'Your potato plant is ready (for training we let it grow fast; real potatoes take much longer). Go to the greenhouse and cut its leafy stems to pull up the potatoes.',
+    text: 'Your plant is ready! Go harvest it in the greenhouse.',
+    long: 'Your plant is ready (for training we let it grow fast; real plants take weeks or months). Go to the greenhouse and use the cutters to harvest it.',
     mood: 'cheer',
     target: 'pots',
     trigger: 'ripen',
-    done: { event: 'potato-harvested' },
+    done: { event: 'crop-harvested' },
   },
 ];
 

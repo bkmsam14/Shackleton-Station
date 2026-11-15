@@ -39,7 +39,7 @@ import { createElectrolysisInstance } from './instances/electrolysis/index.js';
 import { sfx } from './ui/sfx.js';
 import { createWaterWallsInstance } from './instances/waterWalls/index.js';
 import { createStormReportInstance } from './instances/stormReport/index.js';
-import { createRadiationState, stepRadiation, hoursToArrival, exposureLevel } from './systems/radiation.js';
+import { createRadiationState, stepRadiation, hoursToArrival, exposureLevel, expectedStormDose } from './systems/radiation.js';
 import { createStormFx } from './ui/stormFx.js';
 import { loadSun, SUN_MODES } from './data/spaceWeather.js';
 import { createFarming } from './farming/index.js';
@@ -122,6 +122,11 @@ const saveIce = () => saveSettings({ ice: { bagKg: ice.bagKg, oven: ice.oven, sp
 const helmetLamp = createHelmetLamp(world.scene, camera); // lights the dark cold-trap floor
 let wasInColdTrap = false;
 let iceSaveIn = 5;
+// Greenhouse grow lights (switch by the greenhouse door). OFF saves 2 kW, so the battery lasts
+// the long night — but the potatoes stop growing. A real trade-off (gameplay.js POWER).
+let growLightsOn = loadSettings().growLights !== false;
+world.greenhouse.setPowered(growLightsOn);
+world.greenhouse.setSwitch(growLightsOn);
 // ---------------------------------------------------------------- real stars + Star Album
 // The sky shows the real Yale Bright Star Catalog (NASA HEASARC). Constellations you find with
 // the telescope go in the album (saved) and get faint lines + names in the sky outside.
@@ -723,7 +728,7 @@ function advanceGameHours(hours, place = 'habitat') {
     const step = Math.min(1, seconds - t);
     stepDayCycle(day, step);
     const s = getSun(day);
-    stepGauges(gauges, step, { pressurized: true, sunVisibility: s.visibility, alignment: 1 });
+    stepGauges(gauges, step, { pressurized: true, sunVisibility: s.visibility, alignment: 1, growLightsOn });
     stepIceOven((step * TIME.SCALE) / 3600);
     events.push(...stepRadiation(radiation, gameHourNow(), (step * TIME.SCALE) / 3600, { place, wallKg: station.wallKg }));
   }
@@ -734,6 +739,7 @@ function advanceGameHours(hours, place = 'habitat') {
 /** The Ice Oven keeps baking while you play (game hours); water drips into the tank. */
 function stepIceOven(dtGameHours) {
   if (!ice.oven) return;
+  if (gauges.batteryKwh <= 0.01) return; // blackout: the oven's heater stops until power is back
   const r = stepOven(ice, station, dtGameHours);
   if (r.finished) {
     saveIce();
@@ -819,6 +825,23 @@ function lookingAtVolt() {
   return d < ASSISTANT.TALK_REACH_M && (dx * f.x + dz * f.z) / (d * fl) > Math.cos((ASSISTANT.TALK_AIM_DEG * Math.PI) / 180);
 }
 
+/** The grow-lights switch: OFF saves power for the night, but plants stop growing. */
+function toggleGrowLights() {
+  growLightsOn = !growLightsOn;
+  saveSettings({ growLights: growLightsOn });
+  world.greenhouse.setPowered(wasPowered && growLightsOn);
+  world.greenhouse.setSwitch(growLightsOn);
+  sfx.click();
+  const kw = POWER.GREENHOUSE_LED_LOAD_KW;
+  if (growLightsOn) {
+    feedback.notify('Grow lights ON', { long: `Grow lights on: the potatoes grow again. The lights use ${kw} kW of base power.` });
+  } else {
+    feedback.notify(`Grow lights OFF · saves ${kw} kW`, {
+      long: `Grow lights off: the base saves ${kw} kW, so the battery lasts longer through the night. But plants need light, so the potatoes stop growing until you switch them back on.`,
+    });
+  }
+}
+
 function handleInteraction() {
   let target = findInteractable(world.interactables.filter(notVolt), player.zoneId, player.position.x, player.position.z, player.forward2d());
   // a pot stand → the pot you are facing (or nothing, if you look away)
@@ -836,6 +859,7 @@ function handleInteraction() {
     }
     else if (target.action.type === 'farm') farming.interact(target.action.potId);
     else if (target.action.type === 'supply') supply.interact(target);
+    else if (target.action.type === 'lights') toggleGrowLights();
   }
 }
 
@@ -868,7 +892,10 @@ function handleRadiationEvent(e, { quiet = false } = {}) {
   const where = sun?.live ? 'Live' : 'Replay of real data';
   if (e.type === 'warning') {
     if (!quiet) {
-      voltEvent('storm-warning', 'Particle storm coming — go to the shelter!', null, 'critical');
+      // a strong storm is too much for the bare shelter (GAME BALANCE): ask for water in the walls too
+      const strong = expectedStormDose(e.storm, 'shelter', station.wallKg) >= 100;
+      if (strong) voltEvent('storm-warning-strong', 'Big storm coming — shelter + water walls!', null, 'critical');
+      else voltEvent('storm-warning', 'Particle storm coming — go to the shelter!', null, 'critical');
       sfx.alarm();
     }
     stormLog(`${where}: based on NASA DONKI, a ${flareName(e.storm)} (${flareDate(e.storm)}) — fast particles on the way. Go to the storm shelter.`);
@@ -941,7 +968,7 @@ function reactToGauges(report, sun) {
   if (c.power) voltEvent('power-low', 'Base power low', 'Base power is low! The battery needs sunlight on the solar array.', 'low');
   if (wasPowered !== report.hasPower) {
     wasPowered = report.hasPower;
-    world.greenhouse.setPowered(report.hasPower);
+    world.greenhouse.setPowered(report.hasPower && growLightsOn);
     if (!report.hasPower) {
       voltEvent('power-out', 'Base power out', 'Base power ran out. The grow lights switch off until the Sun charges the battery.', 'critical');
     } else {
@@ -1091,6 +1118,7 @@ renderer.setAnimationLoop(() => {
     sunVisibility: sun.visibility,
     alignment: alignment * supply.solarOutputFactor, // 1 when healthy; less after a micrometeorite hit
     extraLoadKw: coldTrapLoadKw(coldTrap), // suit heaters + lamp, recharged by the base
+    growLightsOn,
   });
   if (running) reactToGauges(report, sun);
   // live sky: Earth really dips below the horizon here for part of each month (libration)
@@ -1098,7 +1126,7 @@ renderer.setAnimationLoop(() => {
     earthHiddenSaid = true;
     voltEvent('earth-hidden', 'Earth is below the horizon right now', 'Right now Earth is below the horizon at the south pole. It bobs up and down every month (libration), so radio links need it above the horizon — or a relay satellite.');
   }
-  farming.update(frameDt, simDt, { lit: report.hasPower });
+  farming.update(frameDt, simDt, { lit: report.hasPower && growLightsOn });
   supply.update(frameDt, dt, zoneId, { pace, training: training.active });
   if (mode === 'playing' && (report.oxygenEmpty || report.foodEmpty)) {
     gentleFailure(report.oxygenEmpty ? 'oxygen' : 'food');
@@ -1238,5 +1266,5 @@ if (import.meta.env.DEV) {
       greenhouse: ['greenhouse', 1.4, 30, 90, -0.08],
     },
   };
-  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, guide, walkable, voltBubble, voltVoice, get radiation() { return radiation; }, get sun() { return sun; }, playerPlace, sunReady, ice, helmetLamp, get airlockRun() { return airlockRun; } };
+  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, guide, walkable, voltBubble, voltVoice, get radiation() { return radiation; }, get sun() { return sun; }, playerPlace, sunReady, ice, helmetLamp, get airlockRun() { return airlockRun; }, farming, get growLightsOn() { return growLightsOn; } };
 }

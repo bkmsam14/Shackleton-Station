@@ -1,15 +1,16 @@
 // farmView.js — the close-up interaction view for one pot.
 // The camera glides to the pot, the mouse is freed, and the player does each step by hand:
-//   plant   : drag the seed potato from the panel into the hole
+//   plant   : pick a crop and drag its seed (a seed potato, or a packet of lettuce or
+//             radish seeds) from the panel into the hole
 //   cover   : drag handfuls of soil from the pile onto the seed
 //   water   : take the can, hold the mouse button to tilt it, aim the stream at the soil
-//   harvest : take the cutters, click each leafy stem to cut it, then the potato pops out
+//   harvest : take the cutters, click each stem / head to cut it, then the food pops out
 // The world is paused while this view is open (like the planned lesson instances).
 import * as THREE from 'three';
 import { FARMING, PLAYER } from '../config/gameplay.js';
 import { ITEMS, countOf } from './inventory.js';
-import { plantSeed, addCover, addWater, cutLeaf, canPlant, coverFraction, waterFraction, cutsNeeded, STAGE } from './farmState.js';
-import { POT, createPotatoMesh, createSoilClump, createWateringCan, createCutters, LEAF_HOVER } from './farmModels.js';
+import { plantSeed, addCover, addWater, cutLeaf, canPlant, coverFraction, waterFraction, cutsNeeded, STAGE, CROPS, CROP_IDS } from './farmState.js';
+import { POT, createPotatoMesh, createSeedPacket, createSoilClump, createWateringCan, createCutters, LEAF_HOVER } from './farmModels.js';
 import { MAT } from '../world/materials.js';
 import { sfx } from './sfx.js';
 
@@ -26,7 +27,13 @@ const ease = (t) => t * t * (3 - 2 * t);
 // blades point forward and slightly up-left into the plant; rolled so the blades' flat
 // sides (and their V when open) face you
 const CUTTER_HOLD = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.45, 0.85, 1.0, 'YXZ'));
-const potatoes = (n) => `${n} ${n === 1 ? 'potato' : 'potatoes'}`;
+// what each crop is called, one / many
+const NAME = { potato: ['potato', 'potatoes'], lettuce: ['lettuce head', 'lettuce heads'], radish: ['radish', 'radishes'] };
+const SEED_LABEL = { potato: ITEMS.potato.seedName, lettuce: 'Lettuce seeds', radish: 'Radish seeds' };
+const count = (crop, n) => `${n} ${NAME[crop][n === 1 ? 0 : 1]}`;
+const seedsOf = (state, crop) => countOf(state.inventory, CROPS[crop].seedItem);
+// real growing time (SCIENCE.md "Food and plants"); potato has no verified number yet
+const REAL_DAYS = { lettuce: FARMING.GREENS.lettuce.realDays, radish: FARMING.GREENS.radish.realDays };
 
 export function createFarmView({ camera, renderer, root, world, state, pots, feedback, sync, save, hooks, onEvent = () => {} }) {
   // ------------------------------------------------------------ DOM
@@ -34,13 +41,16 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
   el.className = 'farm-view';
   el.hidden = true;
   el.innerHTML = `
-    <div class="farm-bag" aria-label="Inventory"><span class="farm-potato-icon" aria-hidden="true"></span><span>Potatoes</span><b data-bag>0</b></div>
-    <div class="farm-panel" role="dialog" aria-label="Potato pot">
+    <div class="farm-bag" aria-label="Inventory"><span class="farm-potato-icon" aria-hidden="true" data-bag-icon></span><span data-bag-name>Potatoes</span><b data-bag>0</b></div>
+    <div class="farm-panel" role="dialog" aria-label="Grow pot">
       <ol class="farm-steps">${STEPS.map((s) => `<li data-step="${s}">${s[0].toUpperCase() + s.slice(1)}</li>`).join('')}</ol>
       <p class="farm-instr" data-instr aria-live="polite"></p>
       <div class="farm-meter" data-meter hidden><span data-meter-fill></span></div>
       <div class="farm-actions">
-        <button type="button" class="farm-item" data-seed><span class="farm-potato-icon" aria-hidden="true"></span><span>${ITEMS.potato.seedName}</span><b data-seed-count>×0</b></button>
+        ${CROP_IDS.map(
+          (c) =>
+            `<button type="button" class="farm-item" data-seed="${c}"><span class="farm-potato-icon farm-icon-${c}" aria-hidden="true"></span><span>${SEED_LABEL[c]}</span><b data-seed-count>×0</b></button>`,
+        ).join('')}
         <button type="button" class="btn farm-btn" data-tool="can">Watering can</button>
         <button type="button" class="btn farm-btn" data-tool="cutters">Cutters</button>
         <button type="button" class="btn farm-btn" data-again>Plant again</button>
@@ -54,8 +64,9 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     instr: $('[data-instr]'),
     meter: $('[data-meter]'),
     meterFill: $('[data-meter-fill]'),
-    seed: $('[data-seed]'),
-    seedCount: $('[data-seed-count]'),
+    seeds: [...el.querySelectorAll('[data-seed]')],
+    bagName: $('[data-bag-name]'),
+    bagIcon: $('[data-bag-icon]'),
     can: $('[data-tool="can"]'),
     cutters: $('[data-tool="cutters"]'),
     again: $('[data-again]'),
@@ -143,6 +154,8 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
   let closing = false;
   let busy = false; // short animations that block input
   let pendingNotice = 0;
+  let pendingCrop = 'potato';
+  let dragCrop = 'potato';
 
   function animate(dur, fn, done) {
     anims.push({ t: 0, dur, fn, done });
@@ -177,40 +190,69 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
   function setStep(s) {
     step = s;
     const pot = state.pots[potId];
-    const seeds = countOf(state.inventory, 'potato');
+    const crop = pot.crop ?? pendingCrop;
     const activeIdx = { plant: 0, cover: 1, water: 2, watered: 3, harvest: 4, harvested: 4, empty: 0 }[s];
     ui.steps.forEach((li, i) => {
       li.classList.toggle('is-done', i < activeIdx || s === 'harvested' || (s === 'watered' && i <= 3));
       li.classList.toggle('is-active', i === activeIdx && s !== 'harvested');
     });
-    ui.seed.hidden = s !== 'plant';
-    ui.seedCount.textContent = '×' + seeds;
-    ui.seed.disabled = seeds <= 0;
+    for (const b of ui.seeds) {
+      const n = seedsOf(state, b.dataset.seed);
+      b.hidden = s !== 'plant';
+      b.querySelector('[data-seed-count]').textContent = '×' + n;
+      b.disabled = n <= 0;
+    }
     ui.can.hidden = !(s === 'water' && tool !== 'can');
     ui.cutters.hidden = !(s === 'harvest' && tool !== 'cutters');
-    ui.again.hidden = !(s === 'harvested' && canPlant(state, potId));
+    ui.again.hidden = !(s === 'harvested' && CROP_IDS.some((c) => canPlant(state, potId, c)));
     ui.meter.hidden = s !== 'water' && s !== 'watered';
     ui.done.classList.toggle('is-primary', s === 'watered' || s === 'harvested' || s === 'empty');
     v.dig = s === 'plant';
     sync(potId);
     targetRing.visible = false;
     let text = '';
-    if (s === 'plant') text = 'Drag the seed potato into the hole in the soil.';
-    if (s === 'empty') text = 'No seed potatoes left. Harvest a potato plant to get one.';
-    if (s === 'cover') text = `Drag soil from the pile onto the seed. (${pot.cover}/${FARMING.COVER_LOADS})`;
+    if (s === 'plant') text = 'Pick a seed and drag it into the hole: potato (slow, lots of food) or lettuce / radish (fast, a little food).';
+    if (s === 'empty') text = 'No seeds left. Order seed packets at the supply terminal, or harvest potatoes to plant again.';
+    if (s === 'cover')
+      text =
+        crop === 'potato'
+          ? `Drag soil from the pile onto the seed potato. (${pot.cover}/${CROPS.potato.coverLoads})`
+          : `Tiny seeds are sown shallow: one handful of soil is enough. (${pot.cover}/${CROPS[crop].coverLoads})`;
     if (s === 'water')
       text = tool === 'can' ? 'Hold the mouse button to tilt the can. Aim the water at the soil.' : 'The soil needs water. Take the watering can.';
-    if (s === 'watered') text = 'Watered! Now the potato grows under the grow lights. Come back later.';
-    if (s === 'harvest')
+    if (s === 'watered')
       text =
-        tool === 'cutters'
-          ? `Cut a leafy stem: it comes up with its potato! (${pot.cuts}/${cutsNeeded(pot)})`
-          : 'Ready! Potatoes grow underground on the roots. Take the cutters and cut each leafy stem.';
+        crop === 'potato'
+          ? 'Watered! Now the potato grows under the grow lights. Come back later.'
+          : `Watered! In real life ${crop} takes about ${REAL_DAYS[crop]} days to grow. Here it is sped up: come back soon.`;
+    if (s === 'harvest') {
+      if (crop === 'lettuce')
+        text = tool === 'cutters' ? 'Cut the lettuce at its base: the whole head is the food!' : 'Ready! Take the cutters and cut the lettuce head.';
+      else if (crop === 'radish')
+        text =
+          tool === 'cutters'
+            ? `Cut a radish's leaves: the red root comes up with them! (${pot.cuts}/${cutsNeeded(pot)})`
+            : 'Ready! A radish is a root: its red top peeks out of the soil. Take the cutters.';
+      else
+        text =
+          tool === 'cutters'
+            ? `Cut a leafy stem: it comes up with its potato! (${pot.cuts}/${cutsNeeded(pot)})`
+            : 'Ready! Potatoes grow underground on the roots. Take the cutters and cut each leafy stem.';
+    }
     if (s === 'harvested')
-      text = `You harvested ${potatoes(pendingNotice)}! Keep one to plant again, and eat the rest (F).`;
+      text =
+        crop === 'potato'
+          ? `You harvested ${count(crop, pendingNotice)}! Keep one to plant again, and eat the rest (F).`
+          : `You harvested ${count(crop, pendingNotice)}! Eat fresh greens first (F): they don't keep like potatoes.`;
     ui.instr.textContent = text;
     updateMeter();
-    ui.bag.textContent = String(seeds);
+    showBag(s === 'plant' || s === 'empty' ? 'potato' : crop);
+  }
+  /** The top-left bag shows the food this pot makes. */
+  function showBag(crop) {
+    ui.bagName.textContent = NAME[crop][1].replace(/^./, (c) => c.toUpperCase());
+    ui.bagIcon.className = `farm-potato-icon farm-icon-${crop}`;
+    ui.bag.textContent = String(countOf(state.inventory, CROPS[crop].harvestItem));
   }
   function updateMeter() {
     if (!potId) return;
@@ -248,13 +290,14 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     el.dataset.tool = '';
   }
 
-  function startSeedDrag(e) {
-    if (busy || step !== 'plant' || !canPlant(state, potId)) return;
+  function startSeedDrag(e, crop) {
+    if (busy || step !== 'plant' || !canPlant(state, potId, crop)) return;
     e.preventDefault();
     sfx.unlock();
     sfx.pickUp();
     tool = 'seed';
-    toolObj = createPotatoMesh(11, 1);
+    dragCrop = crop;
+    toolObj = crop === 'potato' ? createPotatoMesh(11, 1) : createSeedPacket(crop);
     layer.add(toolObj);
     el.dataset.tool = 'drag';
     pointer.x = e.clientX;
@@ -273,7 +316,7 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     tool = null;
     el.dataset.tool = '';
     targetRing.visible = false;
-    if (!over || !plantSeed(state, potId)) {
+    if (!over || !plantSeed(state, potId, dragCrop)) {
       // back to the panel: shrink away, nothing used
       const s0 = seed.scale.x;
       animate(0.2, (k) => seed.scale.setScalar(s0 * (1 - k)), () => seed.removeFromParent());
@@ -294,7 +337,8 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
         sfx.plop();
         burst(KIND.CRUMB, v.soilWorld, 10, COL.soil, 0.2);
         save();
-        onEvent('potato-planted');
+        onEvent(`${dragCrop}-planted`);
+        onEvent('crop-planted');
         setStep('plant'); // refresh counts while the seed settles
         v.dig = true;
         sync(potId);
@@ -353,7 +397,7 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
         sync(potId);
         if (covered) {
           sfx.success();
-          ui.instr.textContent = 'The seed potato is covered!';
+          ui.instr.textContent = state.pots[potId].crop === 'potato' ? 'The seed potato is covered!' : 'The seeds are covered!';
           animate(0.6, () => {}, () => {
             busy = false;
             setStep('water');
@@ -445,7 +489,8 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     updateMeter();
     if (done) {
       save();
-      onEvent('potato-watered');
+      onEvent(`${pot.crop}-watered`);
+      onEvent('crop-watered');
       sfx.success();
       busy = true;
       animate(0.9, () => {}, () => {
@@ -513,11 +558,16 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
     lifted.material.transparent = true;
     stem.matrixWorld.decompose(lifted.position, lifted.quaternion, lifted.scale);
     layer.add(lifted);
-    const tuber = lifted.getObjectByName('potato');
+    const tuber = lifted.getObjectByName('harvest');
+    const crop = state.pots[potId].crop;
     const r = cutLeaf(state, potId);
     save();
     const harvested = r.harvested;
-    if (harvested) onEvent('potato-harvested');
+    pendingCrop = crop;
+    if (harvested) {
+      onEvent(`${crop}-harvested`);
+      onEvent('crop-harvested');
+    }
     if (harvested) {
       // the plant is gone from the pot; keep its geometry alive until the animation ends
       const plant = v.plant;
@@ -563,7 +613,7 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
           () => {
             flying.removeFromParent();
             sfx.reward();
-            ui.bag.textContent = String(countOf(state.inventory, 'potato'));
+            showBag(crop);
             ui.bag.parentElement.classList.remove('is-pop');
             void ui.bag.offsetWidth;
             ui.bag.parentElement.classList.add('is-pop');
@@ -637,10 +687,12 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
   window.addEventListener('pointermove', onPointerMove);
   window.addEventListener('pointerup', onPointerUp);
   window.addEventListener('keydown', onKey);
-  ui.seed.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    startSeedDrag(e);
-  });
+  for (const b of ui.seeds) {
+    b.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      startSeedDrag(e, b.dataset.seed);
+    });
+  }
   ui.can.addEventListener('click', takeCan);
   ui.cutters.addEventListener('click', takeCutters);
   ui.again.addEventListener('click', () => {
@@ -653,7 +705,7 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
   // ------------------------------------------------------------ open / close
   function stepForPot() {
     const pot = state.pots[potId];
-    if (pot.stage === STAGE.EMPTY) return canPlant(state, potId) ? 'plant' : 'empty';
+    if (pot.stage === STAGE.EMPTY) return CROP_IDS.some((c) => canPlant(state, potId, c)) ? 'plant' : 'empty';
     if (pot.stage === STAGE.SEEDED) return 'cover';
     if (pot.stage === STAGE.COVERED) return 'water';
     if (pot.stage === STAGE.READY) return 'harvest';
@@ -700,8 +752,11 @@ export function createFarmView({ camera, renderer, root, world, state, pots, fee
       v = null;
       hooks.onExit(reason);
       if (pendingNotice) {
-        feedback.notify(`+${potatoes(pendingNotice)}`, {
-          long: `Harvested ${potatoes(pendingNotice)}. Plant one again as a seed potato, and press F to eat the others.`,
+        feedback.notify(`+${count(pendingCrop, pendingNotice)}`, {
+          long:
+            pendingCrop === 'potato'
+              ? `Harvested ${count('potato', pendingNotice)}. Plant one again as a seed potato, and press F to eat the others.`
+              : `Harvested ${count(pendingCrop, pendingNotice)}. Press F to eat: fresh greens are eaten first.`,
         });
         pendingNotice = 0;
       }

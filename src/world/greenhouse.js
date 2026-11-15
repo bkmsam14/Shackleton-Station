@@ -192,6 +192,33 @@ export function createGreenhouseModel() {
   return { group, skylight, exterior: ext, interior: int };
 }
 
+/** Grow-lights wall switch: a panel with a lever and a lamp (faces +X, into the greenhouse). */
+function createLightSwitch() {
+  const group = new THREE.Group();
+  group.add(new THREE.Mesh(rbox(0.05, 0.42, 0.3, 0.015), MAT.painted(0xc9ced6)));
+  const lever = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.022, 0.1, 4, 10),
+    new THREE.MeshStandardMaterial({ color: 0x2a2f38, roughness: 0.4 }),
+  );
+  lever.position.set(0.05, 0, 0);
+  group.add(lever);
+  const lampMat = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0x7be0a0, emissiveIntensity: 2 });
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 12), lampMat);
+  lamp.position.set(0.035, 0.15, 0);
+  group.add(lamp);
+  const sign = createSign(['GROW', 'LIGHTS'], 0.34, 0.2, { bg: '#2a1240', accent: '#e08cff' });
+  sign.position.set(0.03, 0.34, 0);
+  sign.rotation.y = Math.PI / 2;
+  group.add(sign);
+  const set = (on) => {
+    lever.rotation.z = on ? -0.5 : 0.5; // lever up = on
+    lever.position.y = on ? 0.03 : -0.03;
+    lampMat.emissive.setHex(on ? 0x7be0a0 : 0xff7a59);
+  };
+  set(true);
+  return { group, set };
+}
+
 export function createGreenhouse() {
   const model = createGreenhouseModel();
   const L = G.length;
@@ -208,6 +235,9 @@ export function createGreenhouse() {
     for (const p of lights) p.intensity = active ? (powered ? 16 : 1.5) : 0;
   };
   applyLights();
+  const lightSwitch = createLightSwitch();
+  lightSwitch.group.position.set(0.2, G.floorY + 1.25, 1.15); // on the end wall, right of the door
+  model.interior.add(lightSwitch.group);
   const ox = G.x - L / 2; // world x of the west end
   const toWorld = (p) => ({ x: ox + p.x, z: p.z, yawDeg: p.yawDeg });
   return {
@@ -272,7 +302,20 @@ export function createGreenhouse() {
           },
         })),
       ),
+      {
+        id: 'gh-lights',
+        zone: 'greenhouse',
+        x: ox + 0.45,
+        z: G.z + 1.15,
+        y: G.floorY + 1.25,
+        prompt: 'Press E to switch the grow lights',
+        action: { type: 'lights' },
+      },
     ],
+    /** The wall switch shows whether the grow lights are switched on (green) or off (red). */
+    setSwitch(on) {
+      lightSwitch.set(on);
+    },
     setPowered(on) {
       powered = on;
       applyLights();

@@ -16,6 +16,8 @@ export const ICONS = {
   water: svg('<path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z"/><path d="M9 14a3 3 0 0 0 3 3"/>'),
   'seed-potatoes': svg('<path d="M6 9c0-3 3-5 6-5s6 2 6 5c0 6-3 11-6 11S6 15 6 9z"/><circle cx="10" cy="10" r=".6"/><circle cx="14" cy="13" r=".6"/><circle cx="11" cy="16" r=".6"/>'),
   'battery-pack': svg('<rect x="3" y="7" width="16" height="11" rx="2"/><path d="M19 11h2v3h-2M10 9l-2 4h4l-2 4"/>'),
+  'lettuce-seeds': svg('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 17c-3 0-4-3-4-5 2 0 4 1 4 5zm0 0c3 0 4-3 4-5-2 0-4 1-4 5zM12 17V9"/>'),
+  'radish-seeds': svg('<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="14" r="3"/><path d="M12 11V7M10 8l2-1 2 1"/>'),
 };
 
 const DEF = {
@@ -49,6 +51,22 @@ const DEF = {
     perUnit: SUPPLY.ITEMS['battery-pack'].kwh,
     unitLabel: 'pack',
   },
+  'lettuce-seeds': {
+    name: 'Lettuce Seeds',
+    desc: 'A packet of red romaine lettuce seeds, like NASA grew on the ISS. Seeds are tiny, so flying them costs far less than flying food.',
+    to: 'inventory',
+    item: 'lettuce-seed',
+    perUnit: SUPPLY.ITEMS['lettuce-seeds'].seeds,
+    unitLabel: 'packet',
+  },
+  'radish-seeds': {
+    name: 'Radish Seeds',
+    desc: 'A packet of radish seeds. Radishes were grown on the ISS too, in the Advanced Plant Habitat.',
+    to: 'inventory',
+    item: 'radish-seed',
+    perUnit: SUPPLY.ITEMS['radish-seeds'].seeds,
+    unitLabel: 'packet',
+  },
 };
 
 /** id → { id, name, desc, icon, massKg, maxPerOrder, deliveryGameHours, to, item?, perUnit, unitLabel } */
@@ -63,5 +81,6 @@ export function unitEffect(id) {
   if (c.to === 'tank') return `+${c.perUnit} kg water to the Electrolysis tank`;
   if (c.to === 'battery') return `+${c.perUnit} kWh to the base battery`;
   if (c.item === 'potato') return `+${c.perUnit} seed potatoes`;
+  if (c.item?.endsWith('-seed')) return `+${c.perUnit} ${c.item.replace('-seed', '')} seeds`;
   return `+${c.perUnit} ${c.unitLabel}`;
 }
