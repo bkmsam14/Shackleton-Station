@@ -111,6 +111,20 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **Carrying the bag:** Moon gravity is 1.62 m/s² (NASA Moon Fact Sheet), so 60 kg weighs like ~10 kg on Earth. Mass (and inertia) stays the same — the game only says it "feels like" / "weighs".
 - **Game simplifications:** bag size, kg per chunk, drill round, rocks, mega lumps, streaks and the scanner charges are game balance. The cold trap's extra base power is the suit heaters and lamp being recharged by the base (game balance amount); we do **not** claim cold makes you breathe more oxygen.
 
+### The starry sky from the lunar south pole (telescope)
+- **Real stars:** the sky uses the **Yale Bright Star Catalog** (5th rev. ed., Hoffleit & Warren 1991) as hosted by NASA HEASARC (table bsc5p): stars with V ≤ 5.5 that can be seen from the lunar south pole (1,640 stars). Built by `scripts/fetch-stars.mjs` → `public/data/stars-bsc.json`. *Source: https://heasarc.gsfc.nasa.gov/W3Browse/star-catalog/bsc5p.html*
+- **Geometry:** the Moon's spin axis is ~1.5° from the ecliptic pole (NASA Moon Fact Sheet: 6.68° to its orbit, orbit 5.145° to the ecliptic), so straight up at the south pole is (almost) the **south ecliptic pole**. Altitude ≈ −(ecliptic latitude): stars **never rise or set**, they circle at a fixed height; stars north of the ecliptic (Polaris, the Big Dipper) are never visible. Left out: the ~1.5° wobble. Conversion RA/Dec → ecliptic uses the J2000 obliquity 23.4393° (IAU).
+- **Turning:** the sky turns once per **sidereal month (27.3 days)**; the Sun once per synodic month (29.5 days) because it creeps ~0.986° a day along the ecliptic. Both are sped up with the Sun loop (`SKY.GAME_SUN_LOOP_REAL_SECONDS`). Test: `tests/skyMath.test.js` checks the 27.32-day lap.
+- **Direction (correction, v0.7.0):** the Moon spins the same way as Earth, so at the south pole the sky turns **counter-clockwise seen from above**. The Sun used to go round the wrong way; fixed in `daycycle.sunAzimuthDeg`.
+- **Start date:** the Sun starts at ecliptic longitude 48° (≈ 8 May, the Stormy Sun replay date) — `SKY.SUN_ECLIPTIC_LON_START_DEG`.
+- **Distances in the Star Album:** Hipparcos new reduction (van Leeuwen 2007) via NASA HEASARC (hipnewcat), light-years = 3261.56 ÷ parallax (mas), rounded: Acrux ~320, Gacrux ~89, Hadar ~390, Rigel ~860, Canopus ~310, Sirius 8.6. Alpha Centauri ~4.4 ly (NASA APOD — https://science.nasa.gov/image-article/apod-2025-january-1-alpha-centauri-the-closest-star-system/). Betelgeuse "roughly 500–700 ly — still being measured" (Hipparcos ~500 with a large error; NASA says ~700 — https://science.nasa.gov/universe/what-is-betelgeuse-inside-the-strange-volatile-star). LMC ~160,000 ly (Pietrzyński et al., Nature 2013: 49.97 kpc ≈ 163,000 ly).
+- **Betelgeuse size:** "in place of our Sun it would swallow Mercury, Venus, Earth and Mars" — true for both NASA's figure (past Jupiter's orbit) and the smaller 2020 estimate (past Mars).
+- **Crux** is the smallest of the 88 IAU constellations (~68 square degrees). *Source: IAU*
+- **No twinkling on the Moon:** twinkling comes from Earth's moving air. *Source: NASA StarChild — https://starchild.gsfc.nasa.gov/docs/StarChild/questions/question26.html*
+- **Star colours:** colour comes from B−V in the catalog; the dot tint uses the Ballesteros (2012) B−V → temperature approximation and a blackbody colour. No temperatures are shown as data.
+- **Sun safety:** "Never look at the Sun through a telescope" — the scope's sun shutter closes within 25° of the Sun (game balance angle).
+- **Game simplifications:** zoom levels, lock-on time, round time and the hint arrow are game balance; the telescope view uses a flat (gnomonic) map projection.
+
 ### Dust
 - Lunar regolith is sharp, abrasive and sticky. It clings to suits and covers equipment.
 - **There is no wind, so there are no dust storms on the Moon.** Dust gets thrown up by rocket exhaust, rovers and walking.

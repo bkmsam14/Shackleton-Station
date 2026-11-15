@@ -1,5 +1,31 @@
 # Changelog — Shackleton Station
 
+## 0.7.0 — Telescope: the real starry sky + Star Hunt
+
+### Gameplay
+- **Real stars everywhere:** the random dots are gone. The sky now shows 1,640 real stars from the
+  Yale Bright Star Catalog (via NASA HEASARC), with real brightness and colour, placed for the
+  Moon's south pole and slowly turning (once per 27.3-day sidereal month, sped up).
+- **Telescope** on a small rise north-east of the habitat (follow the lamps). **Star Hunt**: pick
+  a target, pan and zoom the real sky to find it, keep it in the crosshair to lock on, then tap the
+  stars in order to draw it. Volt can help (hint arrow, "Help me, Volt!"). Stars + mastery.
+- **6 targets:** Southern Cross, Alpha & Beta Centauri, Orion, Canis Major (Sirius), Carina
+  (Canopus) and the Large Magellanic Cloud — each with a card of real facts and sources.
+- **Sun shutter:** pointing near the Sun closes the shutter — "Never look at the Sun through a
+  telescope!"
+- **Star Album** in the PDA; found constellations show faint lines + names in the sky outside when
+  you look at them (toggle: pause menu → Star names in the sky).
+
+### Science fix
+- The Sun went round the sky the wrong way for the lunar south pole. It now turns counter-clockwise
+  seen from above (the Moon spins the same way as Earth). The first dark period comes a little
+  later in a session than before.
+
+### Code
+- `scripts/fetch-stars.mjs`, `public/data/stars-bsc.json`, `systems/skyMath.js` (+ tests),
+  `data/stars.js`, `data/constellations.js` (+ tests), `world/telescope.js`,
+  `instances/telescope/`; `world/sky.js` draws the real stars; `getSun()` returns `skyTurnDeg`.
+
 ## 0.6.0 — Ice mining: make water from Moon ice
 
 ### Gameplay

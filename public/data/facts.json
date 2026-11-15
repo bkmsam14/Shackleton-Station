@@ -240,6 +240,36 @@
       "text": "NASA's Lunar Prospector found extra hydrogen near the Moon's poles in 1998 by counting neutrons, a clue that ice is there.",
       "value": "Lunar Prospector neutron spectrometer, 1998",
       "source": "https://ntrs.nasa.gov/citations/20230012260"
+    },
+    {
+      "id": "moon-sky-circle",
+      "text": "At the Moon's south pole the stars never rise or set; they circle once every 27.3 days.",
+      "value": "Sidereal month 27.3 days; axis ~1.5° from the ecliptic pole",
+      "source": "https://heasarc.gsfc.nasa.gov/W3Browse/star-catalog/bsc5p.html"
+    },
+    {
+      "id": "no-twinkle",
+      "text": "Stars don't twinkle on the Moon: twinkling is caused by Earth's moving air.",
+      "value": "NASA StarChild",
+      "source": "https://starchild.gsfc.nasa.gov/docs/StarChild/questions/question26.html"
+    },
+    {
+      "id": "alpha-centauri",
+      "text": "Alpha Centauri is the closest star system to the Sun, about 4.4 light-years away.",
+      "value": "~4.4 ly",
+      "source": "https://science.nasa.gov/image-article/apod-2025-january-1-alpha-centauri-the-closest-star-system/"
+    },
+    {
+      "id": "crux-smallest",
+      "text": "Crux, home of the Southern Cross, is the smallest of the 88 constellations.",
+      "value": "~68 square degrees",
+      "source": "https://www.iau.org/public/themes/constellations/"
+    },
+    {
+      "id": "lmc-distance",
+      "text": "The Large Magellanic Cloud is a small galaxy about 160,000 light-years away.",
+      "value": "49.97 kpc ≈ 163,000 ly (Pietrzyński et al. 2013)",
+      "source": "https://www.nature.com/articles/nature11878"
     }
   ]
 }
