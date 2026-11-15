@@ -1,20 +1,31 @@
-// index.js — Electrolysis instance: intro → choose batch → Molecule Zapper → quiz → result.
+// index.js — Electrolysis instance: intro → choose batch → mini-game (picked at random) → quiz → result.
+// Mini-games (minigames.js): Molecule Zapper, Bubble Detective, Atom Match. They all make
+// the same batch for the same cost; the first time each one is played, a short "How to
+// play" card explains it (ui/tutorial.js).
 // Game rules (costs, affordability, stars) live in systems/electrolysis.js; this file only
 // shows screens and calls them. The batch is paid for when the round finishes, so leaving
 // early costs nothing and makes nothing (no free oxygen, no lost water).
 import './style.css';
+import './minigames.css';
 import { POWER, ELECTROLYSIS, OXYGEN } from '../../config/gameplay.js';
 import { powerPercent } from '../../systems/gauges.js';
 import { batchCost, checkAfford, applyBatch, scoreRound } from '../../systems/electrolysis.js';
 import { sfx } from '../../ui/sfx.js';
 import { createZapperGame } from './game.js';
-import { TEXT, QUIZ, realTimeLine, shuffledOptions } from './content.js';
+import { createBubbleGame } from './bubbles.js';
+import { createAtomGame } from './atoms.js';
+import { gameById, nextGame } from './minigames.js';
+import { ART } from './tutorialArt.js';
+import { showTutorial, tutorialSeen } from '../../ui/tutorial.js';
+import { loadSettings, saveSettings } from '../../systems/save.js';
+import { TEXT, QUIZ, TUTORIALS, CONCEPT, TIPS, LEARN, LEARN_SHOWS, realTimeLine, shuffledOptions } from './content.js';
 import { IC, starIcon, medalIcon, flaskIcon, voltBot } from './icons.js';
 
 const MEDAL_NAME = { bronze: 'Bronze', silver: 'Silver', gold: 'Gold' };
 const STEPS = [
   { id: 'choose', label: 'Pick' },
-  { id: 'play', label: 'Zap' },
+  { id: 'play', label: 'Play' },
+  { id: 'learn', label: 'Learn' },
   { id: 'quiz', label: 'Quiz' },
   { id: 'result', label: 'Stars' },
 ];
@@ -74,6 +85,27 @@ export function createElectrolysisInstance({ root, ctx, done }) {
 
   let screen = 'intro';
   let game = null;
+  // The game is picked at random by the station (never twice in a row) and kept until a
+  // round is played, so leaving and coming back can't re-roll it.
+  const saved = loadSettings();
+  let gameId = saved.electrolysisNext && gameById(saved.electrolysisNext).id === saved.electrolysisNext
+    ? saved.electrolysisNext
+    : nextGame(saved.electrolysisLast);
+  saveSettings({ electrolysisNext: gameId });
+  const tutKey = (id) => `electrolysis-${id}`;
+  /** The "How to play" card for a game, with its icons filled in. */
+  function tutorialFor(id) {
+    const t = TUTORIALS[id];
+    return {
+      id: tutKey(id),
+      title: t.title,
+      // Volt says the big idea first, then the pictures show how to play
+      lead: `${voltBot('wow')}<p>${CONCEPT[id]}</p>`,
+      leadSay: CONCEPT[id],
+      panels: t.panels.map((p) => ({ art: ART[p.art] ?? '', caption: p.caption, say: p.say })),
+    };
+  }
+  const tutorialOpen = () => Boolean(el.querySelector('.tut'));
   let round = null; // { batchId, hits, misses, seconds, maxCombo, paid, quizCorrect, stars }
 
   function setMedal(level) {
@@ -169,6 +201,7 @@ export function createElectrolysisInstance({ root, ctx, done }) {
     speak(`${TEXT.chooseTitle} ${line}`);
     body.innerHTML = `
       ${say(mood, `<h3 class="ez-h3">${TEXT.chooseTitle}</h3><p>${line}</p>`)}
+      <p class="ez-today">${IC.power}<span>Today’s game: <b>${gameById(gameId).name}</b>${tutorialSeen(tutKey(gameId)) ? '' : ' <span class="ez-game-new">New!</span>'}</span></p>
       <div class="ez-meters">
         ${meter(IC.water, 'Water tank', kg(station.tankKg), station.tankKg / ELECTROLYSIS.TANK_START_KG, 'water')}
         ${meter(IC.power, 'Base power', pct(pp), pp / 100, 'power')}
@@ -202,35 +235,90 @@ export function createElectrolysisInstance({ root, ctx, done }) {
     }
     setScreen('play');
     const c = batchCost(batchId);
-    round = { batchId, paid: false };
+    const g = gameById(gameId);
+    round = { batchId, paid: false, game: g.id };
+    const area =
+      g.id === 'zapper'
+        ? `<div class="ez-hints">
+            <span class="ez-hint">${IC.mouse}<span><b>Click</b> a water molecule</span></span>
+            <span class="ez-hint-or">or</span>
+            <span class="ez-hint">${IC.keySpace}<span>press <b>Space</b> in the glowing zone</span></span>
+          </div>
+          <div class="ez-screen"><canvas class="ez-canvas" aria-label="Molecule Zapper: water molecules float between a minus and a plus electrode. Split them to fill the hydrogen and oxygen tubes."></canvas></div>`
+        : `<div class="ez-play"><div class="ez-tip" hidden aria-live="polite">${voltBot('wow')}<p></p></div></div>`;
     body.innerHTML = `
-      <div class="ez-hints">
-        <span class="ez-hint">${IC.mouse}<span><b>Click</b> a water molecule</span></span>
-        <span class="ez-hint-or">or</span>
-        <span class="ez-hint">${IC.keySpace}<span>press <b>Space</b> in the glowing zone</span></span>
-      </div>
-      <div class="ez-screen"><canvas class="ez-canvas" aria-label="Molecule Zapper: water molecules float between a minus and a plus electrode. Split them to fill the hydrogen and oxygen tubes."></canvas></div>
+      ${area}
       <div class="ez-row">
         <button class="ez-btn ez-btn-ghost" data-leave>${IC.back}<span>${TEXT.leave}</span></button>
+        <button class="ez-btn ez-btn-ghost ez-help" data-help aria-label="How to play ${g.name}">${IC.book}<span>How to play</span></button>
         <span class="ez-goal">${IC.oxygen}Goal: <b>${c.o2Kg} kg</b> of oxygen</span>
       </div>`;
     body.querySelector('[data-leave]').addEventListener('click', () => done({ completed: false }));
-    game = createZapperGame({
-      canvas: body.querySelector('.ez-canvas'),
-      zaps: c.zaps,
-      announce,
-      onComplete: (r) => finishRound(r),
+    body.querySelector('[data-help]').addEventListener('click', () => {
+      sfx.click();
+      showTutorial(el, tutorialFor(g.id), { onSpeak: speak });
     });
-    announce(`Split ${c.zaps} water molecules to make ${c.o2Kg} kilograms of oxygen.`);
+    const begin = () => {
+      if (screen !== 'play' || game) return;
+      const common = { announce, onComplete: (r) => finishRound(r), onTip: (key) => showTip(TIPS[g.id]?.[key]) };
+      if (g.id === 'bubbles') game = createBubbleGame({ mount: body.querySelector('.ez-play'), zaps: c.zaps, ...common });
+      else if (g.id === 'atoms') game = createAtomGame({ mount: body.querySelector('.ez-play'), zaps: c.zaps, ...common });
+      else game = createZapperGame({ canvas: body.querySelector('.ez-canvas'), zaps: c.zaps, ...common });
+      announce(`${g.name}: make ${c.o2Kg} kilograms of oxygen.`);
+    };
+    // the first time a game is played, its "How to play" card comes first
+    if (tutorialSeen(tutKey(g.id))) begin();
+    else showTutorial(el, tutorialFor(g.id), { onSpeak: speak }).then(begin);
+  }
+
+  /** Volt's one-line reaction during play (the moment the kid sees it happen). */
+  let tipTimer = 0;
+  function showTip(text) {
+    const tip = body.querySelector('.ez-tip');
+    if (!text || !tip) return;
+    tip.querySelector('p').textContent = text;
+    tip.hidden = false;
+    tip.classList.remove('is-pop');
+    void tip.offsetWidth;
+    tip.classList.add('is-pop');
+    speak(text);
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(() => (tip.hidden = true), 3600);
   }
 
   function finishRound(r) {
     game?.destroy();
     game = null;
     // pay for the batch now (water + power + heat from misses) and store the oxygen
-    const paid = applyBatch(gauges, station, round.batchId, r.misses);
+    // only missed ZAPS waste electricity as heat; a wrong guess in the other games doesn't
+    const paid = applyBatch(gauges, station, round.batchId, r.heatMisses ?? r.misses);
+    // a round was played: next visit gets a new random game (not this one)
+    saveSettings({ electrolysisLast: round.game, electrolysisNext: nextGame(round.game) });
     round = { ...round, ...r, paid };
-    showQuiz();
+    clearTimeout(tipTimer);
+    // "What really happened": the first few times each game is played, then straight on
+    const shown = loadSettings().learnShown ?? {};
+    if ((shown[round.game] ?? 0) < LEARN_SHOWS) {
+      saveSettings({ learnShown: { ...shown, [round.game]: (shown[round.game] ?? 0) + 1 } });
+      showLearn();
+    } else showQuiz();
+  }
+
+  function showLearn() {
+    setScreen('learn');
+    const L = LEARN[round.game];
+    speak(`What really happened? ${L.lines.join(' ').replace('→', 'gives')} ${L.real}`);
+    body.innerHTML = `
+      ${say('cheer', `<h3 class="ez-h3">What really happened?</h3>${L.lines.map((l) => `<p class="ez-learn-line">${l}</p>`).join('')}`)}
+      <div class="ez-learn-art">${ART[L.art]}</div>
+      <p class="ez-learn-real">${IC.oxygen}<span>${L.real}</span></p>
+      <p class="ez-source">${IC.link}<span>Source: <a href="${L.source.url}" target="_blank" rel="noopener">${L.source.label}</a></span></p>
+      <div class="ez-row ez-row-end"><button class="ez-btn ez-btn-go ez-btn-xl" data-next><span>Got it!</span></button></div>`;
+    body.querySelector('[data-next]').addEventListener('click', () => {
+      sfx.click();
+      showQuiz();
+    });
+    focusFirst();
   }
 
   function showQuiz() {
@@ -358,12 +446,22 @@ export function createElectrolysisInstance({ root, ctx, done }) {
 
   // ---------------------------------------------------------------- keys
   function onKey(e) {
-    if (e.code === 'Space' && screen === 'play') {
+    if (tutorialOpen()) {
+      // the "How to play" card is up: Enter / Space / Escape close it (even if it lost focus)
+      if (e.code === 'Enter' || e.code === 'Space' || e.code === 'Escape') {
+        e.preventDefault();
+        el.querySelector('.tut-go')?.click();
+      }
+      return;
+    }
+    if (screen === 'play' && round?.game !== 'zapper' && game?.onKey?.(e)) return;
+    if (e.code === 'Space' && screen === 'play' && round?.game === 'zapper') {
       e.preventDefault();
       if (!e.repeat) game?.zapInZone();
     } else if (e.code === 'Escape') {
       e.preventDefault();
-      if (screen === 'quiz') showResult();
+      if (screen === 'learn') showQuiz();
+      else if (screen === 'quiz') showResult();
       else if (screen === 'result') closeWithResult();
       else done({ completed: false });
     }
@@ -375,6 +473,7 @@ export function createElectrolysisInstance({ root, ctx, done }) {
   return {
     onKey,
     destroy() {
+      clearTimeout(tipTimer);
       ctx.voice?.stop();
       game?.destroy();
       game = null;
