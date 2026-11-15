@@ -31,6 +31,7 @@ import { createVolt } from './world/volt.js';
 import { createWalkable } from './world/walkable.js';
 import { createGuide } from './world/guide.js';
 import { createVoltBubble } from './ui/voltBubble.js';
+import { createSuitVisor } from './ui/suitVisor.js';
 import { createVoltVoice } from './ui/voltVoice.js';
 import { heightAt } from './world/heightfield.js';
 import { createMastery } from './systems/mastery.js';
@@ -106,6 +107,7 @@ const day = createDayCycle();
 const uiRoot = document.createElement('div');
 uiRoot.className = 'ui-root';
 document.body.appendChild(uiRoot);
+const suitVisor = createSuitVisor(uiRoot); // the helmet view outside (drawn under the HUD)
 const hud = createHud(uiRoot);
 hud.setVisible(false);
 const feedback = createFeedback(uiRoot);
@@ -1186,6 +1188,7 @@ renderer.setAnimationLoop(() => {
   voltBubble.update(frameDt, camera, volt.headPosition(voltHead), mode === 'playing' && !instances.isOpen);
   // the Sun is off indoors, so skip re-rendering its shadow map there
   const outdoors = zoneId === 'outside';
+  suitVisor.set(outdoors && mode !== 'start'); // outside you see through your helmet visor
   if (outdoors && !renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = true;
   renderer.shadowMap.autoUpdate = outdoors;
   lastHudState = {
