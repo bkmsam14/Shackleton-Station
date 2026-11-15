@@ -207,6 +207,12 @@ function startDragMode() {
   }
 }
 function enterPlay() {
+  // A mouse lock asked for as one screen closed (e.g. the harvest view) can arrive after the
+  // next screen opened (e.g. the Training Day report): give the mouse straight back to it.
+  if (instances.isOpen) {
+    document.exitPointerLock?.();
+    return;
+  }
   hud.setVisible(true);
   menus.showStart(false);
   menus.showPause(false);
@@ -973,7 +979,7 @@ renderer.setAnimationLoop(() => {
   const carryMarker = ice.bagKg > 0 && !ice.oven && !coldTrap ? ovenMarkerTarget(zoneId) : null;
   guide.setTarget(stormMarker ?? (assistant.tourActive ? tourTargetPosition(assistant.tourStep?.target, zoneId) : carryMarker));
   guide.update(frameDt, player);
-  voltBubble.update(frameDt, camera, volt.headPosition(voltHead), mode === 'playing');
+  voltBubble.update(frameDt, camera, volt.headPosition(voltHead), mode === 'playing' && !instances.isOpen);
   // the Sun is off indoors, so skip re-rendering its shadow map there
   const outdoors = zoneId === 'outside';
   if (outdoors && !renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = true;

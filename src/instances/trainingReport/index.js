@@ -4,6 +4,7 @@ import { TIME } from '../../config/gameplay.js';
 import { sfx } from '../../ui/sfx.js';
 import { IC, voltBot } from '../electrolysis/icons.js';
 import { TRAINING_CHAPTERS } from '../../data/trainingDay.js';
+import './style.css';
 
 /** ctx: { voice? } */
 export function createTrainingReportInstance({ root, ctx, done }) {
