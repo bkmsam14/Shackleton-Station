@@ -15,9 +15,12 @@ const SHADOW_DISTANCE = 220; // light sits this far toward the Sun
 const EARTHSHINE_MAX = 0.12; // at full Earth — faint, bluish
 const OUTDOOR_FILL = 0.035; // almost nothing: shadows stay near-black
 const HELMET_LAMP = 14; // candela-ish; reaches ~15 m
+// Indoors (graphics overhaul): warm-white light from above, a soft blue-purple bounce
+// from below — the "animated film" ambience. The greenhouse fill is nearly neutral so the
+// pink-purple grow light reads as a glow, not a purple room.
 const INDOOR_FILL = {
-  habitat: { sky: 0xffe8d0, ground: 0x857a6e, intensity: 0.14 }, // warm, homey
-  greenhouse: { sky: 0xd9a6ff, ground: 0x6a4f7a, intensity: 0.38 }, // red + blue LED glow
+  habitat: { sky: 0xfff1e0, ground: 0x5f6584, intensity: 0.26 },
+  greenhouse: { sky: 0xf1ecff, ground: 0x6e5e8c, intensity: 0.42 },
 };
 
 export function createLighting(scene, { shadowMapSize = 2048 } = {}) {

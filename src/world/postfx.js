@@ -1,6 +1,9 @@
 // postfx.js — post-processing with the pmndrs "postprocessing" library:
-//   RenderPass → N8AO ambient occlusion (indoors) → bloom + AgX tone mapping → FXAA
-// Only on High quality. On Low the renderer draws directly with AgX tone mapping.
+//   RenderPass → N8AO ambient occlusion (indoors) → bloom + ACES tone mapping + a gentle
+//   colour grade + soft vignette (one pass) → FXAA
+// Only on High quality. On Low the renderer draws directly with ACES tone mapping.
+// Graphics overhaul: ACES Filmic gives the richer, "animated film" contrast and colour
+// (AgX looked washed out); bloom is softer so lights glow without blowing out.
 // Bloom picks up HDR-bright materials only (the Sun, light strips, LEDs; see MAT.glow).
 import * as THREE from 'three';
 import {
@@ -11,6 +14,8 @@ import {
   ToneMappingEffect,
   ToneMappingMode,
   FXAAEffect,
+  HueSaturationEffect,
+  VignetteEffect,
 } from 'postprocessing';
 import { N8AOPostPass } from 'n8ao';
 
@@ -40,11 +45,15 @@ export function createPostFX(renderer, scene, camera) {
     mipmapBlur: true,
     luminanceThreshold: 1.0, // only HDR-bright things glow, not white walls
     luminanceSmoothing: 0.2,
-    intensity: 0.7,
-    radius: 0.55,
+    intensity: 0.5,
+    radius: 0.6,
   });
-  const tone = new ToneMappingEffect({ mode: ToneMappingMode.AGX });
-  composer.addPass(new EffectPass(camera, bloom, tone));
+  const tone = new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC });
+  // a touch more colour after tone mapping (ACES flattens saturated brights a little)
+  const grade = new HueSaturationEffect({ saturation: 0.08 });
+  // soft vignette: draws the eye to the middle of the screen, never hides anything
+  const vignette = new VignetteEffect({ offset: 0.32, darkness: 0.34 });
+  composer.addPass(new EffectPass(camera, bloom, tone, grade, vignette));
   // FXAA: one cheap pass (SMAA cost ~3.4 ms on an Intel UHD laptop GPU at 720p)
   const aaPass = new EffectPass(camera, new FXAAEffect());
   composer.addPass(aaPass);
@@ -63,7 +72,14 @@ export function createPostFX(renderer, scene, camera) {
     setEnabled(on) {
       enabled = on;
       // pmndrs applies tone mapping in its own pass; the renderer must not do it twice
-      renderer.toneMapping = on ? THREE.NoToneMapping : THREE.AgXToneMapping;
+      renderer.toneMapping = on ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
+    },
+    /** Draw a scene straight to the screen (the airlock room), always tone-mapped. */
+    renderPlain(scene, cam) {
+      const before = renderer.toneMapping;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.render(scene, cam);
+      renderer.toneMapping = before;
     },
     setZone(zoneId) {
       if (zoneId === zone) return;

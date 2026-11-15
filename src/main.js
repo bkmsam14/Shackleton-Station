@@ -70,8 +70,8 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'hi
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, QUALITY[quality].pixelRatioCap));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-// AgX keeps bright lights from clipping to flat white (the old interiors blew out).
-renderer.toneMapping = THREE.AgXToneMapping;
+// ACES Filmic: filmic contrast + colour for the stylized look (postfx.setEnabled sets it too).
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 // Shader info logs (e.g. harmless ANGLE/D3D compiler warnings) only matter while developing.
@@ -87,7 +87,7 @@ postfx.setEnabled(quality === 'high');
 function renderFrame(dt = 0) {
   // during an airlock cycle we only draw the little airlock room (its own scene)
   if (airlockRun) {
-    renderer.render(airlockRoom.scene, camera);
+    postfx.renderPlain(airlockRoom.scene, camera); // tone-mapped like the rest (was untone-mapped on High)
     return;
   }
   postfx.setZone(player?.zoneId ?? 'habitat');

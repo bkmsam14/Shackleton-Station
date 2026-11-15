@@ -212,9 +212,17 @@ export function curtainGeometry(width, height, folds = 7) {
 
 /** Storage crate with bevels, a darker band and a label. */
 export function crate(w, h, d, text = 'SUPPLIES') {
+  // Graphics overhaul: a clean futuristic crate — white rounded body, blue-grey corner
+  // posts, an orange lid band and a soft cyan status strip.
   const g = new THREE.Group();
-  g.add(mesh(rbox(w, h, d, 0.06), MAT.interiorPanel(), 0, h / 2, 0));
-  g.add(mesh(rbox(w + 0.02, 0.07, d + 0.02, 0.025), MAT.darkMetal(), 0, h * 0.74, 0));
+  g.add(mesh(rbox(w, h, d, 0.08), MAT.painted(0xf1f3f6), 0, h / 2, 0));
+  const post = rbox(0.09, h + 0.02, 0.09, 0.03);
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) g.add(mesh(post, MAT.darkMetal(), (sx * (w - 0.05)) / 2, h / 2, (sz * (d - 0.05)) / 2));
+  }
+  g.add(mesh(rbox(w + 0.03, 0.08, d + 0.03, 0.03), MAT.accent(), 0, h * 0.88, 0));
+  g.add(mesh(rbox(w + 0.025, 0.05, d + 0.025, 0.02), MAT.hullDark(), 0, h * 0.1, 0));
+  g.add(mesh(rbox(w * 0.5, 0.03, 0.02, 0.01), MAT.glow(0x6fe3f0, 1.8), 0, h * 0.22, d / 2 + 0.005, { cast: false }));
   const tag = label(text, w * 0.62, 0.13, { bg: '#0d1a33', accent: '#ffb547', w: 256, h: 64 });
   tag.position.set(0, h * 0.42, d / 2 + 0.008);
   g.add(tag);

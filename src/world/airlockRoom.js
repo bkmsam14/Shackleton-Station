@@ -10,6 +10,8 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { createSign } from './signs.js';
 import { MAT } from './materials.js';
 import { rbox, mesh, pipe, hazardStripeMaterial } from './details.js';
+import { planarUV } from './textures.js';
+import { procSet } from './proceduralTextures.js';
 
 const R = 1.35; // cylinder radius
 const AXIS_Y = 1.15; // cylinder centre height (the floor deck is a flat chord below it)
@@ -43,14 +45,14 @@ export function createAirlockRoom(renderer) {
   if (renderer) {
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environmentIntensity = 0.3;
+    scene.environmentIntensity = 0.1; // low: a bright studio reflection washed the small room out
     pmrem.dispose();
   }
-  scene.add(new THREE.HemisphereLight(0xe8eefc, 0x40444c, 0.55));
+  scene.add(new THREE.HemisphereLight(0xeef0ff, 0x4a4f66, 0.14)); // softer (it was blown out once tone-mapped)
   // two ceiling light panels, each with a soft light under it
   const lights = [];
   for (const z of [-0.85, 0.85]) {
-    const l = new THREE.PointLight(0xfff4e2, 5.5, 6, 1.6);
+    const l = new THREE.PointLight(0xfff4e2, 2.3, 6, 1.6);
     l.position.set(0, AXIS_Y + R - 0.35, z);
     scene.add(l);
     lights.push(l);
@@ -61,55 +63,22 @@ export function createAirlockRoom(renderer) {
 
   // ---------------------------------------------------------------- shell
   // padded wall panels: soft off-white rectangles with thin seams and fasteners
-  const panelTex = (() => {
-    const cv = document.createElement('canvas');
-    cv.width = 512;
-    cv.height = 256;
-    const c = cv.getContext('2d');
-    c.fillStyle = '#e9ebee';
-    c.fillRect(0, 0, 512, 256);
-    for (const [x, y, w, h] of [
-      [4, 4, 248, 120],
-      [260, 4, 248, 120],
-      [4, 132, 160, 120],
-      [172, 132, 168, 120],
-      [348, 132, 160, 120],
-    ]) {
-      const g = c.createLinearGradient(x, y, x, y + h);
-      g.addColorStop(0, '#f3f4f6');
-      g.addColorStop(1, '#dfe2e6');
-      c.fillStyle = g;
-      c.fillRect(x, y, w, h);
-      c.strokeStyle = '#b9bec6';
-      c.lineWidth = 3;
-      c.strokeRect(x, y, w, h);
-      c.fillStyle = '#9aa0a8';
-      for (const [fx, fy] of [
-        [x + 10, y + 10],
-        [x + w - 10, y + 10],
-        [x + 10, y + h - 10],
-        [x + w - 10, y + h - 10],
-      ]) {
-        c.beginPath();
-        c.arc(fx, fy, 3, 0, Math.PI * 2);
-        c.fill();
-      }
-    }
-    const tex = new THREE.CanvasTexture(cv);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(6, 2);
-    tex.anisotropy = 8;
-    return tex;
-  })();
-  const wallMat = new THREE.MeshStandardMaterial({ map: panelTex, roughness: 0.85, side: THREE.BackSide });
+  // Graphics overhaul: the same clean riveted plates as the habitat (procedural panels)
+  const wallMat = new THREE.MeshStandardMaterial({
+    color: 0xe9edf2,
+    roughness: 1,
+    metalness: 0.8,
+    side: THREE.BackSide,
+    ...procSet('panels', { repeat: [7, 2.5] }),
+    normalScale: new THREE.Vector2(0.9, 0.9),
+  });
   const shell = new THREE.Mesh(new THREE.CylinderGeometry(R, R, L, 48, 1, true), wallMat);
   shell.rotation.x = Math.PI / 2;
   shell.position.y = AXIS_Y;
   scene.add(shell);
   // grating deck (a flat floor across the bottom of the cylinder)
   const deckHalf = Math.sqrt(R * R - (AXIS_Y - 0.02) ** 2);
-  const deck = mesh(new THREE.BoxGeometry(deckHalf * 2, 0.04, L), MAT.floor(), 0, 0, 0);
+  const deck = mesh(planarUV(new THREE.BoxGeometry(deckHalf * 2, 0.04, L), 'xz', 1), MAT.floor(), 0, 0, 0);
   scene.add(deck);
   // structural rings (frames) along the cylinder
   const ringMat = MAT.hullDark();
@@ -468,7 +437,7 @@ export function createAirlockRoom(renderer) {
               : 'SAFE TO OPEN';
       drawScreen(cycle.pressure, label, busy ? '#ffb547' : '#7be0a0');
       // ceiling lights dim very slightly while the pumps draw power (a small touch)
-      for (const l of lights) l.intensity = ph === 'pump' ? 5.0 : 5.5;
+      for (const l of lights) l.intensity = ph === 'pump' ? 2.1 : 2.3;
     },
     /** camera offset for a tiny "clunk" shake */
     shakeOffset(time) {

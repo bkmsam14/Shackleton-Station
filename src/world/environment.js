@@ -41,8 +41,10 @@ export function createEnvironments(renderer) {
 }
 
 // How strongly the environment lights each zone (scene.environmentIntensity).
+// Graphics overhaul: more indoor reflection, so painted metal and floor plates read as
+// clean, softly reflective surfaces.
 export const ENV_INTENSITY = {
   outside: 0.6,
-  habitat: 0.22,
-  greenhouse: 0.05, // keep the red + blue LED colour dominant
+  habitat: 0.42,
+  greenhouse: 0.3,
 };
