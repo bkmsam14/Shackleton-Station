@@ -44,7 +44,7 @@ export function createEnvironments(renderer) {
 // Graphics overhaul: more indoor reflection, so painted metal and floor plates read as
 // clean, softly reflective surfaces.
 export const ENV_INTENSITY = {
-  outside: 0.6,
+  outside: 1.0, // brighter ground reflection outside (was 0.6; readability)
   habitat: 0.42,
   greenhouse: 0.3,
 };
