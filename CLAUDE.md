@@ -1,6 +1,6 @@
 # CLAUDE.md — Shackleton Station
 
-Read this file fully at the start of every session. Then read `docs/GAME_DESIGN.md` and `docs/SCIENCE.md` before writing gameplay or educational content.
+Read this file fully at the start of every session. Then read `docs/HANDOFF.md` (how to continue: standing instructions, decisions log, code patterns, testing tips, backlog), and `docs/GAME_DESIGN.md` + `docs/SCIENCE.md` before writing gameplay or educational content.
 
 ## What we are building
 
@@ -113,7 +113,7 @@ public/
 scripts/               # fetch-lola, fetch-space-weather, fetch-stars, balance-sim
 tests/                 # node --test (185 tests)
 docs/
-  GAME_DESIGN.md  SCIENCE.md  PERFORMANCE.md  screenshots/
+  HANDOFF.md  GAME_DESIGN.md  SCIENCE.md  PERFORMANCE.md  screenshots/
 ```
 
 Keep the systems (`systems/`) as pure logic with no Three.js imports, so they can be tested and tuned on their own.
@@ -126,6 +126,10 @@ Keep the systems (`systems/`) as pure logic with no Three.js imports, so they ca
 - Placeholder art is fine: simple shapes in one **clean, smooth-shaded style** (v0.2.1 team decision: rounded/bevelled edges, smooth shading, no faceted low-poly look; rocks may stay angular). A teammate will swap in real models (glTF) later. Keep model loading behind one function so swapping is easy.
 - When you add an in-game fact, add it to `public/data/facts.json` with a `source` URL at the same time.
 - If something in the design conflicts with these rules, the rules win. Mention the conflict to the user.
+- **Plan first on big features:** a short plan with a physics check + teaching check, then wait for the user's go-ahead. Small fixes can go straight ahead.
+- **Git:** push only when the user asks; **never run the deploy** (the GitHub Pages workflow is manual on purpose). Ask before anything hard to undo.
+- **Done means verified:** `npm test`, `npm run balance` if gameplay numbers changed, `npx vite build`, and the change played in the browser with no console errors; report honestly what wasn't checked.
+- **New mini-game lessons** follow the pattern in `src/instances/leak/` + `src/instances/lessonKit.js` (random pick, first-time picture tutorial, Volt concept/tips, "What really happened", quiz, sources). Owner's style: short, symbols and pictures over text.
 
 ## Current state (v0.11.0 + unreleased changes on main)
 

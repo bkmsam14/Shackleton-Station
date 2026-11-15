@@ -99,3 +99,5 @@ itself off if frames get slow. See `docs/PERFORMANCE.md`.
 - `src/ui/`: HUD, PDA, menus, Volt's bubble and voice, visor, sounds.
 - `docs/SCIENCE.md`: every fact and number with its source. `docs/GAME_DESIGN.md`: the design.
 - `CLAUDE.md`: project rules, current state, what's not built yet, known issues.
+- `docs/HANDOFF.md`: start here if you're continuing the project (with or without Claude Code).
+- `.claude/skills/`: the Three.js skills Claude Code uses on this project (loaded automatically).
