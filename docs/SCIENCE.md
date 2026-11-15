@@ -57,6 +57,8 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **Radishes on the ISS:** Plant Habitat-02 (PH-02) grew radishes in the Advanced Plant Habitat, harvested on 30 Nov 2020 after about 27 days; radishes were picked partly because they grow fast. *Source: NASA Kennedy blog, "Kennedy Harvests Radish Crop as Part of PH-02 Experiment" — https://blogs.nasa.gov/kennedy/2020/12/15/kennedy-harvests-radish-crop-as-part-of-ph-02-experiment*
 - **Food energy of crops (raw, per 100 g):** potato (flesh and skin) **77 kcal** (FDC 170026), romaine lettuce **17 kcal** (FDC 169247), radish **16 kcal** (FDC 169276). Leafy greens and radishes are mostly water: few calories, but fresh vitamins; potatoes are full of starch. *Source: USDA FoodData Central (SR Legacy), read through the FDC API — https://fdc.nal.usda.gov/*
 - Seeds are tiny and light, so flying seeds costs far less mass than flying the food they grow into. (Seed-packet mass in the game is game balance.)
+- **Fast crop ≠ filling crop:** lettuce and radishes grow fast (≈ 27–33 days) but are mostly water, so they give little energy; potatoes take months but are full of starch (77 kcal / 100 g). In the game a lettuce head (0.6 kg) ≈ 100 kcal ≈ 3 % of a day's food; a game "potato" is a whole plant's crop ≈ 2 kg ≈ 1,530 kcal ≈ half a day. *Source: USDA FoodData Central (above); BVAD 12.778 MJ/day.*
+- **Packaged space food:** ISS crews eat mostly packaged food from Earth; the game's "space meal" is a third of the BVAD daily food (0.27 kg dry). *Source: NASA BVAD (above).*
 - Plants need light, water, warmth and nutrients, and they take time to grow. They also release some oxygen and take in CO₂.
 - ESA's **MELiSSA** project researches life-support loops including spirulina (an algae). *Source: ESA MELiSSA (add URL)*
 - CSA food production toolkit: https://www.asc-csa.gc.ca/eng/youth-educators/toolkits/food-production/ (an index page; use its linked articles "Food in space: the challenges" and "Growing healthy food in space and in remote areas")
@@ -166,6 +168,9 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **Game additions on the real terrain:** the levelled base pad (a real base would grade a pad), the small cold-trap crater for ice mining, the telescope mound, tiny craters < 6 m and bumps smaller than the 5 m map can show.
 - **Earth stays in view in game mode:** the real horizon toward Earth (lon 0) is ~0.9° high; game Earth sits at 4°.
 
+### Footsteps and the suit (sound)
+- **No air, no sound through the air:** outside, footsteps can't be heard through the vacuum; the game plays a soft, low crunch you'd feel through your boots and suit (vibration travels through solids, like the airlock pump "through your boots"). Inside, steps are normal sounds in the cabin air. The suit breathing gets faster when you move outside: working in a spacesuit uses ≈ 2× more oxygen (BVAD).
+
 ### Airlock and sound (v0.10.0)
 - **Sound needs air:** sound waves are compression waves and need molecules to travel; there is no sound in a vacuum. *Source: NASA Astrobiology, Ask an Astrobiologist — https://webarchive.library.unt.edu/eot2008/20080920072225/http://astrobiology.nasa.gov/ask-an-astrobiologist/question/?id=78*
 - In the game the airlock hiss gets quieter and duller as the pressure drops (thin air carries less sound, high notes first); outside the world is silent and you only hear your suit (breathing + fan). The pump motor stays faintly audible "through your boots": vibrations travel through solids.
@@ -204,80 +209,59 @@ How the game uses them (ratios stay real, amounts are scaled):
 - **Stormy Sun:** May 2024. A period of very strong solar activity, including X-class flares on 14 May 2024 (confirm in the DONKI archive JSON before shipping).
 - **Calm Sun:** late 2019, around solar minimum (December 2019).
 
-## Game balance (how the numbers fit together) — v0.11.0 + micrometeoroid leaks
+## Game balance (how the numbers fit together) — the 4-day mission (Nov 2026)
 
 These are **game-design** calculations, not facts to show kids. The real numbers come from the
 sections above; the sizes (gauge capacity, battery, tank, loads, storm length) are marked
 `GAME BALANCE` in `gameplay.js`. Run `npm run balance` to print it all again;
 `tests/balance.test.js` fails if a change breaks the targets.
 
-**Targets for one lunar day (20 real minutes), checked by three bots** (`src/systems/balanceSim.js`):
+**The day structure (owner's design: "survive the day", FNAF-style).** The mission is **4 days**.
+Each day is a **12-hour work shift (07:00 → 19:00)** that lasts **6 real minutes** (the clock runs
+**120×** real life: 1 game hour = 30 real s). Survive to 19:00 → congratulations card → the night is
+skipped → "Day N" → you wake up in your bunk in the sleeping nook.
+- **Overnight refill = a game rule, said so on the card:** oxygen, battery and the water tank go
+  back to full. A real base would have to make them (the card says how much water the oxygen would
+  really need). **Hunger carries over**, and so does everything you carry and grow.
+- **Nights still happen on the base clock:** the Sun keeps moving, the Ice Oven keeps baking, and a
+  real storm that came at night is dosed as if you were in the shelter (you sleep in the nook,
+  which IS the storm shelter). Plants grow one step per night, but only if the grow lights were on
+  for at least half of the day (`LIGHT_SHARE_TO_GROW`).
+- **Storms by calendar day:** game Day 1 = the replay's first date at 07:00 UTC, Day 2 the next
+  date… so the Stormy May 2024 storms land on Day 2 (9 May, ~14:00), Day 3 (10 May, ~13:00) and the
+  night before Day 4 (11 May, 02:10). The day title shows the replay date.
+- **Gentle failure = a rescue:** a 1-hour rest (short on purpose: with a countdown, a long rest
+  would HELP), partial refill, and the rescue is counted. Day stars: 3 with no rescue, 2 with one,
+  1 otherwise.
 
-Each bot plays **200 runs** with random micrometeoroid hits on the solar array or the habitat (≈ 1.5 hits per run, ≈ 0.55 of them leaks).
+**Sizes (game balance):** oxygen supply **0.35 kg** (resting inside it lasts ≈ 9.4 game h = 4.7 real
+min, so you must make oxygen every day); Electrolysis batches 0.1 / 0.2 / 0.3 kg; water tank 3 kg;
+battery **40 kWh** (a whole dark shift with the grow lights ON needs 5 kW × 12 h = 60 kWh →
+blackout; OFF 36 kWh fits — the grow-lights choice); food gauge = **1 day of BVAD food (0.8 kg dry,
+≈ 3,050 kcal)**, so a resting shift uses half of it. Storms: 2–3 h warning, 2 h long, same dose per
+storm as before (2 h × 175 % = the old 5 h × 70 %). Micrometeoroid hits ≈ 2–3 per mission.
+Supply deliveries keep their old real waiting times (game hours ÷ 3).
 
-| Bot | What it does | Target | Result (with habitat leaks, Nov 2026) |
+**Food items:**
+
+| Item | Gauge | Why (honest) |
+|---|---|---|
+| Potato (a plant's crop) | **50 %** (owner's design) | 0.4 kg dry ≈ 1,530 kcal ≈ 2 kg of raw potatoes (USDA 77 kcal / 100 g): a whole plant's harvest, not one potato |
+| Packaged space meal (2 at the start) | 33 % | a third of a day's BVAD food |
+| Lettuce head (0.6 kg) | 3.3 % | romaine is 17 kcal / 100 g: mostly water. The owner asked for 25 %; that would need ≈ 2 kg of lettuce, so it stays honest |
+| Radish handful (0.1 kg, 3 per pot) | 0.5 % each | 16 kcal / 100 g |
+
+Potato: planted on day N, ready on day N + 2 (cut twice: one back into the soil, one to eat).
+Lettuce and radish: ready the next morning. F eats fresh greens first, then the potato or meal that
+fits your hunger best without wasting any.
+
+**Targets, checked by three bots over 200 runs each** (`src/systems/balanceSim.js`):
+
+| Bot | What it does | Target | Result (Nov 2026) |
 |---|---|---|---|
-| idle | nothing | first failure after 5–8 min (≥ 4 min with an unpatched leak) | oxygen runs out at 6:42 without a leak; 14 / 200 runs with an early leak fail at 4:06–5:00 |
-| sloppy | reacts at 25 %, 3 pots (potato, lettuce, radish), 40 % outside, grow lights always on, never mines ice, orders a repair kit only when needed | ≥ 18 min in ≥ 90 % of runs, never before 14 min | 96 % reach 18:24 (food runs out); unlucky runs with 2+ hits fail at 14:52–17:18 |
-| skilled | makes O₂ at 60 %, 3 potato + 1 radish pot, lights off at night, mines ice at 3 kg, 2 kg in walls, keeps a spare repair kit | no failure in any run | 0 / 200 fail; food dips to ≈ 24 %, ends O₂ ≥ 71 %, food ≥ 53 % |
-
-**Food (BVAD).** 12.778 MJ/day inside = 0.532 MJ/h; a spacewalk 1.062 MJ/h (≈ 2.0×). Full gauge = 3 days,
-so 1 % = 0.383 MJ ≈ 92 kcal. Inside: 33.3 %/game day = 8.3 %/real min (full → empty in 12 min);
-outside ≈ 16.6 %/real min (≈ 6 min). There is no food from Earth: everything you eat is grown here.
-
-**Crops.** `FARM_FOOD_COVERAGE` = 1.4: a full farm makes 1.4× what a resting astronaut eats, because
-you also work outside and may switch the lights off at night (without it the skilled bot starved at
-≈ 13:36). One potato = 0.105 kg dry food ≈ 400 kcal ≈ a big 0.5 kg raw potato (USDA 77 kcal/100 g).
-Every pot gives the same **game harvest mass** of food as a potato pot's two edible potatoes; the
-energy then follows the USDA kcal, so greens honestly give less:
-
-| Crop | Grows (game) | Real | One item | Per harvest | Food per pot per minute |
-|---|---|---|---|---|---|
-| potato | 150 s | (needs a source) | 4.4 % | 8.7 % (2 eaten + 1 replanted) | 3.5 %/min |
-| lettuce (1 head) | 50 s | ≈ 33 days | 1.9 % | 1.9 % | 2.3 %/min |
-| radish (3) | 41 s | ≈ 27 days | 0.6 % | 1.8 % | 2.7 %/min |
-
-Greens keep the real 27 : 33 day ratio, grow ≈ 3× faster than potato and fill gaps while potatoes
-grow, but potato stays the best food per minute. Greens come from seeds (start 4 + 4; packets of 6
-from Earth), potatoes from your own harvest.
-
-**Micrometeoroid hits.** Average one hit per 3 game days (≈ 12 real min), none in the first half day;
-60 % crack the solar array, 40 % hole the habitat, never both broken at once.
-*Array:* drops to 40 % (3.6 kW at best, below the 5 kW load, so in sunlight the battery drains ≈ 1.4 kW
-instead of charging ≈ 4 kW; at night nothing changes, since a broken array can't make the dark worse).
-You start with 1 spare repair kit; a new kit takes ≈ 75 real s to arrive.
-*Habitat leak:* the oxygen supply drains ≈ 2.2× faster inside until it's patched (choked flow through a
-0.7 mm hole, see "Micrometeoroids and air leaks"); patching costs 1 game hour and no kit (the base keeps a
-leak-repair kit, as the ISS does), but every minute you wait costs oxygen.
-The idle bot never patches, so an early leak brings its first failure forward to ≥ 4 min (14 of 200 runs);
-the target is now 4–8 min with ≥ 85 % of runs still in 5–8 min.
-Real basis: micrometeoroids hit the Moon all the time; how often one breaks something is game balance.
-
-**Oxygen and water.** 0.895 kg O₂/day = 30 % of the 3 kg supply per game day (full → empty in 13.4 min
-inside, 5.8 min outside). Making 1 kg O₂ costs 1.125 kg water + 4.96 kWh (6 % of the battery). The
-6 kg tank makes ≈ 5.3 kg O₂ — about one lunar day for a busy kid; water in the shelter walls comes
-from the same tank, so a kid who shields must also mine ice (60 kg bag → 3.4 kg water) or order water.
-
-**Power.** The base's long night is 208 real s = 20.8 game h (plus a 14 s flicker). Loads: habitat 3 kW
-+ grow lights 2 kW. Lights on: 5 × 20.8 ≈ 104 kWh > 80 kWh battery → blackout near sunrise.
-Lights off: 3 × 20.8 ≈ 62 kWh → fits. In a blackout the grow lights, potatoes, Electrolysis,
-Ice Oven and water pump stop; the airlock keeps working (it never traps you outside).
-
-**Radiation (May 2024 replay).** Storm strength = log₁₀(CRaTER dose ÷ quiet) ÷ log₁₀(300); dose per
-storm (% of the per-storm limit) = 70 %/h × strength × place factor × 5 h. Shelter factor 0.35,
-water walls halve it at 3 kg:
-
-| Storm (CRaTER day) | Strength | Outside | Habitat | Shelter, 0 / 2 / 4 / 6 kg water |
-|---|---|---|---|---|
-| 9 May (only ≈ 2× quiet → the minimum) | 0.25 | 88 % | 44 % | 31 / 18 / 13 / 10 % |
-| 10 May | 0.66 | 232 % | 116 % | 81 / 49 / 35 / 27 % |
-| 11 May | 0.93 | 327 % | 163 % | **114** / 69 / 49 / 38 % |
-| 13 May | 0.74 | 260 % | 130 % | 91 / 55 / 39 / 30 % |
-
-So the shelter is always needed, and the strongest storm also needs water in the walls (Volt says so in
-its warning). CRaTER is µGy in a detector and Chang'e 4 is µSv: never put them on one scale; the game's
-% is game-sized. CRaTER's highest day (14 May, ≈ 1,530 µGy/h) has no DONKI SEP record of its own in our
-archive, so the game's storms use the four SEP days above.
+| idle | nothing | first rescue during Day 1, not before 2 min | first rescue at 2:39 in every run |
+| sloppy | reacts at 25 %, 3 pots (potato, lettuce, radish), 40 % outside, grow lights always on | Days 1–2 without a rescue in ≥ 90 % of runs; ≤ 3 rescues in the mission | 196 / 200 clean Days 1–2; max 2 rescues (Day 3 is dark: lights on → blackout → no oxygen) |
+| skilled | makes O₂ at 60 %, 3 potato + 1 lettuce pot, lights off in the dark, mines ice, 2 kg in the walls, spare repair kit | no rescue at all; food never below 15 % | 0 / 200 rescued; food ≥ 29 %, ends O₂ ≥ 76 %, no blackout |
 
 ## Data sources (credit these in the game)
 **Required by the team:** BVAD (https://ntrs.nasa.gov/citations/20210024855), NASA BPS data hub (https://science.nasa.gov/biological-physical/data/), RadLab overview (https://visualization.osdr.nasa.gov/radlab/gui/overview/), DONKI (https://ccmc.gsfc.nasa.gov/donki/). See the table in CLAUDE.md for what each one is used for.
@@ -298,6 +282,7 @@ archive, so the game's storms use the four SEP days above.
 - **Earth fixed in the sky.** Libration (small wobbles) is left out.
 
 ## Needs verification (do not show until resolved)
+- **Potato:** a real growth time (seed potato to harvest) and a typical crop per plant in controlled-environment agriculture, from a NASA/USDA source, before the game shows either. (The game potato = 2 kg is only an energy equivalent.)
 - [x] ~~BVAD per-person oxygen and food values~~ → done, see "Life support numbers" above. (Water values are copied too, for the future water gauge.)
 - A **published** sunlit-time percentage for our base site (LRO/LOLA illumination studies, e.g. Mazarico et al. 2011). The game only shows what we computed ourselves from the LOLA horizon: "the Sun at 1.5° is visible from 82% of directions".
 - Real spacesuit oxygen duration (xEMU / EMU) if we ever show suit-tank time.

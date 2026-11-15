@@ -13,6 +13,14 @@ Some colour maps were converted to neutral grey so the game can tint them.
 | Metal trim, racks, doors | Metal032 | ambientCG — https://ambientcg.com/view?id=Metal032 | CC0 1.0 |
 | Lunar regolith (terrain, rocks) | Moon 01 | Poly Haven — https://polyhaven.com/a/moon_01 | CC0 1.0 |
 
+## Music (CC0 — public domain)
+
+| Used for | Track | Source | License |
+|---|---|---|---|
+| Menu + space ambience | “Outer Space Loop” by wipics | OpenGameArt — https://opengameart.org/content/outer-space-loop | CC0 1.0 (public domain) |
+
+All sound effects are synthesised in the browser (Web Audio), so there are no sound files.
+
 ## Fonts
 
 - Fredoka and Nunito — SIL Open Font License 1.1, via Fontsource (self-hosted).

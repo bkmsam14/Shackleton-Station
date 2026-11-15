@@ -15,7 +15,7 @@ new Solar Fix mini-games" (see `CHANGELOG.md` → Unreleased).
 ```bash
 npm install          # if registry.npmjs.org fails: npm install --registry=https://registry.yarnpkg.com
 npm run dev          # http://localhost:5173
-npm test             # 185 pure-logic tests, all must pass
+npm test             # 186 pure-logic tests, all must pass
 npm run balance      # bots play a lunar day on the real rules
 ```
 
@@ -74,6 +74,10 @@ These came from the owner over many sessions. Treat them as the user's own instr
 
 ## 3. What exists now (short)
 
+- **The mission = 4 days** (FNAF-style shifts of 6 real minutes, 07:00 → 19:00), with a day card,
+  "Day N" titles, overnight refill (game rule) and a "Mission complete" screen. A main menu with
+  Continue / New mission. See SCIENCE.md "Game balance" for every size and why.
+
 Full list: `CLAUDE.md` → "Current state", plus `CHANGELOG.md`.
 
 - 3D base at the real Shackleton rim (NASA LOLA), real stars, Live sky, habitat / greenhouse /
@@ -111,6 +115,13 @@ Full list: `CLAUDE.md` → "Current state", plus `CHANGELOG.md`.
 | Idle balance bot target 4–8 min (was 5–8) | An unpatched leak can end a do-nothing run early; that's the intended consequence |
 | Volt's voice via mespeak (GPL-3.0) in a worker | Works offline, falls back to the browser voice |
 | Deploy workflow manual only | Owner: push, don't deploy |
+| 4-day mission, 6-min shifts, nights skipped (Nov 2026) | Owner: "FNAF style, survive the day"; 4 days |
+| Overnight free refill of oxygen/power/water; hunger carries over | Owner's choice; the card says it's a game rule |
+| Potato = 50 % of the food gauge; lettuce honest (~3 %) | Owner asked 50 % / 25 %; 25 % lettuce would need ~2 kg of lettuce, so it stays honest (rule 1) |
+| Crops: potato 2 nights, greens 1 night, need grow light half the day | Owner's design; keeps the grow-lights power trade-off |
+| Gentle failure = 1-hour rest + a counted rescue (stars) | With a countdown, a long rest would help the player |
+| Storms mapped by calendar day | Real dates stay honest; night storms are dosed in the shelter (you sleep in it) |
+| CC0 music "Outer Space Loop" (wipics) | Owner asked for copyright-free ambient music; downloaded with permission |
 
 ---
 
@@ -179,5 +190,7 @@ Full list: `CLAUDE.md` → "Current state", plus `CHANGELOG.md`.
 
 - `node_modules/` and `dist/`: recreated by `npm install` / `npm run build`.
 - `.env`: personal NASA key, never shared or committed.
+- Testing a later day: set `mission: { day: N }` in the `shackleton-station:v1` localStorage object
+  (Day 1 always runs the Training Day), and jump the clock with `__game.day.gameSeconds`.
 - The first owner's private Claude memory and chat transcripts. Everything that mattered from
   them is written down in this file, `CLAUDE.md`, `docs/` and `CHANGELOG.md`.

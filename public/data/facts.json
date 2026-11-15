@@ -384,6 +384,24 @@
       "text": "Electricity only flows round a complete loop (a circuit); one gap anywhere stops it.",
       "value": "PV cells, wiring and the load/battery form a closed circuit",
       "source": "https://www.energy.gov/eere/solar/articles/pv-cells-101-primer-solar-photovoltaic-cell"
+    },
+    {
+      "id": "food-fast-vs-filling",
+      "text": "Lettuce and radishes grow fast but are mostly water, so they give little energy. Potatoes take longer but are full of energy.",
+      "value": "romaine 17 kcal / 100 g, radish 16, potato 77 (USDA FDC 169247, 169276, 170026)",
+      "source": "https://fdc.nal.usda.gov/"
+    },
+    {
+      "id": "space-meal",
+      "text": "Astronauts on the Space Station eat mostly packaged food from Earth. In the game a space meal is a third of a day's food.",
+      "value": "BVAD food 0.8 kg dry per day → 0.27 kg per meal",
+      "source": "https://ntrs.nasa.gov/citations/20210024855"
+    },
+    {
+      "id": "steps-no-air",
+      "text": "Sound needs air. Outside on the Moon you can't hear your steps through the air, only feel them through your boots and suit.",
+      "value": "the Moon has no real atmosphere (NASA Moon Fact Sheet)",
+      "source": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html"
     }
   ]
 }

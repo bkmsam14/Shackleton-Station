@@ -124,6 +124,8 @@ What exists in the game today, against the plan above. Details are in `CHANGELOG
 | Missions, science points, upgrades, crew-swap goal, end screen | **Not built.** |
 | Water gauge | **Off** (`ENABLE_WATER_GAUGE`); the Electrolysis water tank is shown in the PDA. |
 | Touch controls | **Not built** (some mini-games accept taps). |
+| Days (Nov 2026) | **Changed:** instead of one long lunar day, the goal is now to survive **4 work shifts** of 6 real minutes (FNAF-style), with overnight refill (game rule), crops that grow overnight and a "Mission complete" screen (no crew-swap ship yet). |
+| Main menu, music | **Done:** indie-style menu over the live base; CC0 space music; footsteps and themed mini-game sounds. |
 | Extra, not in this plan | Volt the helper robot + 19-step Training Day, telescope Star Hunt with real stars, Live sky, first-person airlock cycle, helmet visor, balance bots (`npm run balance`). |
 
 ## Look and feel

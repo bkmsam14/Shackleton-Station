@@ -82,6 +82,7 @@ src/
                        # airlock room, solar array, ice site + oven, telescope, Volt, guide trail
   player/              # first-person controls, collision, input, interaction
   systems/             # PURE logic (no Three.js), all unit-tested:
+    days.js              the 4-day mission: shift clock, rescues, overnight refill
     gauges.js            gauge drain/refill, power flow (addOxygen / addFood)
     daycycle.js          game + live clocks, Sun position, real-horizon visibility
     electrolysis.js      batch costs (water, power, time)   mastery.js  bronze/silver/gold
@@ -102,16 +103,17 @@ src/
   training/            # Training Day (Day 1 guided by Volt)
   data/                # databank, Volt lines, Training Day script, stars, constellations,
                        # LOLA terrain, space-weather loader
-  ui/                  # HUD, PDA, menus, Volt bubble + voice, visor, sounds, tutorials
+  ui/                  # HUD, PDA, main menu, Volt bubble + voice, visor, sounds, music, tutorials
 public/
   data/
     facts.json                 # every in-game fact + source URL
     space-weather-2024-05.json # archived real DONKI + RadLab data (Stormy Sun)
     stars-bsc.json             # Yale Bright Star Catalog (NASA HEASARC)
     # space-weather-2019-12.json (Calm Sun) is MISSING — see "Known issues"
+  audio/outer-space-loop.mp3   # CC0 music (wipics, OpenGameArt)
   textures/  CREDITS.md
 scripts/               # fetch-lola, fetch-space-weather, fetch-stars, balance-sim
-tests/                 # node --test (185 tests)
+tests/                 # node --test (186 tests)
 docs/
   HANDOFF.md  GAME_DESIGN.md  SCIENCE.md  PERFORMANCE.md  screenshots/
 ```
@@ -135,6 +137,11 @@ Keep the systems (`systems/`) as pure logic with no Three.js imports, so they ca
 
 Demo 0 is long done; see `CHANGELOG.md` for every version. What the game has now:
 
+- **Days (Nov 2026):** the mission is 4 work shifts of 6 real minutes (07:00 → 19:00, time 120×).
+  Survive to 19:00 → day card → "Day N" → next morning. Overnight refill of oxygen, power and water is
+  a game rule (said on the card); hunger, food and crops carry over. Crops grow overnight (potato 2
+  nights, greens 1). Gentle failure = a counted rescue. `systems/days.js`; storms are mapped by
+  calendar day (Day 1 = first replay date).
 - **World:** real Shackleton-rim terrain (NASA LOLA), real stars, an optional Live sky, a habitat
   (sleeping nook, lounge + galley, work bay, storm shelter), a greenhouse with grow pots, a
   vertical solar array, a cold-trap crater for ice, a telescope, a cargo pad, and a first-person
@@ -143,7 +150,8 @@ Demo 0 is long done; see `CHANGELOG.md` for every version. What the game has now
   - **Oxygen:** one shared supply for habitat + greenhouse + suit. It drains faster outside
     (BVAD spacewalk rate) and is refilled **only** by Electrolysis, which costs water and power.
     Each airlock cycle loses 0.03 kg.
-  - **Food:** drains faster outside (BVAD) and is refilled by eating farm crops (F).
+  - **Food:** one day of BVAD food; drains faster outside; **carries over between days**. Potato = 50 %,
+    space meal 33 % (2 at the start), lettuce/radish small (honest USDA kcal). F picks what fits.
   - **Base power:** shown separately, top-centre. It's large inside modules and smaller outside.
     A blackout stops the machines.
   - **Colours:** oxygen blue, food green; amber = low, red = critical.

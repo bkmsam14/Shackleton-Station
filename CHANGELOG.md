@@ -5,6 +5,27 @@
 Merged after the 0.11.0 balance pass; `package.json` still says 0.11.0.
 
 ### Gameplay
+- **Days: survive 4 shifts (FNAF-style).** Each day runs 07:00 → 19:00 on the base clock, 6 real
+  minutes (time 120× real life), with a countdown in the HUD. Survive it → "Day N complete!" card
+  with stars → the night is skipped → "Day N + 1" (with the replay's real date) → fade in, waking in
+  your bunk. Day 4 → "Mission complete". Overnight, oxygen, power and water refill to full (a game
+  rule, said on the card); hunger, food and crops carry over. A gentle failure is now a short 1-hour
+  rest counted as a rescue (3 / 2 / 1 stars). Saved: the menu offers "Continue · Day N".
+- **Crops grow overnight:** potato ready on the third morning (2 nights), lettuce and radish the
+  next morning — only if the grow lights were on for half the day.
+- **Food values:** the food gauge holds one day of BVAD food. A potato (a whole plant's crop,
+  ≈ 2 kg) fills **50 %**, a packaged space meal 33 % (2 at the start), lettuce ≈ 3 % and a radish
+  handful ≈ 0.5 % (honest USDA calories: the requested 25 % for lettuce would need ≈ 2 kg of
+  lettuce). F picks the food that fits without waste.
+- **Storms by calendar day:** Day 1 = the replay's first date; a storm that really came at night
+  is dosed in the shelter (you sleep in it) and reported in the morning.
+- **Ice Oven:** an animated picture (heat → vapour → cold plate → water) and a first-time
+  3-picture "How it works" card; fewer words.
+- **Main menu (indie style):** the live base drifting by under the stars, a big title, Volt
+  waving, Continue / New mission / Settings / How to play / Credits.
+- **Sound:** CC0 ambient music ("Outer Space Loop" by wipics), footsteps (metal taps inside, a soft
+  crunch felt through the boots outside: no air), faster suit breathing when you move, and themed
+  sound kits for the mini-games (fizz and bubbles, sparks and hum, hiss and clank, drill, oven).
 - **Micrometeoroids hit the array OR the habitat (never both at once).** One scheduler
   (`systems/micrometeoroids.js`) replaces the array-only hits: about one hit per 3 game days,
   60 % crack the solar array, 40 % hole the habitat, and no new hit comes while something is

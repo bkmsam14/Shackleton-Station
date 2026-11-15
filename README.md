@@ -9,7 +9,7 @@ on `main`, see `CHANGELOG.md`).
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # pure-logic unit tests (185)
+npm test         # pure-logic unit tests (186)
 npm run balance  # bots play a lunar day on the real rules (balance check)
 npm run build    # production build in dist/ (base path /Shackleton-Station/)
 ```
@@ -38,6 +38,9 @@ To publish: *Actions → Deploy to GitHub Pages → Run workflow* (and set
 Mini-games show their own controls (e.g. click/Space to zap, S for the Ice Drill scanner).
 
 ## What is in the game
+
+- **The mission:** survive **4 days**. Each day is a 6-minute shift (07:00 → 19:00); make it to
+  19:00 and the next morning oxygen, power and water are topped up again (your food isn't!).
 
 - **Base at the real Shackleton crater rim** (NASA LRO LOLA terrain), a habitat (sleeping nook
   with a storm shelter, lounge + galley, work bay), a greenhouse, a vertical solar array, a
