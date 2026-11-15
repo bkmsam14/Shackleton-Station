@@ -1,5 +1,5 @@
-// volt.js — Volt, the helper robot, in 3D: the model, rolling after the player, and the
-// tour marker. Behaviour numbers live in config/gameplay.js → ASSISTANT.
+// volt.js — Volt, the helper robot, in 3D: the model, and rolling ahead of the player
+// (the trail, arrow and circle that show the way are in guide.js). Behaviour numbers live in config/gameplay.js → ASSISTANT.
 //
 // Science note: Volt ROLLS on wheels everywhere. The Moon has almost no air, so fans or
 // propellers could not push against anything outside (real Moon rovers use wheels).
@@ -9,10 +9,10 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rbox } from './details.js';
-import { MAT } from './materials.js';
 import { heightAt } from './heightfield.js';
 import { resolveCircle, clampInsideRect } from '../player/collision.js';
-import { ASSISTANT } from '../config/gameplay.js';
+import { ASSISTANT, GUIDE } from '../config/gameplay.js';
+import { findPath, isWalkable, nearestWalkable, pathLength, pointAlong } from '../systems/navigation.js';
 
 const INK = '#10182c';
 const WHEEL_R = 0.11;
@@ -190,8 +190,11 @@ export function createVoltModel() {
   };
 }
 
-// ---------------------------------------------------------------- following the player
-export function createVolt(world) {
+// ---------------------------------------------------------------- leading the player
+// Volt rolls AHEAD of the player: along the guide trail when there is one (so he shows the
+// way), otherwise a few steps in front of where the player looks. He finds his own way on
+// the walkable map (world/walkable.js), so he goes around furniture and never into walls.
+export function createVolt(world, walkable = null) {
   const model = createVoltModel();
   const pos = new THREE.Vector3();
   let zoneId = null;
@@ -200,6 +203,9 @@ export function createVolt(world) {
   let wheelAngle = 0;
   let lean = 0;
   let t = 0;
+  let route = null; // Volt's own way to his goal: [{x, z}, ...]
+  let routeGoal = null;
+  let replanIn = 0;
 
   function groundY(zone, x, z) {
     return zone === 'outside' ? heightAt(x, z) : world.zones[zone].floorY;
@@ -213,11 +219,30 @@ export function createVolt(world) {
     return clampInsideRect(p.x, p.z, r, zn.rect);
   }
 
+  const gridFor = (zone) => walkable?.gridFor(zone) ?? null;
+
+  /** Snap a wished-for point onto walkable floor (if the map knows the place). */
+  function onFloor(zone, p) {
+    const g = gridFor(zone);
+    if (!g) return collide(zone, p.x, p.z);
+    return nearestWalkable(g, p.x, p.z, 4) ?? nearestWalkable(g, pos.x, pos.z, 4) ?? collide(zone, p.x, p.z);
+  }
+
   /**
-   * Where Volt wants to be. Normally behind and to the right (out of the way); while he
-   * is talking, in front and to the right, so the kid can see who is speaking.
+   * Where Volt wants to be.
+   *  talking     → in front and to the right, so the kid can see who is speaking
+   *  lead (path) → GUIDE.VOLT_LEAD_M along the trail, showing the way
+   *  otherwise   → a few steps in front of the player, a little to the right
    */
-  function followPoint(player, talking = false) {
+  function goalPoint(player, talking, lead) {
+    if (!talking && lead && lead.length > 1) {
+      const len = pathLength(lead);
+      // near the end: wait beside the spot instead of standing in it
+      const d = Math.min(GUIDE.VOLT_LEAD_M, Math.max(0, len - 1.4));
+      const p = pointAlong(lead, d);
+      if (len - d < 1.6) return { x: p.x - p.dz * 1.1, z: p.z + p.dx * 1.1 }; // step aside (right of the way)
+      return { x: p.x, z: p.z };
+    }
     const f = player.forward2d();
     const fl = Math.hypot(f.x, f.z) || 1;
     const fx = f.x / fl;
@@ -225,20 +250,37 @@ export function createVolt(world) {
     // right-hand side of the view direction (forward −Z → right +X)
     const rx = -fz;
     const rz = fx;
-    const ahead = talking ? ASSISTANT.TALK_AHEAD_M : -ASSISTANT.FOLLOW_BEHIND_M;
-    const side = talking ? ASSISTANT.TALK_SIDE_M : ASSISTANT.FOLLOW_SIDE_M;
+    const ahead = talking ? ASSISTANT.TALK_AHEAD_M : GUIDE.VOLT_AHEAD_M;
+    const side = talking ? ASSISTANT.TALK_SIDE_M : GUIDE.VOLT_AHEAD_SIDE_M;
     return {
       x: player.position.x + fx * ahead + rx * side,
       z: player.position.z + fz * ahead + rz * side,
     };
   }
 
-  function hopTo(player) {
+  function hopTo(player, lead = null) {
     zoneId = player.zoneId;
-    const p = followPoint(player);
-    const c = collide(zoneId, p.x, p.z);
+    const c = onFloor(zoneId, goalPoint(player, false, lead));
     pos.set(c.x, groundY(zoneId, c.x, c.z), c.z);
     speed = 0;
+    route = null;
+  }
+
+  /** Next point to roll toward on the way to `goal` (replanned a few times a second). */
+  function steerPoint(goal, dt) {
+    const g = gridFor(zoneId);
+    if (!g) return goal;
+    replanIn -= dt;
+    const goalMoved = !routeGoal || Math.hypot(goal.x - routeGoal.x, goal.z - routeGoal.z) > 0.5;
+    if (!route || replanIn <= 0 || goalMoved) {
+      replanIn = GUIDE.REPLAN_S;
+      routeGoal = { x: goal.x, z: goal.z };
+      route = findPath(g, pos.x, pos.z, goal.x, goal.z);
+      if (route) route.shift(); // drop the start (where Volt is)
+    }
+    if (!route || !route.length) return goal;
+    while (route.length > 1 && Math.hypot(route[0].x - pos.x, route[0].z - pos.z) < 0.3) route.shift();
+    return route[0];
   }
 
   return {
@@ -252,30 +294,36 @@ export function createVolt(world) {
     headPosition(out = new THREE.Vector3()) {
       return out.set(pos.x, pos.y + HEAD_HEIGHT, pos.z);
     },
-    /** Teleport next to the player right now (doors, wake-up after gentle failure). */
+    /** Teleport ahead of the player right now (doors, wake-up after gentle failure). */
     hopTo,
     /**
      * opts.talking: Volt is speaking → roll into view.
-     * opts.waiting: the player is looking at Volt → stay put (so "E to talk" is easy).
+     * opts.waiting: the player is looking at Volt → stay put once in place (so "E to talk" is easy).
+     * opts.lead:    the guide trail (player → next spot) to lead along, or null.
      */
-    update(dt, player, { talking = false, waiting = false, speaking = false } = {}) {
+    update(dt, player, { talking = false, waiting = false, speaking = false, lead = null } = {}) {
       t += dt;
       const far = Math.hypot(pos.x - player.position.x, pos.z - player.position.z) > ASSISTANT.CATCH_UP_M;
-      if (zoneId !== player.zoneId || far) hopTo(player); // "rides through the airlock with you"
+      if (zoneId !== player.zoneId || far) hopTo(player, lead); // "rides through the airlock with you"
 
-      const target = waiting ? { x: pos.x, z: pos.z } : followPoint(player, talking);
+      let goal = onFloor(zoneId, goalPoint(player, talking, lead));
+      // the player is looking at Volt to talk: once he's (nearly) in place, hold still
+      if (waiting && Math.hypot(goal.x - pos.x, goal.z - pos.z) < 1.2) goal = { x: pos.x, z: pos.z };
+      const toGoal = Math.hypot(goal.x - pos.x, goal.z - pos.z);
+      const target = toGoal > 0.2 ? steerPoint(goal, dt) : goal;
       const dx = target.x - pos.x;
       const dz = target.z - pos.z;
       const dist = Math.hypot(dx, dz);
-      const want = dist > 0.2 ? Math.min(ASSISTANT.SPEED_M_S, dist * 2.2) : 0;
+      const want = toGoal > 0.2 ? Math.min(ASSISTANT.SPEED_M_S, toGoal * 2.4) : 0;
       speed += (want - speed) * Math.min(1, dt * 6);
       let nx = pos.x;
       let nz = pos.z;
       if (dist > 0.001 && speed > 0.01) {
-        nx += (dx / dist) * speed * dt;
-        nz += (dz / dist) * speed * dt;
+        const step = Math.min(dist, speed * dt);
+        nx += (dx / dist) * step;
+        nz += (dz / dist) * step;
       }
-      // never stand inside the player
+      // never stand inside the player: slide around them (sideways, not through)
       const px = nx - player.position.x;
       const pz = nz - player.position.z;
       const pd = Math.hypot(px, pz);
@@ -283,6 +331,17 @@ export function createVolt(world) {
       if (pd < minGap && pd > 0.0001) {
         nx = player.position.x + (px / pd) * minGap;
         nz = player.position.z + (pz / pd) * minGap;
+      }
+      // walls: stay on walkable floor (the map), then the exact colliders as a last guard
+      const g = gridFor(zoneId);
+      if (g && !isWalkable(g, nx, nz) && isWalkable(g, pos.x, pos.z)) {
+        // slide along the wall: try each axis on its own
+        if (isWalkable(g, nx, pos.z)) nz = pos.z;
+        else if (isWalkable(g, pos.x, nz)) nx = pos.x;
+        else {
+          nx = pos.x;
+          nz = pos.z;
+        }
       }
       const c = collide(zoneId, nx, nz);
       const moved = Math.hypot(c.x - pos.x, c.z - pos.z);
@@ -306,39 +365,6 @@ export function createVolt(world) {
       model.setLight(Math.sin(t * 4) > -0.3);
       // talking mouth: a simple open/close rhythm while the voice is speaking
       model.setMouth(speaking ? 0.35 + 0.65 * Math.abs(Math.sin(t * 9)) * (Math.sin(t * 2.3) > -0.6 ? 1 : 0.3) : 0);
-    },
-  };
-}
-
-// ---------------------------------------------------------------- tour marker
-/** A bobbing cyan arrow + ground ring that shows the next tour spot. */
-export function createTourMarker() {
-  const group = new THREE.Group();
-  group.name = 'tourMarker';
-  const glow = MAT.glow(0x4fd1e8, 2.2);
-  const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.36, 24), glow);
-  arrow.rotation.x = Math.PI; // point down
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.64, 48), glow);
-  ring.rotation.x = -Math.PI / 2;
-  group.add(arrow, ring);
-  group.visible = false;
-  let target = null;
-  let t = 0;
-  return {
-    object: group,
-    /** target: { zone, x, y, z } or null */
-    setTarget(tg) {
-      target = tg;
-    },
-    update(dt, playerZone) {
-      t += dt;
-      group.visible = Boolean(target) && target.zone === playerZone;
-      if (!group.visible) return;
-      group.position.set(target.x, target.y, target.z);
-      arrow.position.y = 1.7 + Math.sin(t * 3) * 0.12;
-      const s = 1 + Math.sin(t * 3) * 0.06;
-      ring.scale.set(s, s, s);
-      ring.position.y = 0.03;
     },
   };
 }

@@ -27,7 +27,9 @@ import { createPda } from './ui/pda.js';
 import { createCallouts } from './ui/callouts.js';
 import { createElectrolysisState, checkAfford } from './systems/electrolysis.js';
 import { createAssistant } from './systems/assistant.js';
-import { createVolt, createTourMarker } from './world/volt.js';
+import { createVolt } from './world/volt.js';
+import { createWalkable } from './world/walkable.js';
+import { createGuide } from './world/guide.js';
 import { createVoltBubble } from './ui/voltBubble.js';
 import { createVoltVoice } from './ui/voltVoice.js';
 import { heightAt } from './world/heightfield.js';
@@ -133,9 +135,14 @@ const sunReady = pickSun(sunMode);
 
 // ---------------------------------------------------------------- Volt, the helper robot
 const assistant = createAssistant({ store: { load: loadSettings, save: saveSettings } });
-const volt = createVolt(world);
-const tourMarker = createTourMarker();
-world.scene.add(volt.object, tourMarker.object);
+// the walkable-area map: the guide trail and Volt both find their way on it
+const walkable = createWalkable(world);
+const volt = createVolt(world, walkable);
+const guide = createGuide({
+  walkable,
+  groundAt: (zone, x, z) => (zone === 'outside' ? heightAt(x, z) : world.zones[zone].floorY),
+});
+world.scene.add(volt.object, guide.object);
 const voltBubble = createVoltBubble(uiRoot);
 const stormFx = createStormFx(uiRoot);
 const voltVoice = createVoltVoice({ store: { load: loadSettings, save: saveSettings } });
@@ -322,54 +329,59 @@ function voltSnapshot(moved = 0) {
   };
 }
 
-/** A Training Day target → the spot it means (zone + position). */
+/** An interactable → what the guide points at: { zone, x, z, kind }. */
+function guideRef(it, kind) {
+  if (!it) return null;
+  if (it.action?.type === 'door') kind = it.zone === 'outside' ? 'door-outside' : 'door';
+  return { zone: it.zone, x: it.x, z: it.z, kind };
+}
+const findIt = (id) => world.interactables.find((i) => i.id === id);
+
+/** A Training Day target (or 'shelter' / 'oven' for the storm and ice hints) → the machine it means. */
 function trainingSpot(target) {
-  const find = (id) => world.interactables.find((i) => i.id === id);
-  const at = (it) => it && { zone: it.zone, x: it.x, z: it.z, y: it.zone === 'outside' ? heightAt(it.x, it.z) : world.zones[it.zone].floorY };
-  const outside = (x, z) => ({ zone: 'outside', x, z, y: heightAt(x, z) });
   const A = LAYOUT.SOLAR_ARRAY;
   switch (target) {
     case 'electrolysis':
-      return at(find('electrolysis'));
+      return guideRef(findIt('electrolysis'), 'electrolysis');
     case 'terminal':
-      return at(find('supply-terminal'));
+      return guideRef(findIt('supply-terminal'), 'terminal');
     case 'oven':
-      return at(find('ice-oven'));
+      return guideRef(findIt('ice-oven'), 'oven');
     case 'water-walls':
-      return at(find('water-walls'));
+      return guideRef(findIt('water-walls'), 'water-walls');
     case 'shelter': {
       const sp = world.habitat.shelterSpawn;
-      return { zone: 'habitat', x: sp.x, z: sp.z, y: world.zones.habitat.floorY };
+      return { zone: 'habitat', x: sp.x, z: sp.z, kind: 'shelter' };
     }
     case 'airlock':
-      return at(find('hab-outer-door'));
+      return guideRef(findIt('hab-outer-door'));
     case 'greenhouse':
-      return at(find('gh-inner-door'));
+      return guideRef(findIt('gh-inner-door'));
     case 'pots':
-      return at(world.interactables.find((i) => i.action?.type === 'farm'));
+      return guideRef(world.interactables.find((i) => i.action?.type === 'farm'), 'pots');
     case 'array':
-      return outside(A.x + 3, A.z - 3);
-    case 'pad':
-      return outside(PAD.x - PAD.radius - 0.8, PAD.z);
+      return { zone: 'outside', x: A.x, z: A.z, kind: 'array' };
+    case 'pad': {
+      const crate = world.interactables.find((i) => i.action?.type === 'supply' && i.action.kind === 'crate');
+      return crate ? guideRef(crate, 'crate') : { zone: 'outside', x: PAD.x, z: PAD.z, kind: 'pad' };
+    }
     case 'ice':
-      return at(find(DIG_SPOTS.find((id) => spotReady(ice, id, gameHourNow())) ?? DIG_SPOTS[0]));
+      return guideRef(findIt(DIG_SPOTS.find((id) => spotReady(ice, id, gameHourNow())) ?? DIG_SPOTS[0]), 'ice');
     default:
       return null;
   }
 }
 
-/** Where the marker goes from the player's zone: the spot itself, or the door to its zone. */
+/** What to point at from the player's zone: the machine itself, or the door toward its zone. */
 function tourTargetPosition(target, zoneId) {
   const spot = trainingSpot(target);
   if (!spot) return null;
-  const find = (id) => world.interactables.find((i) => i.id === id);
-  const at = (it) => it && { zone: it.zone, x: it.x, z: it.z, y: it.zone === 'outside' ? heightAt(it.x, it.z) : world.zones[it.zone].floorY };
   if (target === 'airlock' && zoneId === 'outside') return null; // already out
   if (spot.zone === zoneId) return spot;
-  if (zoneId === 'habitat') return at(find('hab-inner-door'));
-  if (zoneId === 'greenhouse') return at(find('gh-inner-door'));
-  if (spot.zone === 'habitat') return at(find('hab-outer-door'));
-  if (spot.zone === 'greenhouse') return at(find('gh-outer-door'));
+  if (zoneId === 'habitat') return guideRef(findIt('hab-inner-door'));
+  if (zoneId === 'greenhouse') return guideRef(findIt('gh-inner-door'));
+  if (spot.zone === 'habitat') return guideRef(findIt('hab-outer-door'));
+  if (spot.zone === 'greenhouse') return guideRef(findIt('gh-outer-door'));
   return spot;
 }
 
@@ -586,12 +598,7 @@ function stepIceOven(dtGameHours) {
 
 /** Where the marker goes while you carry icy soil: the Ice Oven (through the airlock). */
 function ovenMarkerTarget(zoneId) {
-  const find = (id) => world.interactables.find((i) => i.id === id);
-  const at = (it) => it && { zone: it.zone, x: it.x, z: it.z, y: it.zone === 'outside' ? heightAt(it.x, it.z) : world.zones[it.zone].floorY };
-  if (zoneId === 'habitat') return at(find('ice-oven'));
-  if (zoneId === 'outside') return at(find('hab-outer-door'));
-  if (zoneId === 'greenhouse') return at(find('gh-inner-door'));
-  return null;
+  return tourTargetPosition('oven', zoneId);
 }
 
 // ---------------------------------------------------------------- gentle failure
@@ -698,15 +705,7 @@ function playerPlace() {
 
 /** Marker toward the shelter from wherever the player is. */
 function shelterMarkerTarget(zoneId) {
-  const find = (id) => world.interactables.find((i) => i.id === id);
-  const at = (it) => it && { zone: it.zone, x: it.x, z: it.z, y: it.zone === 'outside' ? heightAt(it.x, it.z) : world.zones[it.zone].floorY };
-  if (zoneId === 'habitat') {
-    const sp = world.habitat.shelterSpawn;
-    return { zone: 'habitat', x: sp.x, z: sp.z, y: world.zones.habitat.floorY };
-  }
-  if (zoneId === 'outside') return at(find('hab-outer-door'));
-  if (zoneId === 'greenhouse') return at(find('gh-inner-door'));
-  return null;
+  return tourTargetPosition('shelter', zoneId);
 }
 
 function stormLog(text) {
@@ -938,7 +937,15 @@ renderer.setAnimationLoop(() => {
   }
 
   // ---- Volt: roll after the player, think, talk, show the tour marker
-  if (running) volt.update(dt, player, { talking: voltBubble.isShowing, waiting: mode === 'playing' && lookingAtVolt(), speaking: voltVoice.speaking });
+  const standingStill = Math.hypot(player.position.x - lastPX, player.position.z - lastPZ) < 0.002;
+  if (running) {
+    volt.update(dt, player, {
+      talking: voltBubble.isShowing,
+      waiting: mode === 'playing' && standingStill && lookingAtVolt(),
+      speaking: voltVoice.speaking,
+      lead: guide.path, // the trail to the next spot (last frame's), so Volt shows the way
+    });
+  }
   const moved = mode === 'playing' ? Math.hypot(player.position.x - lastPX, player.position.z - lastPZ) : 0;
   lastPX = player.position.x;
   lastPZ = player.position.z;
@@ -964,8 +971,8 @@ renderer.setAnimationLoop(() => {
   world.habitat.waterWall.setWaterLevel(station.wallKg / RADIATION.WALL_CAPACITY_KG);
   const stormMarker = radiation.phase !== 'calm' && playerPlace() !== 'shelter' ? shelterMarkerTarget(zoneId) : null;
   const carryMarker = ice.bagKg > 0 && !ice.oven && !coldTrap ? ovenMarkerTarget(zoneId) : null;
-  tourMarker.setTarget(stormMarker ?? (assistant.tourActive ? tourTargetPosition(assistant.tourStep?.target, zoneId) : carryMarker));
-  tourMarker.update(frameDt, zoneId);
+  guide.setTarget(stormMarker ?? (assistant.tourActive ? tourTargetPosition(assistant.tourStep?.target, zoneId) : carryMarker));
+  guide.update(frameDt, player);
   voltBubble.update(frameDt, camera, volt.headPosition(voltHead), mode === 'playing');
   // the Sun is off indoors, so skip re-rendering its shadow map there
   const outdoors = zoneId === 'outside';
@@ -1062,5 +1069,5 @@ if (import.meta.env.DEV) {
       greenhouse: ['greenhouse', 1.4, 30, 90, -0.08],
     },
   };
-  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, voltBubble, voltVoice, get radiation() { return radiation; }, get sun() { return sun; }, playerPlace, sunReady, ice, helmetLamp };
+  window.__game = { renderer, world, player, day, camera, gauges, gentleFailure, postfx, get mode() { return mode; }, set mode(m) { mode = m; }, input, useDoor, station, mastery, instances, assistant, volt, guide, walkable, voltBubble, voltVoice, get radiation() { return radiation; }, get sun() { return sun; }, playerPlace, sunReady, ice, helmetLamp };
 }

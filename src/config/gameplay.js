@@ -196,7 +196,7 @@ export const ASSISTANT = {
   TALK_SIDE_M: 1.4, // GAME BALANCE (not real data) — …and to the right, so you can see Volt
   TALK_REACH_M: 3.5, // GAME BALANCE (not real data) — "E to talk" works this close…
   TALK_AIM_DEG: 22, // GAME BALANCE (not real data) — …when Volt is this near the crosshair
-  SPEED_M_S: 3.4, // GAME BALANCE (not real data) — top rolling speed
+  SPEED_M_S: 4.6, // GAME BALANCE (not real data) — top rolling speed (faster than a lope, so he can lead)
   RADIUS_M: 0.32, // GAME BALANCE (not real data) — collision circle
   CATCH_UP_M: 8, // GAME BALANCE (not real data) — farther than this → Volt hops to you
   COOLDOWN_S: 20, // GAME BALANCE (not real data) — quiet time between non-urgent lines
@@ -385,6 +385,29 @@ export const TRAINING = {
   PACE: 0.05, // GAME BALANCE (not real data)
   // Steps can set their own pace (the storm drill runs at normal speed, 1).
   RUSH_SECONDS: 1.5, // the scripted delivery skips to landing within this many seconds — GAME BALANCE
+};
+
+// ---------------------------------------------------------------------------
+// GUIDANCE — the glowing trail, the arrow + circle at the next machine, and Volt leading
+// the way. All GAME BALANCE / presentation (not real data).
+// ---------------------------------------------------------------------------
+export const GUIDE = {
+  // Walkable map (systems/navigation.js): paths stay this far from walls and machines.
+  AGENT_R: 0.38, // GAME BALANCE (not real data) — player radius 0.35, Volt 0.32, plus a margin
+  CELL_INDOOR_M: 0.15, // GAME BALANCE (not real data) — grid cell size inside the modules
+  CELL_OUTDOOR_M: 0.5, // GAME BALANCE (not real data) — grid cell size on the surface
+  // The surface grid covers the base, the solar array, the cargo pad and the ice crater.
+  OUTDOOR_BOUNDS: { minX: -120, maxX: 100, minZ: -90, maxZ: 120 }, // GAME BALANCE (not real data)
+  REPLAN_S: 0.25, // GAME BALANCE (not real data) — recompute the way this often
+  // Trail of chevrons on the ground from you to the next spot.
+  TRAIL_SPACING_M: 1.0, // GAME BALANCE (not real data)
+  TRAIL_SPEED_M_S: 1.3, // GAME BALANCE (not real data) — chevrons flow toward the goal
+  TRAIL_START_M: 1.0, // GAME BALANCE (not real data) — first chevron this far ahead of you
+  TRAIL_MAX: 160, // GAME BALANCE (not real data) — at most this many chevrons
+  // Volt stays ahead of you: along the trail when there is one, else in front of you.
+  VOLT_LEAD_M: 3.4, // GAME BALANCE (not real data) — this far along the trail
+  VOLT_AHEAD_M: 2.8, // GAME BALANCE (not real data) — no trail: this far in front…
+  VOLT_AHEAD_SIDE_M: 1.1, // GAME BALANCE (not real data) — …and a little to the right
 };
 
 // Feature flags (later demos).
