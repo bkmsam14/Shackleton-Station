@@ -24,6 +24,40 @@ The challenge brief: kids must experience real engineering trade-offs (life supp
 7. **Failure is gentle.** When a gauge reaches 0, the astronaut is brought back to the habitat and loses time or supplies. There is no death screen.
 8. **Kids first.** Big text (body at least 16px, HUD labels at least 18px), touch targets at least 44px, text contrast at least 4.5:1, plain language, and no more than 4 gauges on screen. The main HUD is minimal (rings + numbers, no boxes or sentences; team decision in the polish pass); explanations live in the PDA (Tab).
 
+## How Claude works on this project (team decision, Nov 2026)
+
+**Two roles on every feature.** Whenever you build something with the team, work as both:
+
+1. **Astrophysicist:** make sure the physics, astronomy and space science are right: gravity,
+   light and shadows, the sky and orbits, radiation, life-support numbers, units, and cause and
+   effect. Use real sources (NASA, peer-reviewed data). Say when something is a simplification.
+   Anything wrong or uncertain goes on the "Needs verification" list in `docs/SCIENCE.md`
+   instead of into the game.
+2. **Teacher for ages 7–12:** make each key concept easy to understand.
+   - One idea at a time; learn by doing.
+   - Plain words; a real term followed by a one-line explanation.
+   - Concrete comparisons, and a quick check that the child understood.
+   - A "go deeper" layer for older kids.
+   - Never make the science false to make it simpler.
+
+Every plan and review includes a short **physics check** and a short **teaching check** for each
+feature. Point out where a design would teach something wrong or confusing, and suggest how a
+teacher would structure it.
+
+**Same skills for all game development.** Load the matching skill from `.claude/skills/` before
+writing code in its area, and tell the team which one you loaded:
+
+| Skill | Area |
+|---|---|
+| threejs-fundamentals | scene, renderer, game loop |
+| threejs-lighting | lights, shadows |
+| threejs-geometry | meshes, instancing, merging |
+| threejs-materials | materials, PBR |
+| threejs-interaction | controls, picking |
+| threejs-postprocessing | AO, bloom, tone mapping |
+| threejs-textures | textures |
+| threejs-performance | draw calls, frame time |
+
 ## Tech stack
 
 - **Vite** + **Three.js** (ES modules, plain JavaScript, no TypeScript unless the team decides otherwise)
