@@ -120,6 +120,7 @@ export function createHuntGame({ mount, announce, onComplete, onTip }) {
   function found() {
     phase = 'found';
     sfx.success();
+    sfx.hiss();
     holeG.g.style.display = '';
     holeG.g.classList.add('is-found');
     probe.style.display = 'none';
@@ -263,7 +264,7 @@ export function createHatchGame({ mount, announce, onComplete, onTip }) {
         const avg = g.reduce((s, k) => s + pressure[k], 0) / g.length;
         g.forEach((k) => (pressure[k] = avg));
       }
-      sfx.click();
+      sfx.clank();
       refresh();
       watch = 2.2;
       doEl.innerHTML = 'Watching the needles…';
@@ -392,7 +393,7 @@ export function createPatchGame({ mount, announce, onComplete, onTip }) {
     t.focus();
     onActivate(t, () => {
       if (step !== 0) return;
-      sfx.pop();
+      sfx.tape();
       t.remove();
       const strip = svgEl('rect', { x: HX - 50, y: HY - 16, width: 100, height: 32, rx: 4, class: 'lf-tape-on' }, svg);
       strip.dataset.keep = '1';
@@ -435,7 +436,7 @@ export function createPatchGame({ mount, announce, onComplete, onTip }) {
       }
       got[which] = true;
       el.classList.add('is-used');
-      sfx.bubble();
+      sfx.blub();
       blob.setAttribute('rx', got.b ? 44 : 30);
       blob.setAttribute('ry', got.b ? 16 : 11);
       color();
@@ -449,7 +450,7 @@ export function createPatchGame({ mount, announce, onComplete, onTip }) {
     onActivate(stir, () => {
       if (!got.b || stirs >= 3) return;
       stirs++;
-      sfx.bubble();
+      sfx.blub();
       blob.style.transform = `rotate(${stirs * 25}deg)`;
       color();
       if (stirs >= 3) {
@@ -469,6 +470,7 @@ export function createPatchGame({ mount, announce, onComplete, onTip }) {
     const ring = svgEl('circle', { cx: HX, cy: HY, r: 62, class: 'lf-hold-ring', 'stroke-dasharray': `${2 * Math.PI * 62}`, 'stroke-dashoffset': `${2 * Math.PI * 62}` }, layer);
     const down = (e) => {
       e?.preventDefault?.();
+      if (!holding) sfx.squish();
       holding = true;
       patch.classList.add('is-held');
     };

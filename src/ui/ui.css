@@ -392,3 +392,219 @@
 @media (prefers-reduced-motion: reduce) {
   .day-title span { animation: none; }
 }
+
+/* ---------------------------------------------------------------- main menu (indie style)
+   The live 3D base drifts behind; a soft dark gradient on the left keeps the text readable. */
+.menu.mm {
+  display: grid;
+  grid-template-columns: minmax(300px, 520px) 1fr;
+  align-items: center;
+  justify-items: start;
+  padding: clamp(16px, 5vw, 64px);
+  background: linear-gradient(90deg, rgba(4, 8, 22, 0.88) 0%, rgba(4, 8, 22, 0.55) 42%, rgba(4, 8, 22, 0) 75%);
+}
+.mm-side {
+  display: grid;
+  gap: 10px;
+  animation: mm-in 0.9s ease-out both;
+}
+.mm-kicker {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.mm-title {
+  margin: 0;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: clamp(48px, 8vw, 92px);
+  line-height: 0.95;
+  color: #ffffff;
+  text-shadow: 0 0 28px rgba(79, 209, 232, 0.45), 0 4px 0 rgba(0, 0, 0, 0.35);
+}
+.mm-title span {
+  display: block;
+  color: var(--orange);
+  text-shadow: 0 0 28px rgba(255, 181, 71, 0.45), 0 4px 0 rgba(0, 0, 0, 0.35);
+}
+.mm-tag {
+  margin: 4px 0 14px;
+  font-size: 22px;
+  color: #e6ecf7;
+}
+.mm-buttons {
+  display: grid;
+  gap: 10px;
+  width: min(380px, 100%);
+}
+.mm-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 0 22px;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+  background: rgba(14, 22, 48, 0.72);
+  color: #ffffff;
+  font: 600 22px var(--font-head);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.mm-btn[hidden] {
+  display: none;
+}
+.mm-btn:hover,
+.mm-btn:focus-visible {
+  transform: translateX(6px);
+  border-color: var(--cyan);
+  background: rgba(24, 40, 82, 0.9);
+  outline: none;
+}
+.mm-btn-main {
+  min-height: 68px;
+  font-size: 28px;
+  color: #04202a; /* 10.8:1 on cyan */
+  background: var(--cyan);
+  border-color: transparent;
+  box-shadow: 0 0 30px rgba(79, 209, 232, 0.45), inset 0 -5px 0 rgba(0, 0, 0, 0.2);
+}
+.mm-btn-main:hover,
+.mm-btn-main:focus-visible {
+  background: #7fe3f2;
+  border-color: #ffffff;
+}
+.mm-ic {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  font-size: 22px;
+}
+.mm-version {
+  margin: 10px 0 0;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.mm-volt {
+  position: absolute;
+  right: clamp(16px, 6vw, 90px);
+  bottom: clamp(16px, 8vh, 80px);
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  pointer-events: none;
+}
+.mm-volt-bot svg {
+  width: clamp(90px, 12vw, 150px);
+  height: auto;
+  animation: mm-bob 2.6s ease-in-out infinite;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45));
+}
+.mm-volt-bubble {
+  max-width: 260px;
+  padding: 10px 16px;
+  border-radius: 18px 18px 4px 18px;
+  border: 3px solid #10182c;
+  background: #f6f8ff;
+  color: #10182c; /* 17:1 */
+  font-size: 18px;
+  font-weight: 700;
+  animation: mm-in 0.6s 0.8s ease-out both;
+}
+.mm-panel {
+  position: absolute;
+  right: clamp(16px, 5vw, 64px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(620px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  animation: mm-panel-in 0.25s ease-out both;
+}
+.mm-panel[hidden] {
+  display: none;
+}
+.menu.mm.has-panel .mm-volt {
+  display: none;
+}
+.mm-close {
+  float: right;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font-size: 22px;
+  cursor: pointer;
+}
+.mm-close:focus-visible {
+  outline: 3px solid #fff;
+}
+.mm-h2 {
+  margin: 0 0 6px;
+  font: 700 30px var(--font-head);
+  color: var(--cyan);
+}
+.mm-goal p {
+  margin: 4px 0 8px;
+  font-size: 20px;
+}
+.mm-goal ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  font-size: 18px;
+}
+.mm-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border-radius: 50%;
+  vertical-align: -1px;
+}
+.mm-o2 { background: #4fa8ff; }
+.mm-food { background: #7be0a0; }
+.mm-power { background: #ffd43b; }
+@keyframes mm-in {
+  from { opacity: 0; transform: translateY(14px); }
+}
+@keyframes mm-panel-in {
+  from { opacity: 0; transform: translateY(-50%) translateX(20px); }
+}
+@keyframes mm-bob {
+  50% { transform: translateY(-10px) rotate(-3deg); }
+}
+@media (max-width: 760px) {
+  .menu.mm {
+    grid-template-columns: 1fr;
+    background: rgba(4, 8, 22, 0.75);
+  }
+  .mm-volt { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-side, .mm-volt-bubble, .mm-volt-bot svg, .mm-panel { animation: none; }
+}
+/* a panel open: the menu behind steps back */
+.menu.mm.has-panel .mm-side {
+  opacity: 0.35;
+  filter: blur(1px);
+  transition: opacity 0.2s ease;
+}
+@media (max-width: 1180px) {
+  .mm-panel {
+    right: auto;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-name: mm-panel-in-center;
+  }
+}
+@keyframes mm-panel-in-center {
+  from { opacity: 0; transform: translate(-50%, -46%); }
+}

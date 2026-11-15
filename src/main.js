@@ -57,8 +57,9 @@ import { TARGETS } from './data/constellations.js';
 import { createTelescopeInstance } from './instances/telescope/index.js';
 import { createAirlockRoom } from './world/airlockRoom.js';
 import { createAmbience } from './ui/ambience.js';
+import { createMusic } from './ui/music.js';
 import { createAirlockCycle, stepAirlock, payCycle } from './systems/airlock.js';
-import { setVolume, getVolume } from './ui/sfx.js';
+import { setVolume, getVolume, footstep } from './ui/sfx.js';
 import { createTraining } from './training/index.js';
 import { drillStorm } from './training/script.js';
 import { createTrainingReportInstance } from './instances/trainingReport/index.js';
@@ -93,7 +94,7 @@ function renderFrame(dt = 0) {
     postfx.renderPlain(airlockRoom.scene, camera); // tone-mapped like the rest (was untone-mapped on High)
     return;
   }
-  postfx.setZone(player?.zoneId ?? 'habitat');
+  postfx.setZone(mode === 'start' ? 'outside' : player?.zoneId ?? 'habitat');
   if (postfx.enabled) postfx.render(dt);
   else renderer.render(world.scene, camera);
 }
@@ -358,8 +359,23 @@ function enterPause() {
   }
 }
 
+// calm space music (CC0, ui/music.js): full in the menu and outside, softer inside
+const music = createMusic({ volume: loadSettings().musicVolume ?? 0.5 });
 const menus = createMenus(uiRoot, {
-  onStart: requestLock,
+  onStart: () => {
+    music.start();
+    requestLock();
+  },
+  onGesture: () => music.start(),
+  music: {
+    get: () => music.volume,
+    set(v) {
+      music.setVolume(v);
+      saveSettings({ musicVolume: v });
+    },
+  },
+  mission: () => ({ day: mission.day, won: mission.won }),
+  onNewMission: () => startNewMission(),
   sun: { modes: SUN_MODES, get: () => sunMode, set: (m) => pickSun(m) },
   onResume: requestLock,
   getQuality: () => quality,
@@ -1203,6 +1219,12 @@ function startNewMission() {
 const timer = new THREE.Timer();
 timer.connect(document);
 let lastPX = player.position.x; // for "how far did the player walk" (tour step 1)
+let stepPX = player.position.x; // footsteps
+let stepPZ = player.position.z;
+let walkedM = 0;
+let wasOnGround = true;
+let exertion = 0;
+let menuT = 0; // main-menu camera drift
 let lastPZ = player.position.z;
 const fpsMeter = createFpsMeter(renderer);
 
@@ -1238,6 +1260,26 @@ renderer.setAnimationLoop(() => {
     camera.position.y += airlockRoom.shakeOffset(run.t);
   }
   ambience.update(player.zoneId, mode === 'playing' || mode === 'busy');
+  // footsteps: a tap on the metal floor inside; outside a soft crunch felt through the boots
+  // (no air out there to carry sound). Low gravity → long, loping steps outside.
+  if (mode === 'playing' && !airlockRun) {
+    const inside = player.zoneId !== 'outside';
+    const stepDist = Math.hypot(player.position.x - stepPX, player.position.z - stepPZ);
+    stepPX = player.position.x;
+    stepPZ = player.position.z;
+    if (player.onGround && stepDist < 1) {
+      walkedM += stepDist;
+      if (walkedM > (inside ? 0.8 : 1.4)) {
+        walkedM = 0;
+        footstep(inside);
+      }
+    }
+    if (player.onGround && !wasOnGround) footstep(inside, true); // landing after a jump
+    wasOnGround = player.onGround;
+    const speed = frameDt > 0 ? stepDist / frameDt : 0;
+    exertion += ((player.zoneId === 'outside' ? Math.min(1, speed / 4) : 0) - exertion) * Math.min(1, frameDt * 0.5);
+    ambience.setExertion(exertion);
+  }
   if (mode === 'playing') {
     handleInteraction();
     if (player.hitMapEdge && elapsed - edgeToastAt > 6) {
@@ -1250,8 +1292,18 @@ renderer.setAnimationLoop(() => {
   if (input.consumeTab()) togglePda();
   if (input.consumeNext()) nextTourStep();
 
+  // main menu: a slow drift around the base, outside, with Earth low on the horizon
+  if (mode === 'start') {
+    menuT += frameDt;
+    const a = menuT * 0.035 + 2.2;
+    camera.position.set(4 + Math.cos(a) * 30, 9 + Math.sin(menuT * 0.11) * 1.2, 14 + Math.sin(a) * 30);
+    camera.lookAt(4, 3, 14);
+  }
+  const viewZone = mode === 'start' ? 'outside' : player.zoneId;
+  music.setMood(mode === 'start' ? 'menu' : mode === 'instance' || mode === 'paused' || mode === 'pda' || dayEnding ? 'lesson' : viewZone === 'outside' ? 'outside' : 'inside');
+  music.update(frameDt);
   const sun = getSun(day);
-  const alignment = world.update(dt, camera, player.position, sun, (day.gameSeconds / 86400) * Math.PI * 2, player.zoneId);
+  const alignment = world.update(dt, camera, player.position, sun, (day.gameSeconds / 86400) * Math.PI * 2, viewZone);
 
   // ---- survival gauges (pure logic) + reactions
   const zoneId = player.zoneId;
@@ -1333,7 +1385,7 @@ renderer.setAnimationLoop(() => {
   guide.update(frameDt, player);
   voltBubble.update(frameDt, camera, volt.headPosition(voltHead), mode === 'playing' && !instances.isOpen);
   // the Sun is off indoors, so skip re-rendering its shadow map there
-  const outdoors = zoneId === 'outside';
+  const outdoors = viewZone === 'outside';
   // Outside you see through your helmet visor. In the airlock it goes on before the air is
   // pumped out (going out) and comes off once the air is back (coming in).
   if (airlockRun) {

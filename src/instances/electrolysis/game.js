@@ -133,7 +133,7 @@ export function createZapperGame({ canvas, zaps, announce, onComplete }) {
 
   function arriveH2() {
     s.hInTube++;
-    sfx.bubble();
+    sfx.blub();
   }
   function arriveO2() {
     s.oInTube++;
@@ -168,6 +168,7 @@ export function createZapperGame({ canvas, zaps, announce, onComplete }) {
     s.lastHitAt = s.t;
     s.bolts.push({ x: m.x, y: m.y, t: 0 });
     sfx.zap(s.combo);
+    sfx.fizz();
     // 2 H → one H₂ to the − tube; the O goes to wait for a partner near the + plate
     s.hSent++;
     fly('H2', m.x, m.y, TUBE_H.x + TUBE.w / 2, tubeLevelY(s.hSent), arriveH2);

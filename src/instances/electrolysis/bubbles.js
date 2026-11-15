@@ -108,6 +108,7 @@ export function createBubbleGame({ mount, zaps, announce, onComplete, onTip }) {
     else if (gas === 'h2' && got.h2 + 1 === 4 && got.o2 >= 2) onTip?.('ratio');
     else if (gas === 'o2' && got.o2 + 1 === 2 && got.h2 >= 4) onTip?.('ratio');
     sfx.click();
+    sfx.fizz();
     busy = true;
     pop.hidden = true;
     bubble.querySelector('span').textContent = gas === 'h2' ? 'H₂' : 'O₂';

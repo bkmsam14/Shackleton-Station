@@ -66,12 +66,16 @@ export function createAmbience() {
     // suit: breathing (band-passed noise, slow in/out) + a quiet fan
     const suitBus = gain(0);
     const breathG = gain(0);
-    noiseSrc().connect(filter('bandpass', 750, 0.9)).connect(breathG).connect(suitBus);
+    const breathF = filter('bandpass', 750, 0.9);
+    noiseSrc().connect(breathF).connect(breathG).connect(suitBus);
     const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.22; // ~4.5 s per breath
+    lfo.frequency.value = 0.22; // ~4.5 s per breath at rest; faster when you move (setExertion)
     const lfoDepth = gain(LEVEL.suitBreath / 2);
     lfo.connect(lfoDepth).connect(breathG.gain);
     breathG.gain.value = LEVEL.suitBreath / 2;
+    // breathing in sounds brighter than breathing out: the same wave sweeps the filter
+    const lfoTone = gain(260);
+    lfo.connect(lfoTone).connect(breathF.frequency);
     lfo.start();
     const suitFanG = gain(LEVEL.suitFan);
     noiseSrc().connect(filter('lowpass', 300)).connect(suitFanG).connect(suitBus);
@@ -91,7 +95,7 @@ export function createAmbience() {
     motor.connect(filter('lowpass', 110)).connect(bootsG).connect(out);
     motor.start();
 
-    a = { ctx, out, habitatBus, suitBus, hissF, hissG, motorG, motorF, bootsG };
+    a = { ctx, out, habitatBus, suitBus, hissF, hissG, motorG, motorF, bootsG, lfo, breathG, lfoDepth };
     return a;
   }
 
@@ -116,6 +120,18 @@ export function createAmbience() {
       const inside = zone !== 'outside';
       ramp(s.habitatBus.gain, active && !lockOn && inside ? LEVEL.habitat : 0, 0.6);
       ramp(s.suitBus.gain, active && !lockOn && !inside ? 1 : 0, 0.6);
+    },
+
+    /**
+     * How hard you are working in the suit (0 resting … 1 hopping fast): you breathe faster
+     * and a little louder — like a real spacewalk, where you use about 2× more oxygen (BVAD).
+     */
+    setExertion(x) {
+      if (!a) return;
+      const e = Math.max(0, Math.min(1, x));
+      ramp(a.lfo.frequency, 0.22 + 0.26 * e, 1.2);
+      ramp(a.lfoDepth.gain, (LEVEL.suitBreath / 2) * (1 + 0.6 * e), 1.2);
+      ramp(a.breathG.gain, (LEVEL.suitBreath / 2) * (1 + 0.6 * e), 1.2);
     },
 
     /** Airlock: start / follow the pressure / stop. pressure 1 = module air, 0 = vacuum. */

@@ -122,7 +122,7 @@ export function createDrillGame({ canvas, maxChunks, announce, onComplete }) {
         s.bestStreak = Math.max(s.bestStreak, s.streak);
         if (it.mega) s.megas++;
         sfx.zap(s.streak); // the crunch rises in pitch as the streak grows
-        sfx.pop();
+        sfx.grind();
         const kgText = `+${worth * ICE.SOIL_KG_PER_CHUNK} kg`;
         const text = it.mega ? `MEGA ICE! ${kgText}` : s.streak >= 3 ? `Streak ×${s.streak}! ${kgText}` : kgText;
         s.pops.push({ x: it.x, y: it.y, t: 0, text, big: it.mega || s.streak >= 3 });

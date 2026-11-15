@@ -134,7 +134,7 @@ export function createIceOvenInstance({ root, ctx, done }) {
       return;
     }
     const c = loadOven(ice, gauges);
-    sfx.success();
+    sfx.heatUp();
     refresh();
     ctx.voice?.speak(`Baking! About ${c.waterKg.toFixed(1)} kilograms of water will drip into the tank.`);
     started = { waterKg: c.waterKg, kwh: c.kwh, soilKg: c.soilKg };

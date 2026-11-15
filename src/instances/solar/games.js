@@ -127,7 +127,7 @@ export function createCellGame({ mount, announce, onComplete, onTip }) {
     spare.g.removeAttribute('tabindex');
     cr.g.remove();
     crackedEls.delete(row);
-    sfx.bubble();
+    sfx.spark();
     refresh();
     announce(`Row ${row + 1} fixed! ${crackedEls.size} left.`);
     if (!fixedOnce) {
@@ -137,6 +137,7 @@ export function createCellGame({ mount, announce, onComplete, onTip }) {
     if (!crackedEls.size && !finished) {
       finished = true;
       sfx.success();
+      sfx.powerUp();
       doEl.innerHTML = '<b>All chains are flowing again. Full power!</b>';
       setTimeout(() => onComplete({ seconds: (performance.now() - start) / 1000 }), 900);
     }
@@ -274,6 +275,7 @@ export function createHotSpotGame({ mount, announce, onComplete, onTip }) {
     irBtn.setAttribute('aria-pressed', String(on));
     irTxt.textContent = on ? 'ON' : 'OFF';
     sfx.click();
+    if (on) sfx.powerUp();
     if (on && !saidIr) {
       saidIr = true;
       onTip?.('ir');
@@ -300,7 +302,7 @@ export function createHotSpotGame({ mount, announce, onComplete, onTip }) {
     cell.done = true;
     cell.g.classList.add('is-fixed');
     cell.g.classList.remove('is-hot');
-    sfx.bubble();
+    sfx.spark();
     found++;
     if (found === 1) onTip?.('hot');
     announce(`Hot cell found and swapped for a new one. ${BROKEN_ROWS - found} left.`);
@@ -386,16 +388,18 @@ export function createWireGame({ mount, announce, onComplete, onTip }) {
     if (finished) return;
     turnPiece(round, i);
     sfx.click();
+    sfx.spark();
     const reach = draw();
     if (wireSolved(round)) {
       finished = true;
       sfx.success();
+      sfx.powerUp();
       onTip?.('loop');
       doEl.innerHTML = '<b>The loop is complete! Electricity flows round: cells → battery → back.</b>';
       announce('The loop is complete. Electricity flows from the cells to the battery and back again.');
       return;
     }
-    if (pieceOk(round.pieces[i]) && i === reach - 1) sfx.pop();
+    if (pieceOk(round.pieces[i]) && i === reach - 1) sfx.buzz();
     if (!saidGap && reach > 0) {
       saidGap = true;
       onTip?.('gap');

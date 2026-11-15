@@ -90,6 +90,7 @@ export function createAtomGame({ mount, zaps, announce, onComplete, onTip }) {
     const res = tapAtom(round, id);
     if (res.type === 'select') {
       sfx.click();
+      sfx.blub();
       btn(id).classList.add('is-picked');
     } else if (res.type === 'deselect') {
       btn(id).classList.remove('is-picked');

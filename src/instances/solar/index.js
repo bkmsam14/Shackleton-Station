@@ -256,7 +256,8 @@ export function createSolarRepairInstance({ root, ctx, done }) {
       drawLoose();
       target.classList.add('is-done');
       plug.classList.add('is-done');
-      sfx.success();
+      sfx.spark();
+      sfx.powerUp();
       gathered.remove();
       // electrons leave the (−) side, go through the battery and come back to (+)
       loopPath.setAttribute(
