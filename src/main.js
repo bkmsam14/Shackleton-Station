@@ -90,7 +90,7 @@ const input = createInput();
 // ---------------------------------------------------------------- airlock + sounds
 // Doors marked via: 'airlock' run a real-looking cycle (systems/airlock.js) in a small room
 // (world/airlockRoom.js). The sounds follow the air pressure: SOUND NEEDS AIR (ui/ambience.js).
-const airlockRoom = createAirlockRoom();
+const airlockRoom = createAirlockRoom(renderer);
 const ambience = createAmbience();
 let airlockRun = null; // { cycle, resolve }
 setVolume(loadSettings().sfxVolume ?? 0.8);
